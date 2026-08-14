@@ -1,0 +1,2 @@
+This directory holds tenant-database migrations run by `php artisan tenants:migrate`.
+Central/landlord migrations remain in `database/migrations`.

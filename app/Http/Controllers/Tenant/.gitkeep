@@ -1,0 +1,6 @@
+Landlord and Tenant controller namespaces:
+
+  App\Http\Controllers\Landlord\*
+  App\Http\Controllers\Tenant\*
+
+Add controllers under the matching namespace as features are built.
