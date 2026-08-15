@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests\Tenant\Catalog;
+
+use App\Enums\Tenant\Catalog\CollectionStatus;
+use App\Enums\Tenant\Catalog\CollectionType;
+use App\Http\Requests\BaseRequest;
+use App\Support\Media\MediaValidation;
+use Illuminate\Validation\Rule;
+
+/**
+ * Validates collection update payloads.
+ */
+class UpdateProductCollectionRequest extends BaseRequest
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        /** @var int|string|null $collectionId */
+        $collectionId = $this->route('collection');
+
+        return [
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'slug' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('collections', 'slug')->ignore($collectionId),
+            ],
+            'description' => ['sometimes', 'nullable', 'string'],
+            'type' => ['sometimes', Rule::enum(CollectionType::class)],
+            'status' => ['sometimes', Rule::enum(CollectionStatus::class)],
+            'sort_order' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'published_at' => ['sometimes', 'nullable', 'date'],
+            'starts_at' => ['sometimes', 'nullable', 'date'],
+            'ends_at' => ['sometimes', 'nullable', 'date', 'after_or_equal:starts_at'],
+            'image' => MediaValidation::image(required: false),
+        ];
+    }
+}

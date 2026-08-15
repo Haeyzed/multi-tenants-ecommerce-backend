@@ -219,6 +219,48 @@ class NotificationTemplateSeeder extends Seeder
                 'push_body' => 'Payment for {{plan_name}} failed.',
                 'is_mandatory' => false,
             ],
+            [
+                'key' => 'customer.welcome',
+                'name' => 'Customer Welcome',
+                'description' => 'Welcome notification for newly registered customers.',
+                'channels' => [
+                    NotificationChannel::Email->value,
+                    NotificationChannel::Database->value,
+                ],
+                'variables' => ['user_name', 'email'],
+                'title' => 'Welcome',
+                'body' => 'Hi {{user_name}}, your customer account has been created.',
+                'email_subject' => 'Welcome to our store',
+                'email_body' => 'Hi {{user_name}}, your account ({{email}}) is ready.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'customer.email_verify',
+                'name' => 'Customer Email Verification',
+                'description' => 'Sent when a customer needs to verify their email address.',
+                'channels' => [NotificationChannel::Email->value],
+                'variables' => ['user_name', 'email', 'token'],
+                'title' => 'Verify your email',
+                'body' => 'Use token {{token}} to verify your email address.',
+                'email_subject' => 'Verify your email address',
+                'email_body' => 'Hi {{user_name}}, use this token to verify {{email}}: {{token}}',
+                'is_mandatory' => true,
+            ],
+            [
+                'key' => 'customer.account_deactivated',
+                'name' => 'Customer Account Deactivated',
+                'description' => 'Sent when a customer deactivates their account.',
+                'channels' => [
+                    NotificationChannel::Email->value,
+                    NotificationChannel::Database->value,
+                ],
+                'variables' => ['user_name', 'email'],
+                'title' => 'Account deactivated',
+                'body' => 'Hi {{user_name}}, your account has been deactivated.',
+                'email_subject' => 'Your account has been deactivated',
+                'email_body' => 'Hi {{user_name}}, your account ({{email}}) has been deactivated.',
+                'is_mandatory' => false,
+            ],
         ];
 
         foreach ($templates as $template) {

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -28,6 +29,13 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property string|null $barcode
  * @property int|null $unit_id
  * @property bool $is_active
+ * @property bool $allow_backorder
+ * @property bool $is_preorder
+ * @property Carbon|null $preorder_start_at
+ * @property Carbon|null $preorder_end_at
+ * @property int|null $minimum_purchase_quantity
+ * @property int|null $maximum_purchase_quantity
+ * @property int|null $low_stock_threshold
  * @property string|null $weight
  * @property string|null $length
  * @property string|null $width
@@ -49,11 +57,26 @@ class ProductVariant extends Model implements HasMedia
         'barcode',
         'unit_id',
         'is_active',
+        'allow_backorder',
+        'is_preorder',
+        'preorder_start_at',
+        'preorder_end_at',
+        'minimum_purchase_quantity',
+        'maximum_purchase_quantity',
+        'low_stock_threshold',
         'weight',
         'length',
         'width',
         'height',
         'sort_order',
+    ];
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'allow_backorder' => false,
+        'is_preorder' => false,
     ];
 
     /**
@@ -65,6 +88,13 @@ class ProductVariant extends Model implements HasMedia
             'product_id' => 'integer',
             'unit_id' => 'integer',
             'is_active' => 'boolean',
+            'allow_backorder' => 'boolean',
+            'is_preorder' => 'boolean',
+            'preorder_start_at' => 'datetime',
+            'preorder_end_at' => 'datetime',
+            'minimum_purchase_quantity' => 'integer',
+            'maximum_purchase_quantity' => 'integer',
+            'low_stock_threshold' => 'integer',
             'weight' => 'decimal:3',
             'length' => 'decimal:3',
             'width' => 'decimal:3',

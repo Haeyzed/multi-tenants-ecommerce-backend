@@ -48,6 +48,7 @@ beforeEach(function (): void {
         '2026_08_15_034315_create_product_prices_table.php',
         '2026_08_15_034318_create_inventories_table.php',
         '2026_08_15_034321_create_inventory_movements_table.php',
+        '2026_08_15_050001_add_catalogue_control_fields_to_products_and_variants_table.php',
     ];
 
     foreach ($migrationFiles as $file) {

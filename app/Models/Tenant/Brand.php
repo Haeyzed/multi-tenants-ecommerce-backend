@@ -6,6 +6,7 @@ namespace App\Models\Tenant;
 
 use App\Enums\Media\MediaCollection;
 use App\Enums\Media\MediaConversion;
+use App\Models\Concerns\HasSeo;
 use Database\Factories\Tenant\BrandFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,7 +34,7 @@ use Spatie\Sluggable\SlugOptions;
 class Brand extends Model implements HasMedia
 {
     /** @use HasFactory<BrandFactory> */
-    use HasFactory, HasSlug, InteractsWithMedia;
+    use HasFactory, HasSeo, HasSlug, InteractsWithMedia;
 
     /**
      * @var list<string>
@@ -81,11 +82,15 @@ class Brand extends Model implements HasMedia
     }
 
     /**
-     * Register the single-file brand logo collection.
+     * Register the single-file brand logo and OG image collections.
      */
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection(MediaCollection::Logo->value)
+            ->singleFile()
+            ->acceptsMimeTypes(config('media.mimes.image', []));
+
+        $this->addMediaCollection(MediaCollection::OgImage->value)
             ->singleFile()
             ->acceptsMimeTypes(config('media.mimes.image', []));
     }
@@ -102,7 +107,7 @@ class Brand extends Model implements HasMedia
         $this->addMediaConversion(MediaConversion::Thumb->value)
             ->fit(Fit::Max, (int) $thumb['width'], (int) $thumb['height'])
             ->nonQueued()
-            ->performOnCollections(MediaCollection::Logo->value);
+            ->performOnCollections(MediaCollection::Logo->value, MediaCollection::OgImage->value);
 
         $this->addMediaConversion(MediaConversion::Small->value)
             ->fit(Fit::Max, (int) $small['width'], (int) $small['height'])

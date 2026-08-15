@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureActiveSubscription;
 use App\Http\Middleware\EnsureFeature;
+use App\Http\Middleware\SetCustomerGuard;
 use App\Http\Middleware\SetLandlordGuard;
 use App\Http\Middleware\SetTenantGuard;
 use Illuminate\Foundation\Application;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'landlord.guard' => SetLandlordGuard::class,
             'tenant.guard' => SetTenantGuard::class,
+            'customer.guard' => SetCustomerGuard::class,
             'subscription.active' => EnsureActiveSubscription::class,
             'feature' => EnsureFeature::class,
             'role' => RoleMiddleware::class,

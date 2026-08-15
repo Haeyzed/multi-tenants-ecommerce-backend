@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Landlord\User as LandlordUser;
+use App\Models\Tenant\Customer;
 use App\Models\Tenant\User as TenantUser;
 
 return [
@@ -37,6 +38,10 @@ return [
             'driver' => 'session',
             'provider' => 'tenant_users',
         ],
+        'customer' => [
+            'driver' => 'session',
+            'provider' => 'customers',
+        ],
     ],
 
     /*
@@ -53,6 +58,10 @@ return [
         'tenant_users' => [
             'driver' => 'eloquent',
             'model' => TenantUser::class,
+        ],
+        'customers' => [
+            'driver' => 'eloquent',
+            'model' => Customer::class,
         ],
     ],
 
@@ -72,6 +81,12 @@ return [
         'tenant_users' => [
             'provider' => 'tenant_users',
             'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'customers' => [
+            'provider' => 'customers',
+            'table' => 'customer_password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],

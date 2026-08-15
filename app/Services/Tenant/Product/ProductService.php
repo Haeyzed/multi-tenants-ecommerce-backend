@@ -157,6 +157,16 @@ class ProductService
             'attributeValues.attribute',
             'prices',
             'media',
+            'tags',
+            'badges.media',
+            'collections',
+            'specifications',
+            'seo',
+            'relatedProducts',
+            'upsells',
+            'crossSells',
+            'bundleItems.product',
+            'bundleItems.variant',
         ]);
     }
 
