@@ -1,0 +1,51 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests\Landlord\Plan;
+
+use App\Enums\Landlord\BillingInterval;
+use App\Http\Requests\BaseRequest;
+use App\Models\Landlord\Plan;
+use Illuminate\Validation\Rule;
+
+/**
+ * Validates plan update payloads.
+ */
+class UpdatePlanRequest extends BaseRequest
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        /** @var Plan|null $plan */
+        $plan = $this->route('plan');
+
+        return [
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'slug' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:255',
+                'alpha_dash',
+                Rule::unique('plans', 'slug')->ignore($plan?->id),
+            ],
+            'description' => ['sometimes', 'nullable', 'string'],
+            'price' => ['sometimes', 'numeric', 'min:0'],
+            'currency' => ['sometimes', 'string', 'size:3'],
+            'currency_id' => ['sometimes', 'nullable', 'integer'],
+            'billing_interval' => ['sometimes', Rule::enum(BillingInterval::class)],
+            'billing_interval_count' => ['sometimes', 'integer', 'min:1'],
+            'trial_days' => ['sometimes', 'integer', 'min:0'],
+            'is_active' => ['sometimes', 'boolean'],
+            'is_public' => ['sometimes', 'boolean'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'features' => ['sometimes', 'array'],
+            'features.*.slug' => ['required_with:features', 'string', 'max:255', Rule::exists('features', 'slug')],
+            'features.*.is_enabled' => ['sometimes', 'boolean'],
+            'features.*.limit' => ['sometimes', 'nullable', 'integer', 'min:0'],
+        ];
+    }
+}

@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use Stancl\Tenancy\Jobs;
+use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+use Stancl\JobPipeline\JobPipeline;
+use Stancl\Tenancy\Actions\CloneRoutesAsTenant;
+use Stancl\Tenancy\Bootstrappers\RootUrlBootstrapper;
 use Stancl\Tenancy\Events;
-use Stancl\Tenancy\ResourceSyncing;
+use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
-use Stancl\JobPipeline\JobPipeline;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\ServiceProvider;
-use Stancl\Tenancy\Actions\CloneRoutesAsTenant;
-use Illuminate\Contracts\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Route;
+use Stancl\Tenancy\ResourceSyncing;
 
 /**
  * Tenancy for Laravel.
@@ -45,7 +47,7 @@ class TenancyServiceProvider extends ServiceProvider
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
-                    // Jobs\SeedDatabase::class,
+                    Jobs\SeedDatabase::class,
                     // Jobs\CreateStorageSymlinks::class,
 
                     // Your own jobs to prepare the tenant.
@@ -155,7 +157,7 @@ class TenancyServiceProvider extends ServiceProvider
      * Set \Stancl\Tenancy\Bootstrappers\RootUrlBootstrapper::$rootUrlOverride here
      * to override the root URL used in CLI while in tenant context.
      *
-     * @see \Stancl\Tenancy\Bootstrappers\RootUrlBootstrapper
+     * @see RootUrlBootstrapper
      */
     protected function overrideUrlInTenantContext(): void
     {
@@ -255,7 +257,7 @@ class TenancyServiceProvider extends ServiceProvider
         $tenancyMiddleware = array_merge([Middleware\PreventAccessFromUnwantedDomains::class], config('tenancy.identification.middleware'));
 
         foreach (array_reverse($tenancyMiddleware) as $middleware) {
-            $this->app[\Illuminate\Contracts\Http\Kernel::class]->prependToMiddlewarePriority($middleware);
+            $this->app[Kernel::class]->prependToMiddlewarePriority($middleware);
         }
     }
 }
