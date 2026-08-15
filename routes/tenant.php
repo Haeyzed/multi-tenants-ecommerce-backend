@@ -15,15 +15,24 @@ use App\Http\Controllers\Tenant\Catalog\SeoController;
 use App\Http\Controllers\Tenant\Category\CategoryController;
 use App\Http\Controllers\Tenant\Commerce\CartController;
 use App\Http\Controllers\Tenant\Commerce\CheckoutController;
+use App\Http\Controllers\Tenant\Commerce\CustomerInvoiceController;
 use App\Http\Controllers\Tenant\Commerce\CustomerOrderController;
 use App\Http\Controllers\Tenant\Commerce\CustomerShipmentController;
+use App\Http\Controllers\Tenant\Commerce\InvoiceController;
 use App\Http\Controllers\Tenant\Commerce\OrderController;
 use App\Http\Controllers\Tenant\Commerce\PaymentController;
 use App\Http\Controllers\Tenant\Commerce\PaymentWebhookController;
+use App\Http\Controllers\Tenant\Commerce\RefundController;
 use App\Http\Controllers\Tenant\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Tenant\Customer\CustomerController;
 use App\Http\Controllers\Tenant\Customer\ProductReviewController as CustomerProductReviewController;
 use App\Http\Controllers\Tenant\Inventory\InventoryController;
+use App\Http\Controllers\Tenant\Marketplace\SellerCommissionController;
+use App\Http\Controllers\Tenant\Marketplace\SellerController;
+use App\Http\Controllers\Tenant\Marketplace\SellerOfferController;
+use App\Http\Controllers\Tenant\Marketplace\SellerOrderController;
+use App\Http\Controllers\Tenant\Marketplace\SellerPayoutController;
+use App\Http\Controllers\Tenant\Marketplace\SellerProfileController;
 use App\Http\Controllers\Tenant\Media\MediaController;
 use App\Http\Controllers\Tenant\Notification\DeviceController as NotificationDeviceController;
 use App\Http\Controllers\Tenant\Notification\InboxController as NotificationInboxController;
@@ -46,6 +55,7 @@ use App\Http\Controllers\Tenant\Storefront\StorefrontCollectionController;
 use App\Http\Controllers\Tenant\Storefront\StorefrontProductController;
 use App\Http\Controllers\Tenant\Storefront\StorefrontReviewController;
 use App\Http\Controllers\Tenant\Subscription\SubscriptionController;
+use App\Http\Controllers\Tenant\Tax\TaxController;
 use App\Http\Controllers\Tenant\Unit\UnitController;
 use App\Http\Controllers\Tenant\User\UserController;
 use App\Http\Controllers\Tenant\Warehouse\WarehouseController;
@@ -114,6 +124,9 @@ Route::middleware([
                 Route::get('orders', [CustomerOrderController::class, 'index'])->name('orders.index');
                 Route::get('orders/{order}', [CustomerOrderController::class, 'show'])->whereNumber('order')->name('orders.show');
                 Route::get('orders/{order}/shipments', [CustomerShipmentController::class, 'index'])->whereNumber('order')->name('orders.shipments.index');
+                Route::get('orders/{order}/invoice', [CustomerInvoiceController::class, 'forOrder'])->whereNumber('order')->name('orders.invoice');
+                Route::get('invoices/{invoice}', [CustomerInvoiceController::class, 'show'])->whereNumber('invoice')->name('invoices.show');
+                Route::get('invoices/{invoice}/download', [CustomerInvoiceController::class, 'download'])->whereNumber('invoice')->name('invoices.download');
             });
         });
 
@@ -309,6 +322,28 @@ Route::middleware([
                 Route::get('orders/{order}', [OrderController::class, 'show'])->middleware('permission:orders.show')->whereNumber('order')->name('tenant.orders.show');
                 Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->middleware('permission:orders.update')->whereNumber('order')->name('tenant.orders.status');
                 Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->middleware('permission:orders.cancel')->whereNumber('order')->name('tenant.orders.cancel');
+                Route::post('orders/{order}/invoice', [InvoiceController::class, 'generateForOrder'])->middleware('permission:invoices.generate')->whereNumber('order')->name('tenant.orders.invoice.generate');
+
+                Route::get('invoices', [InvoiceController::class, 'index'])->middleware('permission:invoices.view')->name('tenant.invoices.index');
+                Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->middleware('permission:invoices.view')->whereNumber('invoice')->name('tenant.invoices.show');
+                Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->middleware('permission:invoices.download')->whereNumber('invoice')->name('tenant.invoices.download');
+
+                Route::get('refunds', [RefundController::class, 'index'])->middleware('permission:refunds.view')->name('tenant.refunds.index');
+                Route::post('orders/{order}/refunds', [RefundController::class, 'store'])->middleware('permission:refunds.create')->whereNumber('order')->name('tenant.orders.refunds.store');
+                Route::get('refunds/{refund}', [RefundController::class, 'show'])->middleware('permission:refunds.view')->whereNumber('refund')->name('tenant.refunds.show');
+
+                Route::get('taxes', [TaxController::class, 'index'])->middleware('permission:taxes.view')->name('tenant.taxes.index');
+                Route::post('taxes', [TaxController::class, 'store'])->middleware('permission:taxes.create')->name('tenant.taxes.store');
+                Route::get('taxes/{tax}', [TaxController::class, 'show'])->middleware('permission:taxes.view')->whereNumber('tax')->name('tenant.taxes.show');
+                Route::match(['put', 'patch'], 'taxes/{tax}', [TaxController::class, 'update'])->middleware('permission:taxes.update')->whereNumber('tax')->name('tenant.taxes.update');
+                Route::delete('taxes/{tax}', [TaxController::class, 'destroy'])->middleware('permission:taxes.delete')->whereNumber('tax')->name('tenant.taxes.destroy');
+                Route::get('tax-zones', [TaxController::class, 'indexZones'])->middleware('permission:taxes.view')->name('tenant.tax-zones.index');
+                Route::post('tax-zones', [TaxController::class, 'storeZone'])->middleware('permission:taxes.create')->name('tenant.tax-zones.store');
+                Route::get('tax-zones/{tax_zone}', [TaxController::class, 'showZone'])->middleware('permission:taxes.view')->whereNumber('tax_zone')->name('tenant.tax-zones.show');
+                Route::match(['put', 'patch'], 'tax-zones/{tax_zone}', [TaxController::class, 'updateZone'])->middleware('permission:taxes.update')->whereNumber('tax_zone')->name('tenant.tax-zones.update');
+                Route::delete('tax-zones/{tax_zone}', [TaxController::class, 'destroyZone'])->middleware('permission:taxes.delete')->whereNumber('tax_zone')->name('tenant.tax-zones.destroy');
+                Route::post('tax-rules', [TaxController::class, 'storeRule'])->middleware('permission:taxes.create')->name('tenant.tax-rules.store');
+                Route::delete('tax-rules/{tax_rule}', [TaxController::class, 'destroyRule'])->middleware('permission:taxes.delete')->whereNumber('tax_rule')->name('tenant.tax-rules.destroy');
 
                 Route::get('shipping-methods/options', [ShippingMethodController::class, 'options'])->middleware('permission:shipping.view')->name('tenant.shipping-methods.options');
                 Route::get('shipping-methods', [ShippingMethodController::class, 'index'])->middleware('permission:shipping.view')->name('tenant.shipping-methods.index');
@@ -321,6 +356,37 @@ Route::middleware([
                 Route::post('shipments', [ShipmentController::class, 'store'])->middleware('permission:shipments.manage')->name('tenant.shipments.store');
                 Route::get('shipments/{shipment}', [ShipmentController::class, 'show'])->middleware('permission:shipments.view')->whereNumber('shipment')->name('tenant.shipments.show');
                 Route::patch('shipments/{shipment}/status', [ShipmentController::class, 'updateStatus'])->middleware('permission:shipments.manage')->whereNumber('shipment')->name('tenant.shipments.status');
+
+                Route::middleware('marketplace.enabled')->group(function (): void {
+                    Route::get('seller/profile', [SellerProfileController::class, 'show'])->name('tenant.seller.profile.show');
+                    Route::match(['put', 'patch'], 'seller/profile', [SellerProfileController::class, 'update'])->name('tenant.seller.profile.update');
+
+                    Route::get('sellers', [SellerController::class, 'index'])->middleware('permission:sellers.view')->name('tenant.sellers.index');
+                    Route::post('sellers', [SellerController::class, 'store'])->middleware('permission:sellers.create')->name('tenant.sellers.store');
+                    Route::get('sellers/{seller}', [SellerController::class, 'show'])->middleware('permission:sellers.view')->whereNumber('seller')->name('tenant.sellers.show');
+                    Route::match(['put', 'patch'], 'sellers/{seller}', [SellerController::class, 'update'])->middleware('permission:sellers.update')->whereNumber('seller')->name('tenant.sellers.update');
+                    Route::patch('sellers/{seller}/approve', [SellerController::class, 'approve'])->middleware('permission:sellers.approve')->whereNumber('seller')->name('tenant.sellers.approve');
+                    Route::patch('sellers/{seller}/reject', [SellerController::class, 'reject'])->middleware('permission:sellers.reject')->whereNumber('seller')->name('tenant.sellers.reject');
+                    Route::patch('sellers/{seller}/suspend', [SellerController::class, 'suspend'])->middleware('permission:sellers.suspend')->whereNumber('seller')->name('tenant.sellers.suspend');
+                    Route::patch('sellers/{seller}/activate', [SellerController::class, 'activate'])->middleware('permission:sellers.update')->whereNumber('seller')->name('tenant.sellers.activate');
+
+                    Route::get('seller-offers', [SellerOfferController::class, 'index'])->middleware('permission:seller_offers.view')->name('tenant.seller-offers.index');
+                    Route::post('seller-offers', [SellerOfferController::class, 'store'])->middleware('permission:seller_offers.create')->name('tenant.seller-offers.store');
+                    Route::get('seller-offers/{seller_offer}', [SellerOfferController::class, 'show'])->middleware('permission:seller_offers.view')->whereNumber('seller_offer')->name('tenant.seller-offers.show');
+                    Route::match(['put', 'patch'], 'seller-offers/{seller_offer}', [SellerOfferController::class, 'update'])->middleware('permission:seller_offers.update')->whereNumber('seller_offer')->name('tenant.seller-offers.update');
+                    Route::delete('seller-offers/{seller_offer}', [SellerOfferController::class, 'destroy'])->middleware('permission:seller_offers.delete')->whereNumber('seller_offer')->name('tenant.seller-offers.destroy');
+
+                    Route::get('seller-orders', [SellerOrderController::class, 'index'])->middleware('permission:seller_orders.view')->name('tenant.seller-orders.index');
+                    Route::get('seller-orders/{seller_order}', [SellerOrderController::class, 'show'])->middleware('permission:seller_orders.view')->whereNumber('seller_order')->name('tenant.seller-orders.show');
+                    Route::patch('seller-orders/{seller_order}/status', [SellerOrderController::class, 'updateStatus'])->middleware('permission:seller_orders.manage')->whereNumber('seller_order')->name('tenant.seller-orders.status');
+
+                    Route::get('commissions', [SellerCommissionController::class, 'index'])->middleware('permission:commissions.view')->name('tenant.commissions.index');
+                    Route::get('commissions/{commission}', [SellerCommissionController::class, 'show'])->middleware('permission:commissions.view')->whereNumber('commission')->name('tenant.commissions.show');
+
+                    Route::get('payouts', [SellerPayoutController::class, 'index'])->middleware('permission:payouts.view')->name('tenant.payouts.index');
+                    Route::post('payouts', [SellerPayoutController::class, 'store'])->middleware('permission:payouts.manage')->name('tenant.payouts.store');
+                    Route::get('payouts/{payout}', [SellerPayoutController::class, 'show'])->middleware('permission:payouts.view')->whereNumber('payout')->name('tenant.payouts.show');
+                });
 
                 Route::get('suppliers/options', [SupplierController::class, 'options'])->middleware('permission:suppliers.view')->name('tenant.suppliers.options');
                 Route::get('suppliers', [SupplierController::class, 'index'])->middleware('permission:suppliers.view')->name('tenant.suppliers.index');

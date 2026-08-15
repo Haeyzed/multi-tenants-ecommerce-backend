@@ -8,6 +8,8 @@ use App\Models\Tenant\Account;
 use App\Models\Tenant\GoodsReceipt;
 use App\Models\Tenant\JournalEntry;
 use App\Models\Tenant\Order;
+use App\Models\Tenant\SellerCommission;
+use App\Models\Tenant\SellerPayout;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use App\Support\Money;
 use Illuminate\Validation\ValidationException;
@@ -28,6 +30,12 @@ class AccountingService
      */
     public function postSale(Order $order): ?JournalEntry
     {
+        $order->loadMissing('items');
+
+        if ($order->items->contains(fn ($item): bool => $item->seller_id !== null)) {
+            return $this->postMarketplaceSale($order);
+        }
+
         return $this->journals->postUnique($order, 'sale', function (JournalEntryService $journals) use ($order): JournalEntry {
             $cashId = $this->accountId('accounting.cash');
             $salesId = $this->accountId('accounting.sales');
@@ -78,6 +86,120 @@ class AccountingService
                 lines: $lines,
                 source: $order,
                 entryType: 'sale',
+            );
+        });
+    }
+
+    /**
+     * Post a marketplace sale journal splitting seller payable and commission revenue.
+     */
+    public function postMarketplaceSale(Order $order): ?JournalEntry
+    {
+        return $this->journals->postUnique($order, 'sale', function (JournalEntryService $journals) use ($order): JournalEntry {
+            $cashId = $this->accountId('accounting.cash');
+            $sellerPayableId = $this->accountId('accounting.seller_payable');
+            $commissionRevenueId = $this->accountId('accounting.commission_revenue');
+            $salesId = $this->accountId('accounting.sales');
+            $taxId = $this->accountId('accounting.tax_payable');
+
+            $commissions = SellerCommission::query()
+                ->where('order_id', $order->id)
+                ->get();
+
+            $sellerPayableTotal = '0.00';
+            $commissionTotal = '0.00';
+
+            foreach ($commissions as $commission) {
+                $sellerPayableTotal = Money::add($sellerPayableTotal, (string) $commission->seller_amount);
+                $commissionTotal = Money::add($commissionTotal, (string) $commission->commission_amount);
+            }
+
+            $grandTotal = Money::add((string) $order->grand_total, '0');
+            $taxTotal = Money::add((string) $order->tax_total, '0');
+            $shippingTotal = Money::add((string) $order->shipping_total, '0');
+
+            $lines = [
+                [
+                    'account_id' => $cashId,
+                    'debit' => $grandTotal,
+                    'credit' => '0.00',
+                    'description' => 'Cash received for marketplace order '.$order->order_number,
+                ],
+                [
+                    'account_id' => $sellerPayableId,
+                    'debit' => '0.00',
+                    'credit' => $sellerPayableTotal,
+                    'description' => 'Seller payable for order '.$order->order_number,
+                ],
+                [
+                    'account_id' => $commissionRevenueId,
+                    'debit' => '0.00',
+                    'credit' => $commissionTotal,
+                    'description' => 'Commission revenue for order '.$order->order_number,
+                ],
+            ];
+
+            if (bccomp($shippingTotal, '0', 2) > 0) {
+                $lines[] = [
+                    'account_id' => $salesId,
+                    'debit' => '0.00',
+                    'credit' => $shippingTotal,
+                    'description' => 'Shipping revenue for order '.$order->order_number,
+                ];
+            }
+
+            if (bccomp($taxTotal, '0', 2) > 0) {
+                $lines[] = [
+                    'account_id' => $taxId,
+                    'debit' => '0.00',
+                    'credit' => $taxTotal,
+                    'description' => 'Tax payable for order '.$order->order_number,
+                ];
+            }
+
+            return $journals->createDraft(
+                reference: 'JE-SALE-'.$order->order_number,
+                description: 'Marketplace sale for order '.$order->order_number,
+                entryDate: now()->toDateString(),
+                lines: $lines,
+                source: $order,
+                entryType: 'sale',
+            );
+        });
+    }
+
+    /**
+     * Post a seller payout journal (debit seller payable, credit cash).
+     */
+    public function postPayout(SellerPayout $payout): ?JournalEntry
+    {
+        return $this->journals->postUnique($payout, 'payout', function (JournalEntryService $journals) use ($payout): JournalEntry {
+            $cashId = $this->accountId('accounting.cash');
+            $sellerPayableId = $this->accountId('accounting.seller_payable');
+            $amount = Money::add((string) $payout->amount, '0');
+
+            $lines = [
+                [
+                    'account_id' => $sellerPayableId,
+                    'debit' => $amount,
+                    'credit' => '0.00',
+                    'description' => 'Seller payout '.$payout->reference,
+                ],
+                [
+                    'account_id' => $cashId,
+                    'debit' => '0.00',
+                    'credit' => $amount,
+                    'description' => 'Cash disbursed for seller payout '.$payout->reference,
+                ],
+            ];
+
+            return $journals->createDraft(
+                reference: 'JE-PAYOUT-'.$payout->id,
+                description: 'Seller payout '.$payout->reference,
+                entryDate: now()->toDateString(),
+                lines: $lines,
+                source: $payout,
+                entryType: 'payout',
             );
         });
     }
@@ -163,6 +285,60 @@ class AccountingService
                 lines: $lines,
                 source: $order,
                 entryType: 'refund',
+            );
+        });
+    }
+
+    /**
+     * Post a partial refund journal (idempotent via entry_type=partial_refund + reference suffix).
+     */
+    public function postPartialRefund(Order $order, string $amount): ?JournalEntry
+    {
+        $referenceSuffix = str_replace('.', '', $amount);
+
+        return $this->journals->postUnique($order, 'partial_refund_'.$referenceSuffix, function (JournalEntryService $journals) use ($order, $amount): JournalEntry {
+            $cashId = $this->accountId('accounting.cash');
+            $salesId = $this->accountId('accounting.sales');
+            $taxId = $this->accountId('accounting.tax_payable');
+
+            $grandTotal = Money::add((string) $order->grand_total, '0');
+            $taxTotal = Money::add((string) $order->tax_total, '0');
+            $salesAmount = Money::sub(Money::sub($grandTotal, $taxTotal), Money::add((string) $order->shipping_total, '0'));
+
+            $refundSales = Money::percent($salesAmount, bcdiv(bcmul($amount, '100', 4), $grandTotal, 4));
+            $refundTax = Money::percent($taxTotal, bcdiv(bcmul($amount, '100', 4), $grandTotal, 4));
+
+            $lines = [
+                [
+                    'account_id' => $cashId,
+                    'debit' => '0.00',
+                    'credit' => $amount,
+                    'description' => 'Partial refund cash for order '.$order->order_number,
+                ],
+                [
+                    'account_id' => $salesId,
+                    'debit' => $refundSales,
+                    'credit' => '0.00',
+                    'description' => 'Partial sales reversal for order '.$order->order_number,
+                ],
+            ];
+
+            if (bccomp($refundTax, '0', 2) > 0) {
+                $lines[] = [
+                    'account_id' => $taxId,
+                    'debit' => $refundTax,
+                    'credit' => '0.00',
+                    'description' => 'Partial tax reversal for order '.$order->order_number,
+                ];
+            }
+
+            return $journals->createDraft(
+                reference: 'JE-PREFUND-'.$order->order_number.'-'.$referenceSuffix,
+                description: 'Partial refund for order '.$order->order_number,
+                entryDate: now()->toDateString(),
+                lines: $lines,
+                source: $order,
+                entryType: 'partial_refund_'.$referenceSuffix,
             );
         });
     }

@@ -42,6 +42,62 @@ class CommerceSettingService
     }
 
     /**
+     * Whether marketplace features are enabled for this tenant.
+     */
+    public function isMarketplaceEnabled(): bool
+    {
+        return filter_var($this->get('is_marketplace_enabled', 'false'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Enable or disable marketplace mode.
+     */
+    public function setMarketplaceEnabled(bool $enabled): void
+    {
+        $this->set('is_marketplace_enabled', $enabled ? 'true' : 'false');
+    }
+
+    /**
+     * Default commission type for sellers without an override.
+     */
+    public function defaultCommissionType(): string
+    {
+        return $this->get('marketplace.commission_type', 'percentage') ?? 'percentage';
+    }
+
+    /**
+     * Default commission rate percent (e.g. "10" for 10%).
+     */
+    public function defaultCommissionRate(): string
+    {
+        return $this->get('marketplace.commission_rate', '10') ?? '10';
+    }
+
+    /**
+     * Default fixed commission amount.
+     */
+    public function defaultCommissionFixedAmount(): string
+    {
+        return $this->get('marketplace.commission_fixed_amount', '0') ?? '0';
+    }
+
+    /**
+     * Days after delivery before a seller payout is eligible.
+     */
+    public function marketplaceRefundWindowDays(): int
+    {
+        return max(0, (int) ($this->get('marketplace.refund_window_days', '0') ?? '0'));
+    }
+
+    /**
+     * Hours of inactivity before an active cart is considered abandoned.
+     */
+    public function cartAbandonAfterHours(): int
+    {
+        return max(1, (int) ($this->get('cart.abandon_after_hours', '24') ?? '24'));
+    }
+
+    /**
      * Storefront currency code from tenant profile when tenancy is initialized.
      */
     public function currencyCode(): string

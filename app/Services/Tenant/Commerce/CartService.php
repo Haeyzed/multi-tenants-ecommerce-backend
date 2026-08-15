@@ -12,6 +12,7 @@ use App\Models\Tenant\Customer;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductPrice;
 use App\Models\Tenant\ProductVariant;
+use App\Models\Tenant\SellerOffer;
 use App\Services\Tenant\Product\ProductAvailabilityService;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,7 @@ class CartService
         return $cart->load([
             'items.product.prices',
             'items.productVariant.prices',
+            'items.sellerOffer.seller',
         ]);
     }
 
@@ -73,10 +75,21 @@ class CartService
         int $productId,
         ?int $variantId,
         int $quantity,
+        ?int $sellerOfferId = null,
     ): CartItem {
         if ($quantity < 1) {
             throw ValidationException::withMessages([
                 'quantity' => 'Quantity must be at least 1.',
+            ]);
+        }
+
+        if ($this->commerceSettings->isMarketplaceEnabled()) {
+            return $this->addMarketplaceItem($customer, $sellerOfferId, $quantity);
+        }
+
+        if ($sellerOfferId !== null) {
+            throw ValidationException::withMessages([
+                'seller_offer_id' => 'Marketplace offers are not enabled for this store.',
             ]);
         }
 
@@ -88,7 +101,7 @@ class CartService
             $this->assertPurchasable($product, $variant, $quantity);
 
             $unitPrice = $this->resolveUnitPrice($product, $variant, $cart->currency);
-            $existing = $this->findLine($cart, $product->id, $variant?->id);
+            $existing = $this->findLine($cart, $product->id, $variant?->id, null);
 
             if ($existing !== null) {
                 $newQuantity = $existing->quantity + $quantity;
@@ -116,6 +129,62 @@ class CartService
     }
 
     /**
+     * @throws ValidationException
+     */
+    protected function addMarketplaceItem(Customer $customer, ?int $sellerOfferId, int $quantity): CartItem
+    {
+        if ($sellerOfferId === null) {
+            throw ValidationException::withMessages([
+                'seller_offer_id' => 'A seller offer is required when marketplace mode is enabled.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($customer, $sellerOfferId, $quantity): CartItem {
+            $cart = $this->getOrCreateActiveCart($customer);
+            $offer = SellerOffer::query()
+                ->with(['seller', 'product', 'productVariant', 'inventories'])
+                ->findOrFail($sellerOfferId);
+
+            $this->assertOfferPurchasable($offer, $quantity, $cart->currency);
+
+            $product = $offer->product;
+            $variant = $offer->productVariant;
+
+            if ($product === null) {
+                throw ValidationException::withMessages([
+                    'seller_offer_id' => 'Offer product is missing.',
+                ]);
+            }
+
+            $unitPrice = Money::add((string) $offer->price, '0');
+            $existing = $this->findLine($cart, $product->id, $variant?->id, $offer->id);
+
+            if ($existing !== null) {
+                $newQuantity = $existing->quantity + $quantity;
+                $this->assertOfferPurchasable($offer, $newQuantity, $cart->currency);
+
+                $existing->quantity = $newQuantity;
+                $existing->unit_price = $unitPrice;
+                $existing->subtotal = Money::mul($unitPrice, (string) $newQuantity);
+                $existing->save();
+
+                return $existing->fresh(['product', 'productVariant', 'sellerOffer']) ?? $existing;
+            }
+
+            $item = $cart->items()->create([
+                'product_id' => $product->id,
+                'product_variant_id' => $variant?->id,
+                'seller_offer_id' => $offer->id,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'subtotal' => Money::mul($unitPrice, (string) $quantity),
+            ]);
+
+            return $item->fresh(['product', 'productVariant', 'sellerOffer']) ?? $item;
+        });
+    }
+
+    /**
      * Update a cart line quantity.
      *
      * @throws ValidationException
@@ -131,7 +200,26 @@ class CartService
         }
 
         return DB::transaction(function () use ($item, $quantity): CartItem {
-            $item->loadMissing(['product', 'productVariant', 'cart']);
+            $item->loadMissing(['product', 'productVariant', 'cart', 'sellerOffer.seller', 'sellerOffer.inventories']);
+
+            if ($item->seller_offer_id !== null) {
+                $offer = $item->sellerOffer;
+                if ($offer === null) {
+                    throw ValidationException::withMessages([
+                        'seller_offer_id' => 'Cart item offer is missing.',
+                    ]);
+                }
+
+                $this->assertOfferPurchasable($offer, $quantity, $item->cart->currency);
+                $unitPrice = Money::add((string) $offer->price, '0');
+                $item->quantity = $quantity;
+                $item->unit_price = $unitPrice;
+                $item->subtotal = Money::mul($unitPrice, (string) $quantity);
+                $item->save();
+
+                return $item->fresh(['product', 'productVariant', 'sellerOffer']) ?? $item;
+            }
+
             $product = $item->product;
             $variant = $item->productVariant;
 
@@ -237,7 +325,31 @@ class CartService
      */
     public function revalidateItem(CartItem $item, string $currency): void
     {
-        $item->loadMissing(['product', 'productVariant']);
+        $item->loadMissing(['product', 'productVariant', 'sellerOffer.seller', 'sellerOffer.inventories']);
+
+        if ($item->seller_offer_id !== null) {
+            $offer = $item->sellerOffer;
+            if ($offer === null) {
+                throw ValidationException::withMessages([
+                    'items' => 'A cart line references a missing seller offer.',
+                ]);
+            }
+
+            $this->assertOfferPurchasable($offer, $item->quantity, $currency);
+            $unitPrice = Money::add((string) $offer->price, '0');
+            $item->unit_price = $unitPrice;
+            $item->subtotal = Money::mul($unitPrice, (string) $item->quantity);
+            $item->save();
+
+            return;
+        }
+
+        if ($this->commerceSettings->isMarketplaceEnabled()) {
+            throw ValidationException::withMessages([
+                'items' => 'Marketplace carts require a seller offer on every line.',
+            ]);
+        }
+
         $product = $item->product;
         $variant = $item->productVariant;
 
@@ -253,6 +365,43 @@ class CartService
         $item->unit_price = $unitPrice;
         $item->subtotal = Money::mul($unitPrice, (string) $item->quantity);
         $item->save();
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    protected function assertOfferPurchasable(SellerOffer $offer, int $quantity, string $currency): void
+    {
+        if (! $offer->isPurchasable()) {
+            throw ValidationException::withMessages([
+                'seller_offer_id' => 'This seller offer is not available for purchase.',
+            ]);
+        }
+
+        if (strcasecmp($offer->currency, $currency) !== 0) {
+            throw ValidationException::withMessages([
+                'seller_offer_id' => 'Offer currency does not match the cart currency.',
+            ]);
+        }
+
+        $product = $offer->product;
+        if ($product === null || ! $this->availability->isProductSellable($product)) {
+            throw ValidationException::withMessages([
+                'seller_offer_id' => 'The offer product is not available for purchase.',
+            ]);
+        }
+
+        $this->assertPurchaseQuantityLimits($product, $offer->productVariant, $quantity);
+
+        $available = (int) $offer->inventories->sum(
+            fn ($inventory): int => $inventory->availableQuantity()
+        );
+
+        if ($quantity > $available) {
+            throw ValidationException::withMessages([
+                'quantity' => 'Insufficient stock for this seller offer.',
+            ]);
+        }
     }
 
     /**
@@ -410,7 +559,7 @@ class CartService
             ->first();
     }
 
-    protected function findLine(Cart $cart, int $productId, ?int $variantId): ?CartItem
+    protected function findLine(Cart $cart, int $productId, ?int $variantId, ?int $sellerOfferId = null): ?CartItem
     {
         return $cart->items()
             ->where('product_id', $productId)
@@ -418,6 +567,11 @@ class CartService
                 $variantId === null,
                 fn ($query) => $query->whereNull('product_variant_id'),
                 fn ($query) => $query->where('product_variant_id', $variantId),
+            )
+            ->when(
+                $sellerOfferId === null,
+                fn ($query) => $query->whereNull('seller_offer_id'),
+                fn ($query) => $query->where('seller_offer_id', $sellerOfferId),
             )
             ->first();
     }

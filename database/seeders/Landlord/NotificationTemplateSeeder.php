@@ -331,6 +331,23 @@ class NotificationTemplateSeeder extends Seeder
                 'push_body' => 'Order {{order_number}} was delivered.',
                 'is_mandatory' => false,
             ],
+            [
+                'key' => 'cart.abandoned',
+                'name' => 'Abandoned Cart',
+                'description' => 'Sent once when an active cart becomes abandoned.',
+                'channels' => [
+                    NotificationChannel::Email->value,
+                    NotificationChannel::Database->value,
+                ],
+                'variables' => ['user_name', 'cart_id', 'item_count'],
+                'title' => 'You left items in your cart',
+                'body' => 'Hi {{user_name}}, you have {{item_count}} item(s) waiting in your cart.',
+                'email_subject' => 'Complete your order',
+                'email_body' => 'Hi {{user_name}}, you still have {{item_count}} item(s) in your cart. Come back to finish checkout.',
+                'push_title' => 'Cart reminder',
+                'push_body' => 'You have items waiting in your cart.',
+                'is_mandatory' => false,
+            ],
         ];
 
         foreach ($templates as $template) {

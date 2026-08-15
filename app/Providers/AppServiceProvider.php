@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\Marketplace\SellerPayoutDriverInterface;
 use App\Contracts\Notification\PushNotificationProvider;
 use App\Contracts\Notification\SmsProvider;
 use App\Contracts\Payment\PaymentGateway;
@@ -12,6 +13,7 @@ use App\Models\Tenant\Brand;
 use App\Models\Tenant\Category;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Inventory;
+use App\Models\Tenant\Invoice;
 use App\Models\Tenant\JournalEntry;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\Product;
@@ -23,9 +25,17 @@ use App\Models\Tenant\ProductReview;
 use App\Models\Tenant\ProductTag;
 use App\Models\Tenant\ProductVariant;
 use App\Models\Tenant\PurchaseOrder;
+use App\Models\Tenant\Refund;
+use App\Models\Tenant\Seller;
+use App\Models\Tenant\SellerCommission;
+use App\Models\Tenant\SellerOffer;
+use App\Models\Tenant\SellerOrder;
+use App\Models\Tenant\SellerPayout;
 use App\Models\Tenant\Shipment;
 use App\Models\Tenant\ShippingMethod;
 use App\Models\Tenant\Supplier;
+use App\Models\Tenant\Tax;
+use App\Models\Tenant\TaxZone;
 use App\Models\Tenant\Unit;
 use App\Models\Tenant\Warehouse;
 use App\Policies\Tenant\AccountPolicy;
@@ -33,6 +43,7 @@ use App\Policies\Tenant\BrandPolicy;
 use App\Policies\Tenant\CategoryPolicy;
 use App\Policies\Tenant\CustomerPolicy;
 use App\Policies\Tenant\InventoryPolicy;
+use App\Policies\Tenant\InvoicePolicy;
 use App\Policies\Tenant\JournalEntryPolicy;
 use App\Policies\Tenant\OrderPolicy;
 use App\Policies\Tenant\ProductAttributePolicy;
@@ -44,9 +55,17 @@ use App\Policies\Tenant\ProductReviewPolicy;
 use App\Policies\Tenant\ProductTagPolicy;
 use App\Policies\Tenant\ProductVariantPolicy;
 use App\Policies\Tenant\PurchaseOrderPolicy;
+use App\Policies\Tenant\RefundPolicy;
+use App\Policies\Tenant\SellerCommissionPolicy;
+use App\Policies\Tenant\SellerOfferPolicy;
+use App\Policies\Tenant\SellerOrderPolicy;
+use App\Policies\Tenant\SellerPayoutPolicy;
+use App\Policies\Tenant\SellerPolicy;
 use App\Policies\Tenant\ShipmentPolicy;
 use App\Policies\Tenant\ShippingMethodPolicy;
 use App\Policies\Tenant\SupplierPolicy;
+use App\Policies\Tenant\TaxPolicy;
+use App\Policies\Tenant\TaxZonePolicy;
 use App\Policies\Tenant\UnitPolicy;
 use App\Policies\Tenant\WarehousePolicy;
 use App\Services\Notification\ChannelResolver;
@@ -59,6 +78,8 @@ use App\Services\Notification\NotificationPreferenceService;
 use App\Services\Notification\Push\FcmPushProvider;
 use App\Services\Notification\Sms\SmsManager;
 use App\Services\Payment\PaymentManager;
+use App\Services\Shipping\ShippingCarrierManager;
+use App\Services\Tenant\Marketplace\Payout\ManualPayoutDriver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -70,6 +91,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PaymentManager::class);
+        $this->app->singleton(ShippingCarrierManager::class);
+
+        $this->app->bind(SellerPayoutDriverInterface::class, ManualPayoutDriver::class);
 
         $this->app->bind(PaymentGateway::class, function ($app): PaymentGateway {
             return $app->make(PaymentManager::class)->driver();
@@ -121,6 +145,15 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Shipment::class, ShipmentPolicy::class);
         Gate::policy(Supplier::class, SupplierPolicy::class);
         Gate::policy(PurchaseOrder::class, PurchaseOrderPolicy::class);
+        Gate::policy(Seller::class, SellerPolicy::class);
+        Gate::policy(SellerOffer::class, SellerOfferPolicy::class);
+        Gate::policy(Tax::class, TaxPolicy::class);
+        Gate::policy(TaxZone::class, TaxZonePolicy::class);
+        Gate::policy(Invoice::class, InvoicePolicy::class);
+        Gate::policy(Refund::class, RefundPolicy::class);
+        Gate::policy(SellerOrder::class, SellerOrderPolicy::class);
+        Gate::policy(SellerCommission::class, SellerCommissionPolicy::class);
+        Gate::policy(SellerPayout::class, SellerPayoutPolicy::class);
 
         Gate::define('viewApiDocs', function ($user = null): bool {
             // RestrictedDocsAccess already allows local; this gate covers non-local environments.

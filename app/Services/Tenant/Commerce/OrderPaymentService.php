@@ -16,6 +16,7 @@ use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderPayment;
 use App\Services\Payment\PaymentManager;
 use App\Services\Tenant\Accounting\AccountingService;
+use App\Services\Tenant\Marketplace\CommissionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -30,6 +31,8 @@ class OrderPaymentService
         private readonly PaymentManager $paymentManager,
         private readonly OrderInventoryService $orderInventory,
         private readonly AccountingService $accounting,
+        private readonly CommissionService $commissions,
+        private readonly CommerceSettingService $commerceSettings,
     ) {}
 
     /**
@@ -205,6 +208,11 @@ class OrderPaymentService
             $order->save();
 
             $this->orderInventory->commitSaleForOrder($order);
+
+            if ($this->commerceSettings->isMarketplaceEnabled()) {
+                $this->commissions->createForOrder($order);
+            }
+
             $this->accounting->postSale($order);
 
             event(new OrderPaid($order->fresh(['items', 'customer']) ?? $order));

@@ -28,6 +28,7 @@ class CartItemResource extends JsonResource
             'cart_id' => $item->cart_id,
             'product_id' => $item->product_id,
             'product_variant_id' => $item->product_variant_id,
+            'seller_offer_id' => $item->seller_offer_id,
             'quantity' => $item->quantity,
             'unit_price' => $item->unit_price,
             'subtotal' => $item->subtotal,
@@ -64,6 +65,24 @@ class CartItemResource extends JsonResource
                             'is_active' => (bool) $price->is_active,
                         ])->values()
                         : [],
+                ];
+            }),
+            'seller_offer' => $this->whenLoaded('sellerOffer', function () use ($item) {
+                if ($item->sellerOffer === null) {
+                    return null;
+                }
+
+                return [
+                    'id' => $item->sellerOffer->id,
+                    'price' => $item->sellerOffer->price,
+                    'currency' => $item->sellerOffer->currency,
+                    'seller' => $item->sellerOffer->relationLoaded('seller') && $item->sellerOffer->seller !== null
+                        ? [
+                            'id' => $item->sellerOffer->seller->id,
+                            'name' => $item->sellerOffer->seller->name,
+                            'slug' => $item->sellerOffer->seller->slug,
+                        ]
+                        : null,
                 ];
             }),
             'created_at' => $item->created_at,

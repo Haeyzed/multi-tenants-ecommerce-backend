@@ -2,9 +2,13 @@
 
 use App\Http\Middleware\EnsureActiveSubscription;
 use App\Http\Middleware\EnsureFeature;
+use App\Http\Middleware\EnsureMarketplaceEnabled;
 use App\Http\Middleware\SetCustomerGuard;
 use App\Http\Middleware\SetLandlordGuard;
 use App\Http\Middleware\SetTenantGuard;
+use App\Jobs\MarkAbandonedCartsJob;
+use App\Models\Landlord\Tenant;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,6 +24,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withSchedule(function (Schedule $schedule): void {
+        $schedule->call(function (): void {
+            Tenant::query()->cursor()->each(function (Tenant $tenant): void {
+                MarkAbandonedCartsJob::dispatch($tenant->getTenantKey());
+            });
+        })->hourly()->name('mark-abandoned-carts')->withoutOverlapping();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'landlord.guard' => SetLandlordGuard::class,
@@ -27,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'customer.guard' => SetCustomerGuard::class,
             'subscription.active' => EnsureActiveSubscription::class,
             'feature' => EnsureFeature::class,
+            'marketplace.enabled' => EnsureMarketplaceEnabled::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,

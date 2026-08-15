@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $order_id
  * @property int|null $product_id
  * @property int|null $product_variant_id
+ * @property int|null $seller_offer_id
+ * @property int|null $seller_id
  * @property string $product_name
  * @property string|null $sku
  * @property int $quantity
@@ -34,6 +36,8 @@ class OrderItem extends Model
         'order_id',
         'product_id',
         'product_variant_id',
+        'seller_offer_id',
+        'seller_id',
         'product_name',
         'sku',
         'quantity',
@@ -63,6 +67,8 @@ class OrderItem extends Model
             'order_id' => 'integer',
             'product_id' => 'integer',
             'product_variant_id' => 'integer',
+            'seller_offer_id' => 'integer',
+            'seller_id' => 'integer',
             'quantity' => 'integer',
             'unit_price' => 'decimal:2',
             'discount_amount' => 'decimal:2',
@@ -106,5 +112,21 @@ class OrderItem extends Model
     public function inventory(): BelongsTo
     {
         return $this->belongsTo(Inventory::class);
+    }
+
+    /**
+     * @return BelongsTo<SellerOffer, $this>
+     */
+    public function sellerOffer(): BelongsTo
+    {
+        return $this->belongsTo(SellerOffer::class);
+    }
+
+    /**
+     * @return BelongsTo<Seller, $this>
+     */
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(Seller::class);
     }
 }

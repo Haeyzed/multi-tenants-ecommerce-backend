@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property string $subtotal
  * @property string $discount_total
  * @property string $tax_total
+ * @property array<string, mixed>|null $tax_snapshot
  * @property string $shipping_total
  * @property string $grand_total
  * @property int|null $shipping_method_id
@@ -57,6 +58,7 @@ class Order extends Model
         'subtotal',
         'discount_total',
         'tax_total',
+        'tax_snapshot',
         'shipping_total',
         'grand_total',
         'shipping_method_id',
@@ -82,6 +84,7 @@ class Order extends Model
             'subtotal' => 'decimal:2',
             'discount_total' => 'decimal:2',
             'tax_total' => 'decimal:2',
+            'tax_snapshot' => 'array',
             'shipping_total' => 'decimal:2',
             'grand_total' => 'decimal:2',
             'shipping_method_id' => 'integer',
@@ -118,6 +121,14 @@ class Order extends Model
     }
 
     /**
+     * @return HasMany<SellerOrder, $this>
+     */
+    public function sellerOrders(): HasMany
+    {
+        return $this->hasMany(SellerOrder::class);
+    }
+
+    /**
      * @return HasMany<OrderPayment, $this>
      */
     public function payments(): HasMany
@@ -139,6 +150,22 @@ class Order extends Model
     public function checkoutSessions(): HasMany
     {
         return $this->hasMany(CheckoutSession::class);
+    }
+
+    /**
+     * @return HasMany<Invoice, $this>
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * @return HasMany<Refund, $this>
+     */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
     }
 
     /**

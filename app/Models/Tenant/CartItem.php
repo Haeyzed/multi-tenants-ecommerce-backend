@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $cart_id
  * @property int $product_id
  * @property int|null $product_variant_id
+ * @property int|null $seller_offer_id
  * @property int $quantity
  * @property string $unit_price
  * @property string $subtotal
@@ -28,6 +29,7 @@ class CartItem extends Model
         'cart_id',
         'product_id',
         'product_variant_id',
+        'seller_offer_id',
         'quantity',
         'unit_price',
         'subtotal',
@@ -43,6 +45,7 @@ class CartItem extends Model
             'cart_id' => 'integer',
             'product_id' => 'integer',
             'product_variant_id' => 'integer',
+            'seller_offer_id' => 'integer',
             'quantity' => 'integer',
             'unit_price' => 'decimal:2',
             'subtotal' => 'decimal:2',
@@ -72,5 +75,13 @@ class CartItem extends Model
     public function productVariant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class);
+    }
+
+    /**
+     * @return BelongsTo<SellerOffer, $this>
+     */
+    public function sellerOffer(): BelongsTo
+    {
+        return $this->belongsTo(SellerOffer::class);
     }
 }

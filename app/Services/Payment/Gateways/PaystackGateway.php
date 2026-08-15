@@ -7,6 +7,7 @@ namespace App\Services\Payment\Gateways;
 use App\Contracts\Payment\PaymentGateway;
 use App\DTO\Payment\PaymentInitiationRequest;
 use App\DTO\Payment\PaymentInitiationResult;
+use App\DTO\Payment\PaymentRefundResult;
 use App\DTO\Payment\PaymentVerificationResult;
 use Carbon\Carbon;
 use Illuminate\Http\Client\PendingRequest;
@@ -141,13 +142,56 @@ class PaystackGateway implements PaymentGateway
     }
 
     /**
-     * Refunds are not implemented for the Paystack driver yet.
-     *
-     * @throws RuntimeException
+     * Refund a previously successful Paystack transaction.
      */
     public function refundPayment(string $providerTransactionId, ?string $amount = null): bool
     {
-        throw new RuntimeException('Refunds are not implemented for this driver.');
+        return $this->refundPaymentDetailed($providerTransactionId, $amount)->successful;
+    }
+
+    /**
+     * Refund with full gateway response details.
+     */
+    public function refundPaymentDetailed(string $providerTransactionId, ?string $amount = null): PaymentRefundResult
+    {
+        $payload = [
+            'transaction' => $providerTransactionId,
+        ];
+
+        if ($amount !== null) {
+            $payload['amount'] = $this->toMinorUnits($amount, 'NGN');
+        }
+
+        try {
+            $response = $this->client()
+                ->post('/refund', $payload)
+                ->throw()
+                ->json();
+        } catch (RequestException $exception) {
+            return new PaymentRefundResult(
+                successful: false,
+                message: $exception->response?->json('message', $exception->getMessage()),
+                raw: ['exception' => $exception->getMessage()],
+            );
+        }
+
+        /** @var array{status?: bool, message?: string, data?: array<string, mixed>} $response */
+        $data = $response['data'] ?? [];
+        $successful = (bool) ($response['status'] ?? false);
+
+        $refundAmount = null;
+        if (isset($data['amount'])) {
+            $refundAmount = $this->fromMinorUnits((int) $data['amount'], (string) ($data['currency'] ?? 'NGN'));
+        }
+
+        return new PaymentRefundResult(
+            successful: $successful,
+            providerRefundId: isset($data['id']) ? (string) $data['id'] : null,
+            amount: $refundAmount ?? $amount,
+            currency: isset($data['currency']) ? Str::upper((string) $data['currency']) : null,
+            raw: $response,
+            message: isset($response['message']) ? (string) $response['message'] : null,
+        );
     }
 
     /**

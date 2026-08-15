@@ -79,9 +79,10 @@ class CartController extends Controller
 
         $item = $this->cartService->addItem(
             $customer,
-            (int) $validated['product_id'],
+            (int) ($validated['product_id'] ?? 0),
             isset($validated['product_variant_id']) ? (int) $validated['product_variant_id'] : null,
             (int) $validated['quantity'],
+            isset($validated['seller_offer_id']) ? (int) $validated['seller_offer_id'] : null,
         );
 
         return $this->created(

@@ -45,6 +45,15 @@ beforeEach(function (): void {
         '2026_08_15_060005_create_orders_table.php',
         '2026_08_15_060006_create_order_items_table.php',
         '2026_08_15_060007_create_checkout_sessions_table.php',
+        '2026_08_15_070001_create_sellers_table.php',
+        '2026_08_15_070003_create_seller_offers_table.php',
+        '2026_08_15_070004_add_seller_offer_to_cart_and_order_items.php',
+        '2026_08_15_080001_create_taxes_table.php',
+        '2026_08_15_080002_create_tax_rates_table.php',
+        '2026_08_15_080003_create_tax_zones_table.php',
+        '2026_08_15_080004_create_tax_zone_locations_table.php',
+        '2026_08_15_080005_create_tax_rules_table.php',
+        '2026_08_15_080006_add_tax_snapshot_to_orders_table.php',
     ];
 
     foreach ($migrationFiles as $file) {

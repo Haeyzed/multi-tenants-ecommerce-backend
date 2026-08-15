@@ -20,6 +20,8 @@ use Illuminate\Support\Carbon;
  * @property string $currency
  * @property CartStatus $status
  * @property Carbon|null $expires_at
+ * @property Carbon|null $abandoned_at
+ * @property Carbon|null $abandoned_notified_at
  */
 class Cart extends Model
 {
@@ -34,6 +36,8 @@ class Cart extends Model
         'currency',
         'status',
         'expires_at',
+        'abandoned_at',
+        'abandoned_notified_at',
     ];
 
     /**
@@ -52,6 +56,8 @@ class Cart extends Model
             'customer_id' => 'integer',
             'status' => CartStatus::class,
             'expires_at' => 'datetime',
+            'abandoned_at' => 'datetime',
+            'abandoned_notified_at' => 'datetime',
         ];
     }
 

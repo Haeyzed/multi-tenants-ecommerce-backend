@@ -19,7 +19,10 @@ use App\Models\Tenant\Inventory;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductVariant;
+use App\Models\Tenant\SellerOffer;
 use App\Models\Tenant\ShippingMethod;
+use App\Services\Tenant\Marketplace\SellerOrderService;
+use App\Services\Tenant\Tax\TaxService;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -33,6 +36,8 @@ class CheckoutService
         private readonly CartService $cartService,
         private readonly CommerceSettingService $commerceSettings,
         private readonly OrderInventoryService $orderInventory,
+        private readonly SellerOrderService $sellerOrders,
+        private readonly TaxService $taxService,
     ) {}
 
     /**
@@ -73,7 +78,7 @@ class CheckoutService
                 ]);
             }
 
-            $cart->load(['items.product', 'items.productVariant']);
+            $cart->load(['items.product', 'items.productVariant', 'items.sellerOffer.seller']);
 
             if ($cart->items->isEmpty()) {
                 throw ValidationException::withMessages([
@@ -85,7 +90,7 @@ class CheckoutService
                 $this->cartService->revalidateItem($item, $cart->currency);
             }
 
-            $cart->refresh()->load(['items.product', 'items.productVariant']);
+            $cart->refresh()->load(['items.product', 'items.productVariant', 'items.sellerOffer.seller']);
 
             $shippingAddress = $this->resolveCustomerAddress(
                 $customer,
@@ -132,7 +137,21 @@ class CheckoutService
                 $shippingTotal = (string) $shippingMethod->amount;
             }
 
-            $taxTotal = Money::percent($subtotal, $this->commerceSettings->taxRate());
+            $taxLines = $cart->items->map(fn (CartItem $item): array => [
+                'key' => $item->id,
+                'amount' => (string) $item->subtotal,
+            ])->all();
+
+            $address = [
+                'country_id' => $shippingAddress->country_id,
+                'state_id' => $shippingAddress->state_id,
+                'city_id' => $shippingAddress->city_id,
+            ];
+
+            $taxResult = $this->taxService->calculateOrderTax($taxLines, $shippingTotal, $address);
+            $taxTotal = $taxResult['tax_total'];
+            $lineTaxMap = collect($taxResult['line_taxes'])->keyBy('key');
+
             $grandTotal = Money::add(
                 Money::add(Money::sub($subtotal, $discountTotal), $taxTotal),
                 $shippingTotal,
@@ -164,6 +183,7 @@ class CheckoutService
                 'subtotal' => $subtotal,
                 'discount_total' => $discountTotal,
                 'tax_total' => $taxTotal,
+                'tax_snapshot' => $taxResult['snapshot'],
                 'shipping_total' => $shippingTotal,
                 'grand_total' => $grandTotal,
                 'shipping_method_id' => $shippingMethod?->id,
@@ -177,10 +197,14 @@ class CheckoutService
             ]);
 
             foreach ($cart->items as $item) {
-                $this->createOrderItem($order, $item);
+                $this->createOrderItem($order, $item, $lineTaxMap->get($item->id));
             }
 
             $this->orderInventory->reserveForOrder($order->fresh(['items']) ?? $order);
+
+            if ($this->commerceSettings->isMarketplaceEnabled()) {
+                $this->sellerOrders->splitFromOrder($order->fresh(['items.sellerOffer']) ?? $order);
+            }
 
             $cart->status = CartStatus::Converted;
             $cart->save();
@@ -280,31 +304,67 @@ class CheckoutService
      *
      * @throws ValidationException
      */
-    protected function createOrderItem(Order $order, CartItem $item): void
+    protected function createOrderItem(Order $order, CartItem $item, ?array $lineTax = null): void
     {
         /** @var Product $product */
         $product = $item->product;
         $variant = $item->productVariant;
+        $offer = $item->sellerOffer;
 
-        $sku = $variant?->sku;
+        $sku = $offer?->sku ?? $variant?->sku;
         $name = $variant?->name ? $product->name.' — '.$variant->name : $product->name;
         $unitPrice = (string) $item->unit_price;
         $subtotal = (string) $item->subtotal;
+        $taxAmount = is_array($lineTax) ? (string) ($lineTax['tax_amount'] ?? '0.00') : '0.00';
+        $total = Money::add($subtotal, $taxAmount);
 
-        $inventory = $this->findInventoryForReservation($product, $variant, $item->quantity);
+        $inventory = $offer !== null
+            ? $this->findOfferInventoryForReservation($offer, $item->quantity)
+            : $this->findInventoryForReservation($product, $variant, $item->quantity);
 
         $order->items()->create([
             'product_id' => $product->id,
             'product_variant_id' => $variant?->id,
+            'seller_offer_id' => $offer?->id,
+            'seller_id' => $offer?->seller_id,
             'product_name' => $name,
             'sku' => $sku,
             'quantity' => $item->quantity,
             'unit_price' => $unitPrice,
             'discount_amount' => '0.00',
-            'tax_amount' => '0.00',
+            'tax_amount' => $taxAmount,
             'subtotal' => $subtotal,
-            'total' => $subtotal,
+            'total' => $total,
+            'metadata' => is_array($lineTax) ? ['tax_breakdown' => $lineTax['breakdown'] ?? []] : null,
             'inventory_id' => $inventory?->id,
+        ]);
+    }
+
+    /**
+     * Prefer default warehouse inventory with enough available qty for a seller offer.
+     */
+    protected function findOfferInventoryForReservation(SellerOffer $offer, int $quantity): ?Inventory
+    {
+        $inventories = Inventory::query()
+            ->with('warehouse')
+            ->where('inventoryable_type', $offer->getMorphClass())
+            ->where('inventoryable_id', $offer->getKey())
+            ->get();
+
+        $withStock = $inventories
+            ->filter(fn (Inventory $inventory): bool => $inventory->availableQuantity() >= $quantity)
+            ->values();
+
+        $preferred = $withStock->first(
+            fn (Inventory $inventory): bool => (bool) $inventory->warehouse?->is_default
+        ) ?? $withStock->first();
+
+        if ($preferred !== null) {
+            return $preferred;
+        }
+
+        throw ValidationException::withMessages([
+            'cart' => 'Insufficient seller offer stock to reserve for one or more cart items.',
         ]);
     }
 

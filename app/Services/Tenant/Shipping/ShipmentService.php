@@ -9,6 +9,8 @@ use App\Events\ShipmentDelivered;
 use App\Events\ShipmentShipped;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\Shipment;
+use App\Models\Tenant\ShippingMethod;
+use App\Services\Shipping\ShippingCarrierManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +20,10 @@ use Illuminate\Support\Facades\DB;
  */
 class ShipmentService
 {
+    public function __construct(
+        private readonly ShippingCarrierManager $carriers,
+    ) {}
+
     /**
      * @param  array{order_id?: int|null, status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Shipment>
@@ -51,12 +57,47 @@ class ShipmentService
      */
     public function create(Order $order, array $data = []): Shipment
     {
-        return Shipment::query()->create([
-            'order_id' => $order->id,
-            'shipping_method_id' => $data['shipping_method_id'] ?? $order->shipping_method_id,
+        $shippingMethod = null;
+        if (! empty($data['shipping_method_id'])) {
+            $shippingMethod = ShippingMethod::query()->find((int) $data['shipping_method_id']);
+        } elseif ($order->shipping_method_id !== null) {
+            $shippingMethod = $order->shippingMethod;
+        }
+
+        $carrierData = [
             'tracking_number' => $data['tracking_number'] ?? null,
             'carrier' => $data['carrier'] ?? null,
             'tracking_url' => $data['tracking_url'] ?? null,
+        ];
+
+        if (
+            config('shipping.use_carriers')
+            && $shippingMethod !== null
+            && empty($carrierData['tracking_number'])
+        ) {
+            $carrier = $this->carriers->forMethodCode($shippingMethod->code)
+                ?? $this->carriers->driver();
+
+            $result = $carrier->createShipment([
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'shipping_method_code' => $shippingMethod->code,
+                'shipping_address' => $order->shipping_address_snapshot,
+            ]);
+
+            if ($result->successful) {
+                $carrierData['tracking_number'] = $result->trackingNumber;
+                $carrierData['carrier'] = $result->carrier;
+                $carrierData['tracking_url'] = $result->trackingUrl;
+            }
+        }
+
+        return Shipment::query()->create([
+            'order_id' => $order->id,
+            'shipping_method_id' => $data['shipping_method_id'] ?? $order->shipping_method_id,
+            'tracking_number' => $carrierData['tracking_number'],
+            'carrier' => $carrierData['carrier'],
+            'tracking_url' => $carrierData['tracking_url'],
             'status' => isset($data['status'])
                 ? ShipmentStatus::from($data['status'])
                 : ShipmentStatus::Pending,
