@@ -20,20 +20,8 @@ class CommerceAnalyticsListener
     public function __construct(private readonly CommerceAnalyticsService $analytics) {}
 
     /**
-     * @param  OrderCreated  $event
+     * Record an order.created analytics event.
      */
-    public function handle(OrderCreated|OrderPaid|OrderReturnRequested|OrderReturnCompleted|RefundCompleted|CouponApplied $event): void
-    {
-        match (true) {
-            $event instanceof OrderCreated => $this->handleOrderCreated($event),
-            $event instanceof OrderPaid => $this->handleOrderPaid($event),
-            $event instanceof OrderReturnRequested => $this->handleReturnRequested($event),
-            $event instanceof OrderReturnCompleted => $this->handleReturnCompleted($event),
-            $event instanceof RefundCompleted => $this->handleRefundCompleted($event),
-            $event instanceof CouponApplied => $this->handleCouponApplied($event),
-        };
-    }
-
     public function handleOrderCreated(OrderCreated $event): void
     {
         $order = $event->order->loadMissing('customer');
@@ -45,6 +33,9 @@ class CommerceAnalyticsListener
         ]);
     }
 
+    /**
+     * Record an order.paid analytics event.
+     */
     public function handleOrderPaid(OrderPaid $event): void
     {
         $order = $event->order->loadMissing('customer');
@@ -56,6 +47,9 @@ class CommerceAnalyticsListener
         ]);
     }
 
+    /**
+     * Record a return.created analytics event.
+     */
     public function handleReturnRequested(OrderReturnRequested $event): void
     {
         $return = $event->orderReturn->loadMissing('customer');
@@ -66,6 +60,9 @@ class CommerceAnalyticsListener
         ]);
     }
 
+    /**
+     * Record a return.completed analytics event.
+     */
     public function handleReturnCompleted(OrderReturnCompleted $event): void
     {
         $return = $event->orderReturn->loadMissing('customer');
@@ -76,6 +73,9 @@ class CommerceAnalyticsListener
         ]);
     }
 
+    /**
+     * Record a refund.completed analytics event.
+     */
     public function handleRefundCompleted(RefundCompleted $event): void
     {
         $refund = $event->refund->loadMissing('order.customer');
@@ -86,6 +86,9 @@ class CommerceAnalyticsListener
         ]);
     }
 
+    /**
+     * Record a coupon.used analytics event.
+     */
     public function handleCouponApplied(CouponApplied $event): void
     {
         $this->analytics->record('coupon.used', $event->order, $event->customer, [
