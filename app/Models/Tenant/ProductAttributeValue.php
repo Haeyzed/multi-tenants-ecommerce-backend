@@ -7,6 +7,8 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 /**
  * Selectable value for a tenant-global product attribute.
@@ -14,16 +16,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property int $id
  * @property int $product_attribute_id
  * @property string $value
+ * @property string $slug
  * @property int $sort_order
  */
 class ProductAttributeValue extends Model
 {
+    use HasSlug;
+
     /**
      * @var list<string>
      */
     protected $fillable = [
         'product_attribute_id',
         'value',
+        'slug',
         'sort_order',
     ];
 
@@ -36,6 +42,17 @@ class ProductAttributeValue extends Model
             'product_attribute_id' => 'integer',
             'sort_order' => 'integer',
         ];
+    }
+
+    /**
+     * Configure slug generation from the attribute value.
+     */
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom('value')
+            ->saveSlugsTo('slug')
+            ->skipGenerateWhen(fn (): bool => filled($this->slug));
     }
 
     /**

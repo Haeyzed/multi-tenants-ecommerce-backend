@@ -49,6 +49,13 @@ beforeEach(function (): void {
         '2026_08_15_034318_create_inventories_table.php',
         '2026_08_15_034321_create_inventory_movements_table.php',
         '2026_08_15_050001_add_catalogue_control_fields_to_products_and_variants_table.php',
+        '2026_08_15_050002_create_product_relations_table.php',
+        '2026_08_15_050003_create_collections_tables.php',
+        '2026_08_15_050004_create_product_tags_tables.php',
+        '2026_08_15_050005_create_product_badges_tables.php',
+        '2026_08_15_050006_create_product_specifications_table.php',
+        '2026_08_15_050007_create_seo_meta_table.php',
+        '2026_08_15_050008_create_product_bundle_items_table.php',
     ];
 
     foreach ($migrationFiles as $file) {
