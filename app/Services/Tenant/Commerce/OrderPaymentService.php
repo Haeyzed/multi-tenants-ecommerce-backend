@@ -6,6 +6,7 @@ namespace App\Services\Tenant\Commerce;
 
 use App\DTO\Payment\PaymentInitiationRequest;
 use App\DTO\Payment\PaymentInitiationResult;
+use App\DTO\Payment\PaymentVerificationResult;
 use App\Enums\Tenant\Commerce\OrderPaymentRecordStatus;
 use App\Enums\Tenant\Commerce\OrderPaymentStatus;
 use App\Enums\Tenant\Commerce\OrderStatus;
@@ -34,6 +35,8 @@ class OrderPaymentService
     /**
      * Initialize a gateway payment for an order.
      *
+     * Reuses an existing pending payment for the same order when present.
+     *
      * @return array{initiation: PaymentInitiationResult, payment: OrderPayment}
      *
      * @throws ValidationException
@@ -52,23 +55,37 @@ class OrderPaymentService
             ]);
         }
 
+        $existing = OrderPayment::query()
+            ->where('order_id', $order->id)
+            ->where('status', OrderPaymentRecordStatus::Pending)
+            ->latest('id')
+            ->first();
+
+        if ($existing !== null) {
+            $initiation = $this->paymentManager->driver($existing->gateway)->initializePayment(
+                new PaymentInitiationRequest(
+                    amount: (string) $existing->amount,
+                    currency: $existing->currency,
+                    email: $customer->email,
+                    reference: $existing->reference,
+                    metadata: [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'customer_id' => $customer->id,
+                    ],
+                    customerName: trim($customer->first_name.' '.$customer->last_name),
+                ),
+            );
+
+            return [
+                'initiation' => $initiation,
+                'payment' => $existing->fresh() ?? $existing,
+            ];
+        }
+
         $order->loadMissing('customer');
         $reference = 'ORDPAY-'.$order->order_number.'-'.uniqid();
         $gateway = (string) config('payment.default', 'paystack');
-
-        $payment = OrderPayment::query()->create([
-            'order_id' => $order->id,
-            'customer_id' => $customer->id,
-            'amount' => $order->grand_total,
-            'currency' => $order->currency,
-            'gateway' => $gateway,
-            'reference' => $reference,
-            'status' => OrderPaymentRecordStatus::Pending,
-            'metadata' => [
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-            ],
-        ]);
 
         $initiation = $this->paymentManager->driver($gateway)->initializePayment(
             new PaymentInitiationRequest(
@@ -85,6 +102,20 @@ class OrderPaymentService
             ),
         );
 
+        $payment = OrderPayment::query()->create([
+            'order_id' => $order->id,
+            'customer_id' => $customer->id,
+            'amount' => $order->grand_total,
+            'currency' => $order->currency,
+            'gateway' => $gateway,
+            'reference' => $reference,
+            'status' => OrderPaymentRecordStatus::Pending,
+            'metadata' => [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+            ],
+        ]);
+
         $order->payment_status = OrderPaymentStatus::Pending;
         $order->save();
 
@@ -95,7 +126,27 @@ class OrderPaymentService
     }
 
     /**
+     * Verify a payment reference for an authenticated customer (ownership first).
+     *
+     * @throws ValidationException
+     * @throws AccessDeniedHttpException
+     */
+    public function verifyForCustomer(string $reference, Customer $customer): OrderPayment
+    {
+        /** @var OrderPayment $payment */
+        $payment = OrderPayment::query()->where('reference', $reference)->firstOrFail();
+
+        if ($payment->customer_id !== $customer->id) {
+            throw new AccessDeniedHttpException('Payment does not belong to this customer.');
+        }
+
+        return $this->verify($reference);
+    }
+
+    /**
      * Verify a payment reference with the gateway and mark success/failure.
+     *
+     * @throws ValidationException
      */
     public function verify(string $reference): OrderPayment
     {
@@ -107,6 +158,8 @@ class OrderPaymentService
         }
 
         $result = $this->paymentManager->driver($payment->gateway)->verifyPayment($reference);
+
+        $this->assertVerificationMatchesPayment($payment, $result);
 
         if ($result->successful) {
             return $this->markSuccessful(
@@ -190,7 +243,9 @@ class OrderPaymentService
     }
 
     /**
-     * Handle a Paystack webhook payload (signature already validated or validated here).
+     * Handle a Paystack webhook payload.
+     *
+     * Never marks successful without a successful gateway verify + amount/currency match.
      *
      * @param  array<string, mixed>  $payload
      * @return array{processed: bool, payment?: OrderPayment|null}
@@ -222,17 +277,33 @@ class OrderPaymentService
             return ['processed' => true, 'payment' => $payment];
         }
 
-        // Prefer gateway verify for amount/status integrity when possible; fall back to markSuccessful.
-        try {
-            $verified = $this->verify($reference);
-        } catch (\Throwable) {
-            $verified = $this->markSuccessful(
-                $payment,
-                isset($data['id']) ? (string) $data['id'] : null,
-            );
-        }
+        $verified = $this->verify($reference);
 
         return ['processed' => true, 'payment' => $verified];
+    }
+
+    /**
+     * Ensure gateway verification matches the stored payment amount and currency.
+     *
+     * @throws ValidationException
+     */
+    protected function assertVerificationMatchesPayment(OrderPayment $payment, PaymentVerificationResult $result): void
+    {
+        if ($result->amount !== null && bccomp((string) $result->amount, (string) $payment->amount, 2) !== 0) {
+            $this->markFailed($payment);
+
+            throw ValidationException::withMessages([
+                'reference' => ['Verified payment amount does not match the expected amount.'],
+            ]);
+        }
+
+        if ($result->currency !== null && strtoupper((string) $result->currency) !== strtoupper((string) $payment->currency)) {
+            $this->markFailed($payment);
+
+            throw ValidationException::withMessages([
+                'reference' => ['Verified payment currency does not match the expected currency.'],
+            ]);
+        }
     }
 
     /**

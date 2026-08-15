@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services\Tenant\Commerce;
 
 use App\Enums\Tenant\Catalog\InventoryMovementType;
+use App\Enums\Tenant\Commerce\OrderPaymentStatus;
 use App\Models\Tenant\Order;
 use App\Services\Tenant\Inventory\InventoryService;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Inventory reservation and sale commit for orders.
@@ -40,14 +42,26 @@ class OrderInventoryService
     }
 
     /**
-     * Release reserved stock for order items with inventory_id.
+     * Release reserved stock for unpaid orders only.
+     *
+     * @throws ValidationException
      */
     public function releaseForOrder(Order $order): void
     {
+        if ($order->payment_status === OrderPaymentStatus::Paid) {
+            throw ValidationException::withMessages([
+                'order' => 'Cannot release reservations for a paid order. Use a refund flow instead.',
+            ]);
+        }
+
         $order->loadMissing('items.inventory');
 
         foreach ($order->items as $item) {
             if ($item->inventory_id === null || $item->inventory === null) {
+                continue;
+            }
+
+            if ($item->inventory->reserved_quantity < $item->quantity) {
                 continue;
             }
 
@@ -56,7 +70,7 @@ class OrderInventoryService
     }
 
     /**
-     * Convert reserved stock into a sale decrease for each reserved line.
+     * Atomically convert reserved stock into a sale decrease for each reserved line.
      */
     public function commitSaleForOrder(Order $order): void
     {
@@ -67,9 +81,8 @@ class OrderInventoryService
                 continue;
             }
 
-            $this->inventoryService->release($item->inventory, $item->quantity);
-            $this->inventoryService->decrease(
-                $item->inventory->fresh() ?? $item->inventory,
+            $this->inventoryService->commitReservation(
+                $item->inventory,
                 $item->quantity,
                 InventoryMovementType::Sale,
                 reason: 'Order sale',

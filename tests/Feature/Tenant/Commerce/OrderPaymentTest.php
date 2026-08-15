@@ -27,10 +27,13 @@ use App\Services\Payment\PaymentManager;
 use App\Services\Tenant\Commerce\CartService;
 use App\Services\Tenant\Commerce\CheckoutService;
 use App\Services\Tenant\Commerce\OrderPaymentService;
+use App\Services\Tenant\Commerce\OrderTransitionService;
 use App\Services\Tenant\Inventory\InventoryService;
 use Database\Seeders\Tenant\ChartOfAccountsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 uses(RefreshDatabase::class);
 
@@ -109,11 +112,18 @@ function paymentFixture(int $stock = 10): array
     ];
 }
 
-function mockPaymentGateway(bool $verifySuccess = true): PaymentGateway
-{
-    return new class($verifySuccess) implements PaymentGateway
+function mockPaymentGateway(
+    bool $verifySuccess = true,
+    string $amount = '200.00',
+    string $currency = 'NGN',
+): PaymentGateway {
+    return new class($verifySuccess, $amount, $currency) implements PaymentGateway
     {
-        public function __construct(private readonly bool $verifySuccess) {}
+        public function __construct(
+            private readonly bool $verifySuccess,
+            private readonly string $amount,
+            private readonly string $currency,
+        ) {}
 
         public function initializePayment(PaymentInitiationRequest $request): PaymentInitiationResult
         {
@@ -131,8 +141,8 @@ function mockPaymentGateway(bool $verifySuccess = true): PaymentGateway
                 successful: $this->verifySuccess,
                 reference: $reference,
                 providerTransactionId: 'txn_'.$reference,
-                amount: '200.00',
-                currency: 'NGN',
+                amount: $this->amount,
+                currency: $this->currency,
                 paidAt: now(),
             );
         }
@@ -211,4 +221,83 @@ test('duplicate verify does not double post journal or restock', function (): vo
     expect(OrderPayment::query()->where('reference', $init['payment']->reference)->count())->toBe(1)
         ->and(JournalEntry::query()->where('entry_type', 'sale')->where('source_id', $fixture['order']->id)->count())->toBe(1)
         ->and($fixture['inventory']->fresh()->quantity)->toBe(8);
+});
+
+test('verify rejects amount mismatch and does not mark paid', function (): void {
+    $fixture = paymentFixture();
+    $gateway = mockPaymentGateway(verifySuccess: true, amount: '1.00', currency: 'NGN');
+
+    $this->mock(PaymentManager::class, function ($mock) use ($gateway): void {
+        $mock->shouldReceive('driver')->andReturn($gateway);
+    });
+
+    $service = app(OrderPaymentService::class);
+    $init = $service->initialize($fixture['order'], $fixture['customer']);
+
+    expect(fn () => $service->verify($init['payment']->reference))
+        ->toThrow(ValidationException::class);
+
+    expect($init['payment']->fresh()->status)->toBe(OrderPaymentRecordStatus::Failed)
+        ->and($fixture['order']->fresh()->payment_status)->not->toBe(OrderPaymentStatus::Paid)
+        ->and(JournalEntry::query()->where('entry_type', 'sale')->count())->toBe(0)
+        ->and($fixture['inventory']->fresh()->reserved_quantity)->toBe(2);
+});
+
+test('verifyForCustomer blocks other customers before side effects', function (): void {
+    $fixture = paymentFixture();
+    $other = Customer::factory()->create();
+    $gateway = mockPaymentGateway(verifySuccess: true);
+
+    $this->mock(PaymentManager::class, function ($mock) use ($gateway): void {
+        $mock->shouldReceive('driver')->andReturn($gateway);
+    });
+
+    $service = app(OrderPaymentService::class);
+    $init = $service->initialize($fixture['order'], $fixture['customer']);
+
+    expect(fn () => $service->verifyForCustomer($init['payment']->reference, $other))
+        ->toThrow(AccessDeniedHttpException::class);
+
+    expect($init['payment']->fresh()->status)->toBe(OrderPaymentRecordStatus::Pending)
+        ->and(JournalEntry::query()->where('entry_type', 'sale')->count())->toBe(0);
+});
+
+test('webhook without valid signature is rejected', function (): void {
+    config(['payment.drivers.paystack.webhook_secret' => 'test_secret']);
+
+    $fixture = paymentFixture();
+    $gateway = mockPaymentGateway(verifySuccess: true);
+
+    $this->mock(PaymentManager::class, function ($mock) use ($gateway): void {
+        $mock->shouldReceive('driver')->andReturn($gateway);
+    });
+
+    $service = app(OrderPaymentService::class);
+    $init = $service->initialize($fixture['order'], $fixture['customer']);
+
+    $payload = [
+        'event' => 'charge.success',
+        'data' => ['reference' => $init['payment']->reference, 'id' => '999'],
+    ];
+    $raw = json_encode($payload, JSON_THROW_ON_ERROR);
+
+    expect(fn () => $service->handleWebhook($payload, 'bad-signature', $raw))
+        ->toThrow(AccessDeniedHttpException::class);
+});
+
+test('paid order cannot be cancelled via transition', function (): void {
+    $fixture = paymentFixture();
+    $gateway = mockPaymentGateway(verifySuccess: true);
+
+    $this->mock(PaymentManager::class, function ($mock) use ($gateway): void {
+        $mock->shouldReceive('driver')->andReturn($gateway);
+    });
+
+    $service = app(OrderPaymentService::class);
+    $init = $service->initialize($fixture['order'], $fixture['customer']);
+    $service->verify($init['payment']->reference);
+
+    expect(fn () => app(OrderTransitionService::class)
+        ->transition($fixture['order']->fresh(), OrderStatus::Cancelled))
+        ->toThrow(ValidationException::class);
 });

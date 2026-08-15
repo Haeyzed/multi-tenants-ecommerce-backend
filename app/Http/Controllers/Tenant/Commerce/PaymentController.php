@@ -54,11 +54,10 @@ class PaymentController extends Controller
         /** @var Customer $customer */
         $customer = Auth::guard('customer')->user();
 
-        $payment = $this->orderPaymentService->verify($request->validated('reference'));
-
-        if ($payment->customer_id !== $customer->id) {
-            abort(403, 'Payment does not belong to this customer.');
-        }
+        $payment = $this->orderPaymentService->verifyForCustomer(
+            $request->validated('reference'),
+            $customer,
+        );
 
         return $this->success(
             new OrderPaymentResource($payment),

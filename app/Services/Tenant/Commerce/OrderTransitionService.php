@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\Commerce;
 
+use App\Enums\Tenant\Commerce\OrderPaymentStatus;
 use App\Enums\Tenant\Commerce\OrderStatus;
 use App\Events\OrderCancelled;
 use App\Models\Tenant\Order;
@@ -16,13 +17,15 @@ use Illuminate\Validation\ValidationException;
 class OrderTransitionService
 {
     /**
+     * Admin/manual transitions. Confirmed is driven by payment success, not PATCH.
+     *
      * @var array<string, list<OrderStatus>>
      */
     private const array ALLOWED = [
-        OrderStatus::Pending->value => [OrderStatus::Confirmed, OrderStatus::Processing, OrderStatus::Cancelled],
-        OrderStatus::Confirmed->value => [OrderStatus::Processing, OrderStatus::Cancelled],
-        OrderStatus::Processing->value => [OrderStatus::Fulfilled, OrderStatus::Cancelled],
-        OrderStatus::Fulfilled->value => [OrderStatus::Completed, OrderStatus::Cancelled],
+        OrderStatus::Pending->value => [OrderStatus::Cancelled],
+        OrderStatus::Confirmed->value => [OrderStatus::Processing],
+        OrderStatus::Processing->value => [OrderStatus::Fulfilled],
+        OrderStatus::Fulfilled->value => [OrderStatus::Completed],
         OrderStatus::Completed->value => [OrderStatus::Refunded],
         OrderStatus::Cancelled->value => [],
         OrderStatus::Refunded->value => [],
@@ -52,22 +55,24 @@ class OrderTransitionService
                 ]);
             }
 
-            $locked->status = $to;
-
-            if ($to === OrderStatus::Confirmed && $locked->confirmed_at === null) {
-                $locked->confirmed_at = now();
-            }
-
             if ($to === OrderStatus::Cancelled) {
+                if ($locked->payment_status === OrderPaymentStatus::Paid) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Paid orders cannot be cancelled without a refund workflow.',
+                    ]);
+                }
+
+                $locked->status = $to;
                 $locked->cancelled_at = now();
+                $locked->save();
                 $this->orderInventory->releaseForOrder($locked);
-            }
-
-            $locked->save();
-
-            if ($to === OrderStatus::Cancelled) {
                 event(new OrderCancelled($locked));
+
+                return $locked->fresh(['items', 'customer', 'shippingMethod']) ?? $locked;
             }
+
+            $locked->status = $to;
+            $locked->save();
 
             return $locked->fresh(['items', 'customer', 'shippingMethod']) ?? $locked;
         });

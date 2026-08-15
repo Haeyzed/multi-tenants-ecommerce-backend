@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Enums\Tenant\Accounting\JournalEntryStatus;
 use App\Enums\Tenant\Commerce\ShipmentStatus;
 use App\Enums\Tenant\Procurement\PurchaseOrderStatus;
+use App\Events\ShipmentDelivered;
+use App\Events\ShipmentShipped;
 use App\Models\Tenant\Account;
 use App\Models\Tenant\JournalEntry;
 use App\Models\Tenant\Order;
@@ -21,11 +23,17 @@ use App\Services\Tenant\Shipping\ShipmentService;
 use App\Services\Tenant\Shipping\ShippingMethodService;
 use Database\Seeders\Tenant\ChartOfAccountsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
+    config([
+        'notifications.sms.default' => 'null',
+        'notifications.sms.enabled' => false,
+        'notifications.queue' => false,
+    ]);
     $migrationFiles = [
         '2026_08_15_031728_create_brands_table.php',
         '2026_08_15_034243_create_units_table.php',
@@ -65,6 +73,8 @@ beforeEach(function (): void {
 });
 
 test('shipping method can be created and shipment transitioned', function (): void {
+    Event::fake([ShipmentShipped::class, ShipmentDelivered::class]);
+
     $method = app(ShippingMethodService::class)->store([
         'name' => 'Standard',
         'code' => 'STD',
@@ -88,6 +98,8 @@ test('shipping method can be created and shipment transitioned', function (): vo
 
     expect($shipped->status)->toBe(ShipmentStatus::Shipped)
         ->and($shipped->shipped_at)->not->toBeNull();
+
+    Event::assertDispatched(ShipmentShipped::class);
 });
 
 test('supplier purchase order partial receive updates inventory and posts journal', function (): void {

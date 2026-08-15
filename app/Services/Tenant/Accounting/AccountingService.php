@@ -35,7 +35,8 @@ class AccountingService
 
             $grandTotal = Money::add((string) $order->grand_total, '0');
             $taxTotal = Money::add((string) $order->tax_total, '0');
-            $salesAmount = Money::sub($grandTotal, $taxTotal);
+            $shippingTotal = Money::add((string) $order->shipping_total, '0');
+            $salesAmount = Money::sub(Money::sub($grandTotal, $taxTotal), $shippingTotal);
 
             $lines = [
                 [
@@ -51,6 +52,15 @@ class AccountingService
                     'description' => 'Sales revenue for order '.$order->order_number,
                 ],
             ];
+
+            if (bccomp($shippingTotal, '0', 2) > 0) {
+                $lines[] = [
+                    'account_id' => $salesId,
+                    'debit' => '0.00',
+                    'credit' => $shippingTotal,
+                    'description' => 'Shipping revenue for order '.$order->order_number,
+                ];
+            }
 
             if (bccomp($taxTotal, '0', 2) > 0) {
                 $lines[] = [

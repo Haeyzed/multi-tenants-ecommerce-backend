@@ -212,6 +212,65 @@ class InventoryService
     }
 
     /**
+     * Atomically convert a reservation into an on-hand decrease (single lock).
+     *
+     * @throws ValidationException
+     */
+    public function commitReservation(
+        Inventory $inventory,
+        int $qty,
+        InventoryMovementType $type,
+        ?string $reason = null,
+        ?string $notes = null,
+        ?User $actor = null,
+        ?Model $reference = null,
+    ): Inventory {
+        return DB::transaction(function () use ($inventory, $qty, $type, $reason, $notes, $actor, $reference): Inventory {
+            /** @var Inventory $locked */
+            $locked = Inventory::query()->whereKey($inventory->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($qty <= 0) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Commit quantity must be greater than zero.',
+                ]);
+            }
+
+            if ($qty > $locked->reserved_quantity) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Cannot commit more than the reserved quantity.',
+                ]);
+            }
+
+            if ($qty > $locked->quantity) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Insufficient on-hand stock to commit reservation.',
+                ]);
+            }
+
+            $quantityBefore = $locked->quantity;
+            $quantityAfter = $quantityBefore - $qty;
+
+            $locked->movements()->create([
+                'type' => $type,
+                'quantity' => -$qty,
+                'quantity_before' => $quantityBefore,
+                'quantity_after' => $quantityAfter,
+                'reference_type' => $reference?->getMorphClass(),
+                'reference_id' => $reference?->getKey(),
+                'reason' => $reason,
+                'notes' => $notes,
+                'created_by' => $actor?->id,
+            ]);
+
+            $locked->quantity = $quantityAfter;
+            $locked->reserved_quantity -= $qty;
+            $locked->save();
+
+            return $locked->fresh(['warehouse', 'inventoryable']) ?? $locked;
+        });
+    }
+
+    /**
      * Transfer stock between warehouses for the same inventoryable.
      *
      * @throws ValidationException

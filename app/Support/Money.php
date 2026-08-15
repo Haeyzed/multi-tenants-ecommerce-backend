@@ -50,8 +50,17 @@ final class Money
         return bcdiv($product, '100', self::SCALE);
     }
 
+    /**
+     * Normalize a decimal string without floating-point conversion.
+     */
     private static function normalize(string $value): string
     {
-        return number_format((float) $value, self::SCALE, '.', '');
+        $value = trim($value);
+
+        if ($value === '' || ! is_numeric($value)) {
+            return '0.00';
+        }
+
+        return bcadd($value, '0', self::SCALE);
     }
 }
