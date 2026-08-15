@@ -44,6 +44,9 @@ class PlanSeeder extends Seeder
                     ['feature' => 'advanced-reports', 'enabled' => false],
                     ['feature' => 'custom-domain', 'enabled' => false],
                     ['feature' => 'api-access', 'enabled' => false],
+                    ['feature' => 'gift-cards', 'enabled' => false],
+                    ['feature' => 'store-credit', 'enabled' => false],
+                    ['feature' => 'loyalty', 'enabled' => false],
                 ],
             ],
             [
@@ -65,6 +68,9 @@ class PlanSeeder extends Seeder
                     ['feature' => 'advanced-reports', 'enabled' => false],
                     ['feature' => 'custom-domain', 'enabled' => false],
                     ['feature' => 'api-access', 'enabled' => false],
+                    ['feature' => 'gift-cards', 'enabled' => false],
+                    ['feature' => 'store-credit', 'enabled' => false],
+                    ['feature' => 'loyalty', 'enabled' => false],
                 ],
             ],
             [
@@ -86,6 +92,9 @@ class PlanSeeder extends Seeder
                     ['feature' => 'advanced-reports', 'enabled' => true],
                     ['feature' => 'custom-domain', 'enabled' => true],
                     ['feature' => 'api-access', 'enabled' => true],
+                    ['feature' => 'gift-cards', 'enabled' => true],
+                    ['feature' => 'store-credit', 'enabled' => true],
+                    ['feature' => 'loyalty', 'enabled' => true],
                 ],
             ],
             [
@@ -107,6 +116,9 @@ class PlanSeeder extends Seeder
                     ['feature' => 'advanced-reports', 'enabled' => true],
                     ['feature' => 'custom-domain', 'enabled' => true],
                     ['feature' => 'api-access', 'enabled' => true],
+                    ['feature' => 'gift-cards', 'enabled' => true],
+                    ['feature' => 'store-credit', 'enabled' => true],
+                    ['feature' => 'loyalty', 'enabled' => true],
                 ],
             ],
         ];

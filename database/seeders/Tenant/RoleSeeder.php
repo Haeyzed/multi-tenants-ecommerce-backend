@@ -163,6 +163,22 @@ class RoleSeeder extends Seeder
             'promotions.show',
             'promotions.update',
             'promotions.delete',
+            'analytics.view',
+            'analytics.sales',
+            'analytics.customers',
+            'analytics.products',
+            'analytics.inventory',
+            'analytics.marketplace',
+            'segments.view',
+            'segments.manage',
+            'gift_cards.view',
+            'gift_cards.create',
+            'gift_cards.update',
+            'gift_cards.cancel',
+            'store_credit.view',
+            'store_credit.manage',
+            'loyalty.view',
+            'loyalty.manage',
         ]);
 
         $seller = Role::findOrCreate('seller', self::GUARD);

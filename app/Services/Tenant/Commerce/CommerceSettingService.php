@@ -106,6 +106,54 @@ class CommerceSettingService
     }
 
     /**
+     * Whether a loyalty program should default to active when first created.
+     */
+    public function loyaltyIsActive(): bool
+    {
+        return filter_var($this->get('loyalty.is_active', 'true'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Points awarded per currency unit spent (e.g. "1.00" for 1 point per unit).
+     */
+    public function loyaltyPointsPerCurrencyUnit(): string
+    {
+        return $this->get('loyalty.points_per_currency_unit', '1.00') ?? '1.00';
+    }
+
+    /**
+     * Points required to discount one currency unit.
+     */
+    public function loyaltyRedemptionPointsPerCurrency(): int
+    {
+        return max(1, (int) ($this->get('loyalty.redemption_points_per_currency', '100') ?? '100'));
+    }
+
+    /**
+     * Smallest redeemable point amount.
+     */
+    public function loyaltyMinRedemptionPoints(): int
+    {
+        return max(1, (int) ($this->get('loyalty.min_redemption_points', '100') ?? '100'));
+    }
+
+    /**
+     * Largest share of an order subtotal that points may cover, as a percent.
+     */
+    public function loyaltyMaxRedemptionPercent(): string
+    {
+        return $this->get('loyalty.max_redemption_percent', '100.00') ?? '100.00';
+    }
+
+    /**
+     * Whether points are awarded automatically when an order is paid.
+     */
+    public function loyaltyEarnOnOrderPaid(): bool
+    {
+        return filter_var($this->get('loyalty.earn_on_order_paid', 'true'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
      * Storefront currency code from tenant profile when tenancy is initialized.
      */
     public function currencyCode(): string

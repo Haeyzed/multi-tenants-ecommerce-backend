@@ -45,6 +45,9 @@ class CheckoutRequest extends BaseRequest
             ],
             'shipping_method_id' => ['sometimes', 'nullable', 'integer', 'exists:shipping_methods,id'],
             'coupon_code' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'loyalty_points' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'gift_card_code' => ['sometimes', 'nullable', 'string', 'max:64'],
+            'store_credit_amount' => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'idempotency_key' => ['sometimes', 'nullable', 'string', 'max:255'],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
         ];

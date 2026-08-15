@@ -46,6 +46,18 @@ class FeatureSeeder extends Seeder
             'name' => 'API Access',
             'description' => 'Programmatic API access for integrations.',
         ],
+        'gift-cards' => [
+            'name' => 'Gift Cards',
+            'description' => 'Issue and redeem prepaid gift cards.',
+        ],
+        'store-credit' => [
+            'name' => 'Store Credit',
+            'description' => 'Maintain customer store credit wallets.',
+        ],
+        'loyalty' => [
+            'name' => 'Loyalty & Rewards',
+            'description' => 'Award and redeem customer loyalty points.',
+        ],
     ];
 
     /**

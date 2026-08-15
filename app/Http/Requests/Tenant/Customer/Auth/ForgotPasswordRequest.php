@@ -7,9 +7,9 @@ namespace App\Http\Requests\Tenant\Customer\Auth;
 use App\Http\Requests\BaseRequest;
 
 /**
- * Validates customer login payloads.
+ * Validates customer forgot-password requests.
  */
-class LoginRequest extends BaseRequest
+class ForgotPasswordRequest extends BaseRequest
 {
     /**
      * @return array<string, mixed>
@@ -17,8 +17,7 @@ class LoginRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string', 'email', 'max:255'],
         ];
     }
 }

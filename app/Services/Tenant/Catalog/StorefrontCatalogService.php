@@ -24,18 +24,26 @@ class StorefrontCatalogService
     public function __construct(
         private readonly ProductAvailabilityService $availabilityService,
         private readonly CategoryService $categoryService,
+        private readonly ProductSearchService $productSearchService,
     ) {}
 
     /**
-     * Paginate storefront-visible products.
+     * Paginate storefront-visible products through the product search abstraction.
      *
      * @param  array{
      *     search?: string|null,
+     *     keyword?: string|null,
      *     brand_id?: int|null,
      *     category_id?: int|null,
      *     collection_id?: int|null,
      *     tag_id?: int|null,
+     *     min_price?: numeric-string|float|int|null,
+     *     max_price?: numeric-string|float|int|null,
+     *     min_rating?: float|int|null,
      *     is_featured?: bool|null,
+     *     availability?: string|null,
+     *     seller_id?: int|null,
+     *     attribute_value_ids?: list<int>|null,
      *     sort?: string|null,
      *     per_page?: int|null
      * }  $params
@@ -43,19 +51,9 @@ class StorefrontCatalogService
      */
     public function products(array $params = []): LengthAwarePaginator
     {
-        $paginator = Product::query()
-            ->storefrontVisible()
-            ->with(['brand', 'media', 'prices' => fn ($query) => $query->where('is_active', true), 'tags', 'badges.media'])
-            ->filter($params)
-            ->when(
-                array_key_exists('category_id', $params) && $params['category_id'] !== null,
-                fn ($query) => $query->whereHas(
-                    'categories',
-                    fn ($query) => $query->where('categories.id', (int) $params['category_id']),
-                ),
-            )
-            ->applySort($params['sort'] ?? null)
-            ->paginate($this->perPage($params));
+        $params['storefront_only'] = true;
+
+        $paginator = $this->productSearchService->search($params);
 
         $paginator->getCollection()->transform(function (Product $product): Product {
             return $this->attachAvailability($product);

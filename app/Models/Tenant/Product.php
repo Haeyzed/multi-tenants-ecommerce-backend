@@ -6,7 +6,9 @@ namespace App\Models\Tenant;
 
 use App\Enums\Media\MediaCollection;
 use App\Enums\Media\MediaConversion;
+use App\Enums\Tenant\Catalog\ProductAvailability;
 use App\Enums\Tenant\Catalog\ProductRelationType;
+use App\Enums\Tenant\Catalog\ProductSearchSort;
 use App\Enums\Tenant\Catalog\ProductStatus;
 use App\Enums\Tenant\Catalog\ProductType;
 use App\Enums\Tenant\Catalog\ProductVisibility;
@@ -19,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
@@ -360,6 +363,36 @@ class Product extends Model implements HasMedia
     }
 
     /**
+     * Marketplace seller offers for this product.
+     *
+     * @return HasMany<SellerOffer, $this>
+     */
+    public function sellerOffers(): HasMany
+    {
+        return $this->hasMany(SellerOffer::class);
+    }
+
+    /**
+     * Sold line items referencing this product, used for popularity signals.
+     *
+     * @return HasMany<OrderItem, $this>
+     */
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * Storefront view records for this product.
+     *
+     * @return HasMany<ProductView, $this>
+     */
+    public function views(): HasMany
+    {
+        return $this->hasMany(ProductView::class);
+    }
+
+    /**
      * Shared belongsToMany for typed product relations.
      *
      * @return BelongsToMany<Product, $this>
@@ -382,10 +415,20 @@ class Product extends Model implements HasMedia
      * @param  array{
      *     search?: string|null,
      *     brand_id?: int|null,
+     *     category_id?: int|null,
      *     status?: ProductStatus|string|null,
      *     type?: ProductType|string|null,
      *     visibility?: ProductVisibility|string|null,
-     *     is_featured?: bool|null
+     *     is_featured?: bool|null,
+     *     tag_id?: int|null,
+     *     collection_id?: int|null,
+     *     min_price?: numeric-string|float|int|null,
+     *     max_price?: numeric-string|float|int|null,
+     *     currency?: string|null,
+     *     min_rating?: float|int|null,
+     *     seller_id?: int|null,
+     *     attribute_value_ids?: list<int>|null,
+     *     availability?: string|null
      * }  $params
      * @return Builder<$this>
      */
@@ -419,7 +462,97 @@ class Product extends Model implements HasMedia
             })
             ->when(array_key_exists('collection_id', $params) && $params['collection_id'] !== null, function (Builder $query) use ($params): void {
                 $query->whereHas('collections', fn (Builder $query) => $query->where('collections.id', (int) $params['collection_id']));
-            });
+            })
+            ->when(array_key_exists('category_id', $params) && $params['category_id'] !== null, function (Builder $query) use ($params): void {
+                $query->whereHas('categories', fn (Builder $query) => $query->where('categories.id', (int) $params['category_id']));
+            })
+            ->when(array_key_exists('seller_id', $params) && $params['seller_id'] !== null, function (Builder $query) use ($params): void {
+                $query->whereHas('sellerOffers', fn (Builder $query) => $query->where('seller_offers.seller_id', (int) $params['seller_id']));
+            })
+            ->when(array_key_exists('min_rating', $params) && $params['min_rating'] !== null, function (Builder $query) use ($params): void {
+                $query->where('average_rating', '>=', (float) $params['min_rating']);
+            })
+            ->when(
+                (array_key_exists('min_price', $params) && $params['min_price'] !== null)
+                    || (array_key_exists('max_price', $params) && $params['max_price'] !== null),
+                function (Builder $query) use ($params): void {
+                    $query->inPriceRange(
+                        $params['min_price'] ?? null,
+                        $params['max_price'] ?? null,
+                        $params['currency'] ?? null,
+                    );
+                },
+            )
+            ->when(! empty($params['attribute_value_ids']), function (Builder $query) use ($params): void {
+                foreach ((array) $params['attribute_value_ids'] as $valueId) {
+                    $query->whereHas(
+                        'attributeValues',
+                        fn (Builder $query) => $query->where('product_attribute_values.id', (int) $valueId),
+                    );
+                }
+            })
+            ->when(
+                ($params['availability'] ?? null) === ProductAvailability::InStock->value,
+                fn (Builder $query) => $query->inStock(),
+            );
+    }
+
+    /**
+     * Restrict to products with an active price inside the given bounds.
+     *
+     * Variant-level prices are intentionally excluded; the storefront price filter
+     * operates on the product's own price rows.
+     *
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeInPriceRange(
+        Builder $query,
+        string|float|int|null $min = null,
+        string|float|int|null $max = null,
+        ?string $currency = null,
+    ): Builder {
+        return $query->whereHas('prices', function (Builder $query) use ($min, $max, $currency): void {
+            $query->where('is_active', true);
+
+            if ($currency !== null) {
+                $query->where('currency', strtoupper($currency));
+            }
+
+            if ($min !== null) {
+                $query->where('amount', '>=', $min);
+            }
+
+            if ($max !== null) {
+                $query->where('amount', '<=', $max);
+            }
+        });
+    }
+
+    /**
+     * Restrict to products that can currently be bought.
+     *
+     * This is a SQL approximation of ProductAvailabilityService: a product counts as
+     * purchasable when it allows backorders, holds free stock of its own, or has an
+     * active variant holding free stock.
+     *
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeInStock(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query): void {
+            $query->where('allow_backorder', true)
+                ->orWhereHas('inventories', function (Builder $query): void {
+                    $query->whereColumn('quantity', '>', 'reserved_quantity');
+                })
+                ->orWhereHas('variants', function (Builder $query): void {
+                    $query->where('is_active', true)
+                        ->whereHas('inventories', function (Builder $query): void {
+                            $query->whereColumn('quantity', '>', 'reserved_quantity');
+                        });
+                });
+        });
     }
 
     /**
@@ -462,5 +595,77 @@ class Product extends Model implements HasMedia
         }
 
         return $query->orderBy($column, $direction)->orderBy('id');
+    }
+
+    /**
+     * Apply a search-oriented sort mode.
+     *
+     * `relevance` is a basic SQL ranking (exact name match, then prefix match, then
+     * substring match) rather than a full-text scoring engine; swapping in a search
+     * engine driver replaces this ordering entirely.
+     *
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeApplySearchSort(Builder $query, ?string $sort = null, ?string $keyword = null): Builder
+    {
+        $mode = ProductSearchSort::tryFrom((string) $sort);
+
+        if ($mode === null) {
+            return $query->applySort($sort);
+        }
+
+        return match ($mode) {
+            ProductSearchSort::PriceAsc => $query
+                ->orderBy($this->lowestActivePriceSubquery())
+                ->orderBy('id'),
+            ProductSearchSort::PriceDesc => $query
+                ->orderByDesc($this->lowestActivePriceSubquery())
+                ->orderBy('id'),
+            ProductSearchSort::Newest => $query->orderByDesc('created_at')->orderByDesc('id'),
+            ProductSearchSort::Oldest => $query->orderBy('created_at')->orderBy('id'),
+            ProductSearchSort::Rating => $query
+                ->orderByDesc('average_rating')
+                ->orderByDesc('reviews_count')
+                ->orderBy('id'),
+            ProductSearchSort::Popularity => $query
+                ->withSum('orderItems as ordered_quantity', 'quantity')
+                ->orderByDesc('ordered_quantity')
+                ->orderBy('id'),
+            ProductSearchSort::Relevance => $this->applyRelevanceSort($query, $keyword),
+        };
+    }
+
+    /**
+     * Correlated subquery returning the lowest active price for the product.
+     */
+    protected function lowestActivePriceSubquery(): QueryBuilder
+    {
+        return ProductPrice::query()
+            ->selectRaw('MIN(amount)')
+            ->whereColumn('priceable_id', 'products.id')
+            ->where('priceable_type', $this->getMorphClass())
+            ->where('is_active', true)
+            ->toBase();
+    }
+
+    /**
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    protected function applyRelevanceSort(Builder $query, ?string $keyword): Builder
+    {
+        if ($keyword === null || trim($keyword) === '') {
+            return $query->orderBy('sort_order')->orderBy('id');
+        }
+
+        $keyword = trim($keyword);
+
+        return $query
+            ->orderByRaw(
+                'CASE WHEN name = ? THEN 0 WHEN name LIKE ? THEN 1 WHEN name LIKE ? THEN 2 ELSE 3 END',
+                [$keyword, $keyword.'%', '%'.$keyword.'%'],
+            )
+            ->orderBy('id');
     }
 }

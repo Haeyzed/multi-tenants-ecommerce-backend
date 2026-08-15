@@ -15,6 +15,7 @@ use App\Models\Tenant\CartItem;
 use App\Models\Tenant\CheckoutSession;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerAddress;
+use App\Models\Tenant\GiftCard;
 use App\Models\Tenant\Inventory;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\Product;
@@ -37,19 +38,30 @@ class CheckoutService
         private readonly CartService $cartService,
         private readonly CommerceSettingService $commerceSettings,
         private readonly DiscountService $discountService,
+        private readonly GiftCardService $giftCardService,
         private readonly OrderInventoryService $orderInventory,
         private readonly SellerOrderService $sellerOrders,
+        private readonly StoreCreditService $storeCreditService,
         private readonly TaxService $taxService,
     ) {}
 
     /**
      * Checkout the customer's active cart.
      *
+     * Gift card and store credit are prepaid tenders applied once discounts, tax and
+     * shipping have been settled: the gift card is drawn down first, then store credit.
+     * The order's `grand_total` therefore records only what is still owed through a
+     * payment gateway, while `gift_card_amount` and `store_credit_amount` snapshot the
+     * prepaid portions so a refund can restore each to its original source.
+     *
      * @param  array{
      *     shipping_address_id: int,
      *     billing_address_id?: int|null,
      *     shipping_method_id?: int|null,
      *     coupon_code?: string|null,
+     *     loyalty_points?: int|null,
+     *     gift_card_code?: string|null,
+     *     store_credit_amount?: string|float|null,
      *     idempotency_key?: string|null,
      *     notes?: string|null
      * }  $data
@@ -151,6 +163,14 @@ class CheckoutService
                 $shippingTotal,
             );
 
+            $discountApplication = $this->discountService->applyLoyaltyRedemption(
+                $customer,
+                $cart,
+                $discountApplication,
+                $subtotal,
+                isset($data['loyalty_points']) ? (int) $data['loyalty_points'] : null,
+            );
+
             $discountTotal = $discountApplication->discountTotal;
             $shippingTotal = $discountApplication->shippingTotal;
             $lineDiscountMap = collect($discountApplication->lineDiscounts);
@@ -185,6 +205,9 @@ class CheckoutService
                 $shippingTotal,
             );
 
+            $prepaid = $this->resolvePrepaidTenders($customer, $cart->currency, $grandTotal, $data);
+            $amountDue = $prepaid['amount_due'];
+
             $session = CheckoutSession::query()->create([
                 'customer_id' => $customer->id,
                 'cart_id' => $cart->id,
@@ -198,7 +221,7 @@ class CheckoutService
                 'discount_total' => $discountTotal,
                 'tax_total' => $taxTotal,
                 'shipping_total' => $shippingTotal,
-                'grand_total' => $grandTotal,
+                'grand_total' => $amountDue,
             ]);
 
             $orderAttributes = [
@@ -213,7 +236,7 @@ class CheckoutService
                 'tax_total' => $taxTotal,
                 'tax_snapshot' => $taxResult['snapshot'],
                 'shipping_total' => $shippingTotal,
-                'grand_total' => $grandTotal,
+                'grand_total' => $amountDue,
                 'shipping_method_id' => $shippingMethod?->id,
                 'shipping_address_snapshot' => $this->addressSnapshot($shippingAddress),
                 'billing_address_snapshot' => $billingAddress !== null
@@ -232,7 +255,28 @@ class CheckoutService
                     : null;
             }
 
+            if (Schema::hasColumn('orders', 'loyalty_points_redeemed')) {
+                $orderAttributes['loyalty_points_redeemed'] = $discountApplication->loyaltyPointsRedeemed > 0
+                    ? $discountApplication->loyaltyPointsRedeemed
+                    : null;
+            }
+
+            if (Schema::hasColumn('orders', 'gift_card_id')) {
+                $orderAttributes['gift_card_id'] = $prepaid['gift_card']?->id;
+                $orderAttributes['gift_card_amount'] = bccomp($prepaid['gift_card_amount'], '0', 2) > 0
+                    ? $prepaid['gift_card_amount']
+                    : null;
+            }
+
+            if (Schema::hasColumn('orders', 'store_credit_amount')) {
+                $orderAttributes['store_credit_amount'] = bccomp($prepaid['store_credit_amount'], '0', 2) > 0
+                    ? $prepaid['store_credit_amount']
+                    : null;
+            }
+
             $order = Order::query()->create($orderAttributes);
+
+            $this->applyPrepaidTenders($customer, $order, $prepaid);
 
             foreach ($cart->items as $item) {
                 $this->createOrderItem(
@@ -244,6 +288,7 @@ class CheckoutService
             }
 
             $this->discountService->recordCouponUsage($order, $discountApplication);
+            $this->discountService->recordLoyaltyRedemption($order, $discountApplication);
 
             $this->orderInventory->reserveForOrder($order->fresh(['items']) ?? $order);
 
@@ -264,6 +309,84 @@ class CheckoutService
 
             return $order;
         });
+    }
+
+    /**
+     * Work out how much of the order total prepaid tenders can cover.
+     *
+     * The gift card is drawn down before store credit, and neither can exceed the
+     * amount still owed, so the returned `amount_due` is never negative.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{
+     *     gift_card: GiftCard|null,
+     *     gift_card_amount: string,
+     *     store_credit_amount: string,
+     *     amount_due: string
+     * }
+     *
+     * @throws ValidationException
+     */
+    protected function resolvePrepaidTenders(Customer $customer, string $currency, string $grandTotal, array $data): array
+    {
+        $amountDue = Money::add($grandTotal, '0');
+        $giftCard = null;
+        $giftCardAmount = '0.00';
+        $storeCreditAmount = '0.00';
+
+        $giftCardCode = isset($data['gift_card_code']) && is_string($data['gift_card_code'])
+            ? trim($data['gift_card_code'])
+            : '';
+
+        if ($giftCardCode !== '' && Schema::hasTable('gift_cards')) {
+            $giftCard = $this->giftCardService->resolveRedeemable($giftCardCode, $currency);
+            $giftCardAmount = $this->giftCardService->applicableAmount($giftCard, $amountDue);
+            $amountDue = Money::sub($amountDue, $giftCardAmount);
+        }
+
+        $requestedStoreCredit = isset($data['store_credit_amount']) && $data['store_credit_amount'] !== null
+            ? Money::add((string) $data['store_credit_amount'], '0')
+            : '0.00';
+
+        if (bccomp($requestedStoreCredit, '0', 2) > 0 && Schema::hasTable('store_credit_accounts')) {
+            $storeCreditAmount = $this->storeCreditService->applicableAmount($customer, $requestedStoreCredit, $amountDue);
+            $amountDue = Money::sub($amountDue, $storeCreditAmount);
+        }
+
+        return [
+            'gift_card' => $giftCard,
+            'gift_card_amount' => $giftCardAmount,
+            'store_credit_amount' => $storeCreditAmount,
+            'amount_due' => $amountDue,
+        ];
+    }
+
+    /**
+     * Draw down the resolved prepaid tenders against a freshly created order.
+     *
+     * @param  array{
+     *     gift_card: GiftCard|null,
+     *     gift_card_amount: string,
+     *     store_credit_amount: string,
+     *     amount_due: string
+     * }  $prepaid
+     *
+     * @throws ValidationException
+     */
+    protected function applyPrepaidTenders(Customer $customer, Order $order, array $prepaid): void
+    {
+        if ($prepaid['gift_card'] !== null && bccomp($prepaid['gift_card_amount'], '0', 2) > 0) {
+            $this->giftCardService->redeem($prepaid['gift_card'], $prepaid['gift_card_amount'], $order);
+        }
+
+        if (bccomp($prepaid['store_credit_amount'], '0', 2) > 0) {
+            $this->storeCreditService->debit(
+                $customer,
+                $prepaid['store_credit_amount'],
+                'Applied to order '.$order->order_number,
+                $order,
+            );
+        }
     }
 
     protected function findIdempotentOrder(Customer $customer, string $key): ?Order

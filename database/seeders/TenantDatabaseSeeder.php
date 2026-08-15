@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use Database\Seeders\Tenant\ChartOfAccountsSeeder;
+use Database\Seeders\Tenant\CustomerSegmentSeeder;
 use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
 use Illuminate\Database\Seeder;
@@ -23,6 +24,7 @@ class TenantDatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RoleSeeder::class,
             ChartOfAccountsSeeder::class,
+            CustomerSegmentSeeder::class,
         ]);
     }
 }

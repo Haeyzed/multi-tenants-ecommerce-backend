@@ -21,5 +21,7 @@ final readonly class DiscountApplicationResult
         public array $promotionSnapshot,
         public array $lineDiscounts,
         public string $shippingTotal,
+        public int $loyaltyPointsRedeemed = 0,
+        public string $loyaltyDiscountTotal = '0.00',
     ) {}
 }

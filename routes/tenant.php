@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Tenant\Accounting\AccountController;
 use App\Http\Controllers\Tenant\Accounting\JournalEntryController;
+use App\Http\Controllers\Tenant\Analytics\AnalyticsController;
 use App\Http\Controllers\Tenant\Auth\AuthController;
 use App\Http\Controllers\Tenant\Brand\BrandController;
 use App\Http\Controllers\Tenant\Catalog\CollectionController;
@@ -16,11 +17,14 @@ use App\Http\Controllers\Tenant\Category\CategoryController;
 use App\Http\Controllers\Tenant\Commerce\CartController;
 use App\Http\Controllers\Tenant\Commerce\CheckoutController;
 use App\Http\Controllers\Tenant\Commerce\CouponController;
+use App\Http\Controllers\Tenant\Commerce\CustomerGiftCardController;
 use App\Http\Controllers\Tenant\Commerce\CustomerInvoiceController;
 use App\Http\Controllers\Tenant\Commerce\CustomerOrderController;
 use App\Http\Controllers\Tenant\Commerce\CustomerOrderReturnController;
 use App\Http\Controllers\Tenant\Commerce\CustomerShipmentController;
+use App\Http\Controllers\Tenant\Commerce\CustomerStoreCreditController;
 use App\Http\Controllers\Tenant\Commerce\CustomerWishlistController;
+use App\Http\Controllers\Tenant\Commerce\GiftCardController;
 use App\Http\Controllers\Tenant\Commerce\InvoiceController;
 use App\Http\Controllers\Tenant\Commerce\OrderController;
 use App\Http\Controllers\Tenant\Commerce\OrderReturnController;
@@ -28,10 +32,16 @@ use App\Http\Controllers\Tenant\Commerce\PaymentController;
 use App\Http\Controllers\Tenant\Commerce\PaymentWebhookController;
 use App\Http\Controllers\Tenant\Commerce\PromotionController;
 use App\Http\Controllers\Tenant\Commerce\RefundController;
+use App\Http\Controllers\Tenant\Commerce\StoreCreditController;
 use App\Http\Controllers\Tenant\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Tenant\Customer\CustomerController;
+use App\Http\Controllers\Tenant\Customer\CustomerSegmentController;
 use App\Http\Controllers\Tenant\Customer\ProductReviewController as CustomerProductReviewController;
+use App\Http\Controllers\Tenant\Customer\RecentlyViewedProductController;
 use App\Http\Controllers\Tenant\Inventory\InventoryController;
+use App\Http\Controllers\Tenant\Loyalty\CustomerLoyaltyController;
+use App\Http\Controllers\Tenant\Loyalty\LoyaltyAccountController;
+use App\Http\Controllers\Tenant\Loyalty\LoyaltyProgramController;
 use App\Http\Controllers\Tenant\Marketplace\SellerCommissionController;
 use App\Http\Controllers\Tenant\Marketplace\SellerController;
 use App\Http\Controllers\Tenant\Marketplace\SellerOfferController;
@@ -58,6 +68,7 @@ use App\Http\Controllers\Tenant\Storefront\StorefrontBrandController;
 use App\Http\Controllers\Tenant\Storefront\StorefrontCategoryController;
 use App\Http\Controllers\Tenant\Storefront\StorefrontCollectionController;
 use App\Http\Controllers\Tenant\Storefront\StorefrontProductController;
+use App\Http\Controllers\Tenant\Storefront\StorefrontRecommendationController;
 use App\Http\Controllers\Tenant\Storefront\StorefrontReviewController;
 use App\Http\Controllers\Tenant\Subscription\SubscriptionController;
 use App\Http\Controllers\Tenant\Tax\TaxController;
@@ -90,6 +101,7 @@ Route::middleware([
             Route::get('products', [StorefrontProductController::class, 'index'])->name('products.index');
             Route::get('products/{product}', [StorefrontProductController::class, 'show'])->name('products.show');
             Route::get('products/{product}/reviews', [StorefrontReviewController::class, 'index'])->whereNumber('product')->name('products.reviews.index');
+            Route::get('products/{product}/recommendations', [StorefrontRecommendationController::class, 'index'])->whereNumber('product')->name('products.recommendations.index');
             Route::get('collections', [StorefrontCollectionController::class, 'index'])->name('collections.index');
             Route::get('collections/{collection}', [StorefrontCollectionController::class, 'show'])->name('collections.show');
             Route::get('brands', [StorefrontBrandController::class, 'index'])->name('brands.index');
@@ -125,6 +137,7 @@ Route::middleware([
                 Route::post('addresses/{address}/default', [CustomerAuthController::class, 'makeDefaultAddress'])->whereNumber('address')->name('addresses.default');
 
                 Route::post('products/{product}/reviews', [CustomerProductReviewController::class, 'store'])->whereNumber('product')->name('products.reviews.store');
+                Route::get('products/recently-viewed', [RecentlyViewedProductController::class, 'index'])->name('products.recently-viewed');
 
                 Route::get('orders', [CustomerOrderController::class, 'index'])->name('orders.index');
                 Route::get('orders/{order}', [CustomerOrderController::class, 'show'])->whereNumber('order')->name('orders.show');
@@ -152,6 +165,21 @@ Route::middleware([
             Route::patch('cart/items/{item}', [CartController::class, 'updateItem'])->whereNumber('item')->name('customer.cart.items.update');
             Route::delete('cart/items/{item}', [CartController::class, 'destroyItem'])->whereNumber('item')->name('customer.cart.items.destroy');
             Route::post('cart/coupon', [CartController::class, 'applyCoupon'])->name('customer.cart.coupon.apply');
+            Route::middleware('feature:loyalty')->group(function (): void {
+                Route::get('loyalty/account', [CustomerLoyaltyController::class, 'account'])->name('customer.loyalty.account');
+                Route::get('loyalty/transactions', [CustomerLoyaltyController::class, 'transactions'])->name('customer.loyalty.transactions');
+                Route::post('loyalty/redemption-preview', [CustomerLoyaltyController::class, 'previewRedemption'])->name('customer.loyalty.redemption-preview');
+            });
+
+            Route::middleware('feature:gift-cards')->group(function (): void {
+                Route::post('cart/gift-card/preview', [CustomerGiftCardController::class, 'preview'])->name('customer.cart.gift-card.preview');
+            });
+
+            Route::middleware('feature:store-credit')->group(function (): void {
+                Route::get('store-credit', [CustomerStoreCreditController::class, 'show'])->name('customer.store-credit.show');
+                Route::get('store-credit/transactions', [CustomerStoreCreditController::class, 'transactions'])->name('customer.store-credit.transactions');
+            });
+
             Route::post('checkout', [CheckoutController::class, 'store'])->name('customer.checkout.store');
             Route::post('checkout/pay', [PaymentController::class, 'pay'])->name('customer.checkout.pay');
             Route::post('payments/verify', [PaymentController::class, 'verify'])->name('customer.payments.verify');
@@ -216,6 +244,21 @@ Route::middleware([
                 Route::delete('brands/{brand}/logo', [BrandController::class, 'destroyLogo'])->middleware('permission:brands.update')->whereNumber('brand')->name('tenant.brands.logo.destroy');
                 Route::get('brands/{brand}/seo', [SeoController::class, 'showBrand'])->middleware('permission:brands.show')->whereNumber('brand')->name('tenant.brands.seo.show');
                 Route::match(['put', 'patch'], 'brands/{brand}/seo', [SeoController::class, 'upsertBrand'])->middleware('permission:brands.update')->whereNumber('brand')->name('tenant.brands.seo.upsert');
+
+                Route::get('segments', [CustomerSegmentController::class, 'index'])->middleware('permission:segments.view')->name('tenant.segments.index');
+                Route::get('segments/{slug}/customers', [CustomerSegmentController::class, 'customers'])->middleware('permission:segments.view')->name('tenant.segments.customers');
+
+                Route::prefix('analytics')->middleware('feature:advanced-reports')->name('tenant.analytics.')->group(function (): void {
+                    Route::get('overview', [AnalyticsController::class, 'overview'])->middleware('permission:analytics.view')->name('overview');
+                    Route::get('sales', [AnalyticsController::class, 'sales'])->middleware('permission:analytics.sales')->name('sales');
+                    Route::get('sales/breakdown', [AnalyticsController::class, 'salesBreakdown'])->middleware('permission:analytics.sales')->name('sales.breakdown');
+                    Route::get('customers', [AnalyticsController::class, 'customers'])->middleware('permission:analytics.customers')->name('customers');
+                    Route::get('products', [AnalyticsController::class, 'products'])->middleware('permission:analytics.products')->name('products');
+                    Route::get('inventory', [AnalyticsController::class, 'inventory'])->middleware('permission:analytics.inventory')->name('inventory');
+                    Route::get('marketplace', [AnalyticsController::class, 'marketplace'])->middleware('permission:analytics.marketplace')->name('marketplace');
+                    Route::get('coupons', [AnalyticsController::class, 'coupons'])->middleware('permission:analytics.sales')->name('coupons');
+                    Route::get('payments', [AnalyticsController::class, 'payments'])->middleware('permission:analytics.sales')->name('payments');
+                });
 
                 Route::get('customers', [CustomerController::class, 'index'])->middleware('permission:customers.view')->name('tenant.customers.index');
                 Route::get('customers/{customer}', [CustomerController::class, 'show'])->middleware('permission:customers.show')->whereNumber('customer')->name('tenant.customers.show');
@@ -361,6 +404,31 @@ Route::middleware([
                 Route::get('promotions/{promotion}', [PromotionController::class, 'show'])->middleware('permission:promotions.view')->whereNumber('promotion')->name('tenant.promotions.show');
                 Route::match(['put', 'patch'], 'promotions/{promotion}', [PromotionController::class, 'update'])->middleware('permission:promotions.update')->whereNumber('promotion')->name('tenant.promotions.update');
                 Route::delete('promotions/{promotion}', [PromotionController::class, 'destroy'])->middleware('permission:promotions.delete')->whereNumber('promotion')->name('tenant.promotions.destroy');
+
+                Route::middleware('feature:loyalty')->group(function (): void {
+                    Route::get('loyalty/program', [LoyaltyProgramController::class, 'show'])->middleware('permission:loyalty.view')->name('tenant.loyalty.program.show');
+                    Route::match(['put', 'patch'], 'loyalty/program', [LoyaltyProgramController::class, 'update'])->middleware('permission:loyalty.manage')->name('tenant.loyalty.program.update');
+                    Route::get('loyalty/accounts', [LoyaltyAccountController::class, 'index'])->middleware('permission:loyalty.view')->name('tenant.loyalty.accounts.index');
+                    Route::get('loyalty/accounts/{loyalty_account}/transactions', [LoyaltyAccountController::class, 'transactions'])->middleware('permission:loyalty.view')->whereNumber('loyalty_account')->name('tenant.loyalty.accounts.transactions');
+                    Route::post('loyalty/accounts/{loyalty_account}/adjustments', [LoyaltyAccountController::class, 'storeAdjustment'])->middleware('permission:loyalty.manage')->whereNumber('loyalty_account')->name('tenant.loyalty.accounts.adjustments.store');
+                });
+
+                Route::middleware('feature:gift-cards')->group(function (): void {
+                    Route::get('gift-cards', [GiftCardController::class, 'index'])->middleware('permission:gift_cards.view')->name('tenant.gift-cards.index');
+                    Route::post('gift-cards', [GiftCardController::class, 'store'])->middleware('permission:gift_cards.create')->name('tenant.gift-cards.store');
+                    Route::get('gift-cards/{gift_card}', [GiftCardController::class, 'show'])->middleware('permission:gift_cards.view')->whereNumber('gift_card')->name('tenant.gift-cards.show');
+                    Route::match(['put', 'patch'], 'gift-cards/{gift_card}', [GiftCardController::class, 'update'])->middleware('permission:gift_cards.update')->whereNumber('gift_card')->name('tenant.gift-cards.update');
+                    Route::post('gift-cards/{gift_card}/activate', [GiftCardController::class, 'activate'])->middleware('permission:gift_cards.update')->whereNumber('gift_card')->name('tenant.gift-cards.activate');
+                    Route::post('gift-cards/{gift_card}/cancel', [GiftCardController::class, 'cancel'])->middleware('permission:gift_cards.cancel')->whereNumber('gift_card')->name('tenant.gift-cards.cancel');
+                });
+
+                Route::middleware('feature:store-credit')->group(function (): void {
+                    Route::get('store-credit/accounts', [StoreCreditController::class, 'index'])->middleware('permission:store_credit.view')->name('tenant.store-credit.accounts.index');
+                    Route::get('store-credit/customers/{customer}', [StoreCreditController::class, 'show'])->middleware('permission:store_credit.view')->whereNumber('customer')->name('tenant.store-credit.customers.show');
+                    Route::get('store-credit/customers/{customer}/transactions', [StoreCreditController::class, 'transactions'])->middleware('permission:store_credit.view')->whereNumber('customer')->name('tenant.store-credit.customers.transactions');
+                    Route::post('store-credit/customers/{customer}/credit', [StoreCreditController::class, 'credit'])->middleware('permission:store_credit.manage')->whereNumber('customer')->name('tenant.store-credit.customers.credit');
+                    Route::post('store-credit/customers/{customer}/debit', [StoreCreditController::class, 'debit'])->middleware('permission:store_credit.manage')->whereNumber('customer')->name('tenant.store-credit.customers.debit');
+                });
 
                 Route::get('invoices', [InvoiceController::class, 'index'])->middleware('permission:invoices.view')->name('tenant.invoices.index');
                 Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->middleware('permission:invoices.view')->whereNumber('invoice')->name('tenant.invoices.show');

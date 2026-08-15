@@ -41,6 +41,20 @@ final class Money
     }
 
     /**
+     * Divide left by right, returning zero when the divisor is zero.
+     */
+    public static function div(string $left, string $right): string
+    {
+        $divisor = self::normalize($right);
+
+        if (bccomp($divisor, '0.00', self::SCALE) === 0) {
+            return '0.00';
+        }
+
+        return bcdiv(self::normalize($left), $divisor, self::SCALE);
+    }
+
+    /**
      * Calculate a percentage of an amount (e.g. percent('100.00', '7.50') => '7.50').
      */
     public static function percent(string $amount, string $rate): string

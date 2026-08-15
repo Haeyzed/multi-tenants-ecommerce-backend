@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Contracts\Catalog\ProductSearchDriver;
 use App\Contracts\Marketplace\SellerPayoutDriverInterface;
 use App\Contracts\Notification\PushNotificationProvider;
 use App\Contracts\Notification\SmsProvider;
@@ -13,9 +14,12 @@ use App\Models\Tenant\Brand;
 use App\Models\Tenant\Category;
 use App\Models\Tenant\Coupon;
 use App\Models\Tenant\Customer;
+use App\Models\Tenant\GiftCard;
 use App\Models\Tenant\Inventory;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\JournalEntry;
+use App\Models\Tenant\LoyaltyAccount;
+use App\Models\Tenant\LoyaltyProgram;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderReturn;
 use App\Models\Tenant\Product;
@@ -36,6 +40,7 @@ use App\Models\Tenant\SellerOrder;
 use App\Models\Tenant\SellerPayout;
 use App\Models\Tenant\Shipment;
 use App\Models\Tenant\ShippingMethod;
+use App\Models\Tenant\StoreCreditAccount;
 use App\Models\Tenant\Supplier;
 use App\Models\Tenant\Tax;
 use App\Models\Tenant\TaxZone;
@@ -46,9 +51,12 @@ use App\Policies\Tenant\BrandPolicy;
 use App\Policies\Tenant\CategoryPolicy;
 use App\Policies\Tenant\CouponPolicy;
 use App\Policies\Tenant\CustomerPolicy;
+use App\Policies\Tenant\GiftCardPolicy;
 use App\Policies\Tenant\InventoryPolicy;
 use App\Policies\Tenant\InvoicePolicy;
 use App\Policies\Tenant\JournalEntryPolicy;
+use App\Policies\Tenant\LoyaltyAccountPolicy;
+use App\Policies\Tenant\LoyaltyProgramPolicy;
 use App\Policies\Tenant\OrderPolicy;
 use App\Policies\Tenant\OrderReturnPolicy;
 use App\Policies\Tenant\ProductBadgePolicy;
@@ -68,6 +76,7 @@ use App\Policies\Tenant\SellerPayoutPolicy;
 use App\Policies\Tenant\SellerPolicy;
 use App\Policies\Tenant\ShipmentPolicy;
 use App\Policies\Tenant\ShippingMethodPolicy;
+use App\Policies\Tenant\StoreCreditAccountPolicy;
 use App\Policies\Tenant\SupplierPolicy;
 use App\Policies\Tenant\TaxPolicy;
 use App\Policies\Tenant\TaxZonePolicy;
@@ -84,6 +93,11 @@ use App\Services\Notification\Push\FcmPushProvider;
 use App\Services\Notification\Sms\SmsManager;
 use App\Services\Payment\PaymentManager;
 use App\Services\Shipping\ShippingCarrierManager;
+use App\Services\Tenant\Catalog\DatabaseProductSearchDriver;
+use App\Services\Tenant\Catalog\ProductRecommendationService;
+use App\Services\Tenant\Catalog\Recommendations\PopularProductsProvider;
+use App\Services\Tenant\Catalog\Recommendations\RecentlyViewedProvider;
+use App\Services\Tenant\Catalog\Recommendations\RelatedProductsProvider;
 use App\Services\Tenant\Marketplace\Payout\ManualPayoutDriver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -99,6 +113,16 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ShippingCarrierManager::class);
 
         $this->app->bind(SellerPayoutDriverInterface::class, ManualPayoutDriver::class);
+
+        $this->app->bind(ProductSearchDriver::class, DatabaseProductSearchDriver::class);
+
+        $this->app->singleton(ProductRecommendationService::class, function ($app): ProductRecommendationService {
+            return new ProductRecommendationService([
+                $app->make(RelatedProductsProvider::class),
+                $app->make(PopularProductsProvider::class),
+                $app->make(RecentlyViewedProvider::class),
+            ]);
+        });
 
         $this->app->bind(PaymentGateway::class, function ($app): PaymentGateway {
             return $app->make(PaymentManager::class)->driver();
@@ -147,6 +171,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ProductAttribute::class, ProductAttributePolicy::class);
         Gate::policy(Order::class, OrderPolicy::class);
         Gate::policy(OrderReturn::class, OrderReturnPolicy::class);
+        Gate::policy(LoyaltyProgram::class, LoyaltyProgramPolicy::class);
+        Gate::policy(LoyaltyAccount::class, LoyaltyAccountPolicy::class);
+        Gate::policy(GiftCard::class, GiftCardPolicy::class);
+        Gate::policy(StoreCreditAccount::class, StoreCreditAccountPolicy::class);
         Gate::policy(Account::class, AccountPolicy::class);
         Gate::policy(JournalEntry::class, JournalEntryPolicy::class);
         Gate::policy(ShippingMethod::class, ShippingMethodPolicy::class);

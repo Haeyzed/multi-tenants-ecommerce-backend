@@ -30,10 +30,15 @@ use Illuminate\Support\Carbon;
  * @property int|null $coupon_id
  * @property string|null $coupon_code
  * @property array<string, mixed>|null $promotion_snapshot
+ * @property int|null $loyalty_points_earned
+ * @property int|null $loyalty_points_redeemed
  * @property string $tax_total
  * @property array<string, mixed>|null $tax_snapshot
  * @property string $shipping_total
  * @property string $grand_total
+ * @property int|null $gift_card_id
+ * @property string|null $gift_card_amount
+ * @property string|null $store_credit_amount
  * @property int|null $shipping_method_id
  * @property array<string, mixed>|null $shipping_address_snapshot
  * @property array<string, mixed>|null $billing_address_snapshot
@@ -63,10 +68,15 @@ class Order extends Model
         'coupon_id',
         'coupon_code',
         'promotion_snapshot',
+        'loyalty_points_earned',
+        'loyalty_points_redeemed',
         'tax_total',
         'tax_snapshot',
         'shipping_total',
         'grand_total',
+        'gift_card_id',
+        'gift_card_amount',
+        'store_credit_amount',
         'shipping_method_id',
         'shipping_address_snapshot',
         'billing_address_snapshot',
@@ -91,10 +101,15 @@ class Order extends Model
             'discount_total' => 'decimal:2',
             'coupon_id' => 'integer',
             'promotion_snapshot' => 'array',
+            'loyalty_points_earned' => 'integer',
+            'loyalty_points_redeemed' => 'integer',
             'tax_total' => 'decimal:2',
             'tax_snapshot' => 'array',
             'shipping_total' => 'decimal:2',
             'grand_total' => 'decimal:2',
+            'gift_card_id' => 'integer',
+            'gift_card_amount' => 'decimal:2',
+            'store_credit_amount' => 'decimal:2',
             'shipping_method_id' => 'integer',
             'shipping_address_snapshot' => 'array',
             'billing_address_snapshot' => 'array',
@@ -110,6 +125,16 @@ class Order extends Model
     public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    /**
+     * Gift card that funded part or all of this order.
+     *
+     * @return BelongsTo<GiftCard, $this>
+     */
+    public function giftCard(): BelongsTo
+    {
+        return $this->belongsTo(GiftCard::class);
     }
 
     /**

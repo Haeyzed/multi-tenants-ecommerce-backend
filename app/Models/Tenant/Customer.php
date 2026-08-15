@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -77,6 +78,36 @@ class Customer extends Authenticatable implements HasMedia, MustVerifyEmail
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Store credit wallet for this customer.
+     *
+     * @return HasOne<StoreCreditAccount, $this>
+     */
+    public function storeCreditAccount(): HasOne
+    {
+        return $this->hasOne(StoreCreditAccount::class);
+    }
+
+    /**
+     * The customer's single wishlist.
+     *
+     * @return HasOne<Wishlist, $this>
+     */
+    public function wishlist(): HasOne
+    {
+        return $this->hasOne(Wishlist::class);
+    }
+
+    /**
+     * Storefront product views attributed to this customer.
+     *
+     * @return HasMany<ProductView, $this>
+     */
+    public function productViews(): HasMany
+    {
+        return $this->hasMany(ProductView::class);
     }
 
     /**

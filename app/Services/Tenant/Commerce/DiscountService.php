@@ -11,6 +11,7 @@ use App\Models\Tenant\CouponUsage;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\Promotion;
+use App\Services\Tenant\Loyalty\LoyaltyService;
 use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -22,6 +23,7 @@ class DiscountService
 {
     public function __construct(
         private readonly CouponService $couponService,
+        private readonly LoyaltyService $loyaltyService,
         private readonly PromotionService $promotionService,
     ) {}
 
@@ -102,6 +104,81 @@ class DiscountService
             promotionSnapshot: $promotionSnapshot,
             lineDiscounts: $lineDiscounts,
             shippingTotal: $adjustedShipping,
+        );
+    }
+
+    /**
+     * Layer a loyalty point redemption on top of coupon and promotion discounts.
+     *
+     * The redemption is capped by whatever is still discountable on the cart so
+     * points can never push the merchandise total below zero.
+     */
+    public function applyLoyaltyRedemption(
+        Customer $customer,
+        Cart $cart,
+        DiscountApplicationResult $applied,
+        string $subtotal,
+        ?int $loyaltyPoints,
+    ): DiscountApplicationResult {
+        if ($loyaltyPoints === null || $loyaltyPoints <= 0) {
+            return $applied;
+        }
+
+        $discountableRemainder = Money::sub($subtotal, $applied->discountTotal);
+
+        if (bccomp($discountableRemainder, '0', 2) <= 0) {
+            return $applied;
+        }
+
+        $redemption = $this->loyaltyService->previewRedemption(
+            $customer,
+            $loyaltyPoints,
+            $subtotal,
+            $discountableRemainder,
+        );
+
+        if (! $redemption->isRedeemable()) {
+            return $applied;
+        }
+
+        $lineDiscounts = $this->mergeLineDiscounts(
+            $applied->lineDiscounts,
+            $this->couponService->distributeDiscount($cart->items, $redemption->moneyValue),
+        );
+
+        return new DiscountApplicationResult(
+            discountTotal: Money::add($applied->discountTotal, $redemption->moneyValue),
+            couponDiscountTotal: $applied->couponDiscountTotal,
+            couponId: $applied->couponId,
+            couponCode: $applied->couponCode,
+            promotionSnapshot: $applied->promotionSnapshot,
+            lineDiscounts: $lineDiscounts,
+            shippingTotal: $applied->shippingTotal,
+            loyaltyPointsRedeemed: $redemption->points,
+            loyaltyDiscountTotal: $redemption->moneyValue,
+        );
+    }
+
+    /**
+     * Write the loyalty ledger entry for a redemption once the order exists.
+     */
+    public function recordLoyaltyRedemption(Order $order, DiscountApplicationResult $discount): void
+    {
+        if ($discount->loyaltyPointsRedeemed <= 0) {
+            return;
+        }
+
+        $customer = $order->customer ?? Customer::query()->find($order->customer_id);
+
+        if ($customer === null) {
+            return;
+        }
+
+        $this->loyaltyService->redeemForCheckout(
+            $customer,
+            $discount->loyaltyPointsRedeemed,
+            (string) $order->subtotal,
+            $order,
         );
     }
 
