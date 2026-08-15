@@ -57,7 +57,7 @@ return [
         'title' => null,
     ],
 
-    'renderer' => 'scalar',
+    'renderer' => 'elements',
 
     'renderers' => [
         /*
@@ -103,9 +103,9 @@ return [
      * ```
      */
     'servers' => [
-         'Live' => 'api',
-         'Prod' => 'https://scramble.dedoc.co/api',
-     ],
+        'Live' => 'api',
+        'Prod' => 'https://scramble.dedoc.co/api',
+    ],
 
     /**
      * Determines how Scramble stores the descriptions of enum cases.

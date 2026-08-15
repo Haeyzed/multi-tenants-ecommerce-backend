@@ -1,0 +1,2018 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Multi-Tenants Ecommerce Backend",
+        "version": "0.0.1"
+    },
+    "servers": [
+        {
+            "url": "http://multi-tenants-ecommerce-backend.test/api",
+            "description": "Live"
+        },
+        {
+            "url": "https://scramble.dedoc.co/api",
+            "description": "Prod"
+        }
+    ],
+    "paths": {
+        "/user": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "`User`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/world/cities/options": {
+            "get": {
+                "operationId": "landlord.world.cities.options",
+                "summary": "Return city options as label/value pairs",
+                "tags": [
+                    "City"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[country_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "filters[country_code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    },
+                    {
+                        "name": "filters[state_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "City options for select inputs.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "value": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "label",
+                                                    "value"
+                                                ]
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/cities": {
+            "get": {
+                "operationId": "landlord.world.cities.index",
+                "summary": "List cities with pagination, search, and filters",
+                "tags": [
+                    "City"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[country_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "filters[country_code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    },
+                    {
+                        "name": "filters[state_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of cities.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CityResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total",
+                                                "from",
+                                                "to"
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/cities/{city}": {
+            "get": {
+                "operationId": "landlord.world.cities.show",
+                "summary": "Show a single city by identifier",
+                "tags": [
+                    "City"
+                ],
+                "parameters": [
+                    {
+                        "name": "city",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A single city.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/CityResource"
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/world/countries/options": {
+            "get": {
+                "operationId": "landlord.world.countries.options",
+                "summary": "Return country options as label/value pairs",
+                "tags": [
+                    "Country"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[iso2]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    },
+                    {
+                        "name": "filters[iso3]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Country options for select inputs.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "value": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "label",
+                                                    "value"
+                                                ]
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/countries": {
+            "get": {
+                "operationId": "landlord.world.countries.index",
+                "summary": "List countries with pagination, search, and filters",
+                "tags": [
+                    "Country"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[iso2]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    },
+                    {
+                        "name": "filters[iso3]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 3
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of countries.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CountryResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total",
+                                                "from",
+                                                "to"
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/countries/{country}": {
+            "get": {
+                "operationId": "landlord.world.countries.show",
+                "summary": "Show a single country by identifier",
+                "tags": [
+                    "Country"
+                ],
+                "parameters": [
+                    {
+                        "name": "country",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A single country.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/CountryResource"
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/world/currencies/options": {
+            "get": {
+                "operationId": "landlord.world.currencies.options",
+                "summary": "Return currency options as label/value pairs",
+                "tags": [
+                    "Currency"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[country_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "filters[country_code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    },
+                    {
+                        "name": "filters[code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Currency options for select inputs.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "value": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "label",
+                                                    "value"
+                                                ]
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/currencies": {
+            "get": {
+                "operationId": "landlord.world.currencies.index",
+                "summary": "List currencies with pagination, search, and filters",
+                "tags": [
+                    "Currency"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[country_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "filters[country_code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    },
+                    {
+                        "name": "filters[code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of currencies.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CurrencyResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total",
+                                                "from",
+                                                "to"
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/currencies/{currency}": {
+            "get": {
+                "operationId": "landlord.world.currencies.show",
+                "summary": "Show a single currency by identifier",
+                "tags": [
+                    "Currency"
+                ],
+                "parameters": [
+                    {
+                        "name": "currency",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A single currency.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/CurrencyResource"
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/world/languages/options": {
+            "get": {
+                "operationId": "landlord.world.languages.options",
+                "summary": "Return language options as label/value pairs",
+                "tags": [
+                    "Language"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Language options for select inputs.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "value": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "label",
+                                                    "value"
+                                                ]
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/languages": {
+            "get": {
+                "operationId": "landlord.world.languages.index",
+                "summary": "List languages with pagination, search, and filters",
+                "tags": [
+                    "Language"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of languages.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/LanguageResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total",
+                                                "from",
+                                                "to"
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/languages/{language}": {
+            "get": {
+                "operationId": "landlord.world.languages.show",
+                "summary": "Show a single language by identifier",
+                "tags": [
+                    "Language"
+                ],
+                "parameters": [
+                    {
+                        "name": "language",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A single language.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/LanguageResource"
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/world/states/options": {
+            "get": {
+                "operationId": "landlord.world.states.options",
+                "summary": "Return state options as label/value pairs",
+                "tags": [
+                    "State"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[country_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "filters[country_code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "State options for select inputs.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "value": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "label",
+                                                    "value"
+                                                ]
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/states": {
+            "get": {
+                "operationId": "landlord.world.states.index",
+                "summary": "List states with pagination, search, and filters",
+                "tags": [
+                    "State"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[country_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "filters[country_code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of states.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/StateResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total",
+                                                "from",
+                                                "to"
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/states/{state}": {
+            "get": {
+                "operationId": "landlord.world.states.show",
+                "summary": "Show a single state by identifier",
+                "tags": [
+                    "State"
+                ],
+                "parameters": [
+                    {
+                        "name": "state",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A single state.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/StateResource"
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/world/timezones/options": {
+            "get": {
+                "operationId": "landlord.world.timezones.options",
+                "summary": "Return timezone options as label/value pairs",
+                "tags": [
+                    "Timezone"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[country_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "filters[country_code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Timezone options for select inputs.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "value": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "label",
+                                                    "value"
+                                                ]
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/timezones": {
+            "get": {
+                "operationId": "landlord.world.timezones.index",
+                "summary": "List timezones with pagination, search, and filters",
+                "tags": [
+                    "Timezone"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "filters[country_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "filters[country_code]",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of timezones.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TimezoneResource"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total",
+                                                "from",
+                                                "to"
+                                            ]
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/world/timezones/{timezone}": {
+            "get": {
+                "operationId": "landlord.world.timezones.show",
+                "summary": "Show a single timezone by identifier",
+                "tags": [
+                    "Timezone"
+                ],
+                "parameters": [
+                    {
+                        "name": "timezone",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A single timezone.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/TimezoneResource"
+                                        },
+                                        "meta": {
+                                            "type": "null"
+                                        },
+                                        "errors": {
+                                            "type": "null"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "meta",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CityResource": {
+                "type": "object",
+                "properties": {
+                    "id": {},
+                    "name": {},
+                    "country_id": {},
+                    "state_id": {},
+                    "country_code": {},
+                    "state_code": {},
+                    "latitude": {},
+                    "longitude": {}
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "country_id",
+                    "state_id",
+                    "country_code",
+                    "state_code",
+                    "latitude",
+                    "longitude"
+                ],
+                "title": "CityResource"
+            },
+            "CountryResource": {
+                "type": "object",
+                "properties": {
+                    "id": {},
+                    "iso2": {},
+                    "iso3": {},
+                    "name": {},
+                    "phone_code": {},
+                    "region": {},
+                    "subregion": {},
+                    "native": {},
+                    "latitude": {},
+                    "longitude": {},
+                    "emoji": {},
+                    "emojiU": {}
+                },
+                "required": [
+                    "id",
+                    "iso2",
+                    "iso3",
+                    "name",
+                    "phone_code",
+                    "region",
+                    "subregion",
+                    "native",
+                    "latitude",
+                    "longitude",
+                    "emoji",
+                    "emojiU"
+                ],
+                "title": "CountryResource"
+            },
+            "CurrencyResource": {
+                "type": "object",
+                "properties": {
+                    "id": {},
+                    "country_id": {},
+                    "name": {},
+                    "code": {},
+                    "precision": {},
+                    "symbol": {},
+                    "symbol_native": {},
+                    "symbol_first": {},
+                    "decimal_mark": {},
+                    "thousands_separator": {}
+                },
+                "required": [
+                    "id",
+                    "country_id",
+                    "name",
+                    "code",
+                    "precision",
+                    "symbol",
+                    "symbol_native",
+                    "symbol_first",
+                    "decimal_mark",
+                    "thousands_separator"
+                ],
+                "title": "CurrencyResource"
+            },
+            "LanguageResource": {
+                "type": "object",
+                "properties": {
+                    "id": {},
+                    "code": {},
+                    "name": {},
+                    "name_native": {},
+                    "dir": {}
+                },
+                "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "name_native",
+                    "dir"
+                ],
+                "title": "LanguageResource"
+            },
+            "StateResource": {
+                "type": "object",
+                "properties": {
+                    "id": {},
+                    "name": {},
+                    "country_id": {},
+                    "country_code": {},
+                    "state_code": {},
+                    "type": {},
+                    "latitude": {},
+                    "longitude": {}
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "country_id",
+                    "country_code",
+                    "state_code",
+                    "type",
+                    "latitude",
+                    "longitude"
+                ],
+                "title": "StateResource"
+            },
+            "TimezoneResource": {
+                "type": "object",
+                "properties": {
+                    "id": {},
+                    "country_id": {},
+                    "name": {}
+                },
+                "required": [
+                    "id",
+                    "country_id",
+                    "name"
+                ],
+                "title": "TimezoneResource"
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "email_verified_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "email_verified_at",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "User"
+            }
+        },
+        "responses": {
+            "AuthenticationException": {
+                "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ValidationException": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Errors overview."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "A detailed description of each field that failed validation.",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "message",
+                                "errors"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ModelNotFoundException": {
+                "description": "Not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
