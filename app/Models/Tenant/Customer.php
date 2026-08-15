@@ -60,6 +60,26 @@ class Customer extends Authenticatable implements HasMedia, MustVerifyEmail
     }
 
     /**
+     * Shopping carts for this customer.
+     *
+     * @return HasMany<Cart, $this>
+     */
+    public function carts(): HasMany
+    {
+        return $this->hasMany(Cart::class);
+    }
+
+    /**
+     * Sales orders for this customer.
+     *
+     * @return HasMany<Order, $this>
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
      * Register media collections for the customer.
      */
     public function registerMediaCollections(): void

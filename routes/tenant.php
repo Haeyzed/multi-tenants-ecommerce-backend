@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Tenant\Accounting\AccountController;
+use App\Http\Controllers\Tenant\Accounting\JournalEntryController;
 use App\Http\Controllers\Tenant\Auth\AuthController;
 use App\Http\Controllers\Tenant\Brand\BrandController;
 use App\Http\Controllers\Tenant\Catalog\CollectionController;
@@ -11,6 +13,13 @@ use App\Http\Controllers\Tenant\Catalog\ProductOptionController;
 use App\Http\Controllers\Tenant\Catalog\ProductTagController;
 use App\Http\Controllers\Tenant\Catalog\SeoController;
 use App\Http\Controllers\Tenant\Category\CategoryController;
+use App\Http\Controllers\Tenant\Commerce\CartController;
+use App\Http\Controllers\Tenant\Commerce\CheckoutController;
+use App\Http\Controllers\Tenant\Commerce\CustomerOrderController;
+use App\Http\Controllers\Tenant\Commerce\CustomerShipmentController;
+use App\Http\Controllers\Tenant\Commerce\OrderController;
+use App\Http\Controllers\Tenant\Commerce\PaymentController;
+use App\Http\Controllers\Tenant\Commerce\PaymentWebhookController;
 use App\Http\Controllers\Tenant\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Tenant\Customer\CustomerController;
 use App\Http\Controllers\Tenant\Customer\ProductReviewController as CustomerProductReviewController;
@@ -19,6 +28,8 @@ use App\Http\Controllers\Tenant\Media\MediaController;
 use App\Http\Controllers\Tenant\Notification\DeviceController as NotificationDeviceController;
 use App\Http\Controllers\Tenant\Notification\InboxController as NotificationInboxController;
 use App\Http\Controllers\Tenant\Notification\PreferenceController as NotificationPreferenceController;
+use App\Http\Controllers\Tenant\Procurement\PurchaseOrderController;
+use App\Http\Controllers\Tenant\Procurement\SupplierController;
 use App\Http\Controllers\Tenant\Product\ProductBundleController;
 use App\Http\Controllers\Tenant\Product\ProductController;
 use App\Http\Controllers\Tenant\Product\ProductRelationController;
@@ -27,6 +38,8 @@ use App\Http\Controllers\Tenant\Product\ProductSpecificationController;
 use App\Http\Controllers\Tenant\Product\ProductVariantController;
 use App\Http\Controllers\Tenant\RBAC\PermissionController;
 use App\Http\Controllers\Tenant\RBAC\RoleController;
+use App\Http\Controllers\Tenant\Shipping\ShipmentController;
+use App\Http\Controllers\Tenant\Shipping\ShippingMethodController;
 use App\Http\Controllers\Tenant\Storefront\StorefrontBrandController;
 use App\Http\Controllers\Tenant\Storefront\StorefrontCategoryController;
 use App\Http\Controllers\Tenant\Storefront\StorefrontCollectionController;
@@ -97,8 +110,26 @@ Route::middleware([
                 Route::post('addresses/{address}/default', [CustomerAuthController::class, 'makeDefaultAddress'])->whereNumber('address')->name('addresses.default');
 
                 Route::post('products/{product}/reviews', [CustomerProductReviewController::class, 'store'])->whereNumber('product')->name('products.reviews.store');
+
+                Route::get('orders', [CustomerOrderController::class, 'index'])->name('orders.index');
+                Route::get('orders/{order}', [CustomerOrderController::class, 'show'])->whereNumber('order')->name('orders.show');
+                Route::get('orders/{order}/shipments', [CustomerShipmentController::class, 'index'])->whereNumber('order')->name('orders.shipments.index');
             });
         });
+
+        Route::middleware(['customer.guard', 'auth:sanctum'])->group(function (): void {
+            Route::get('cart', [CartController::class, 'show'])->name('customer.cart.show');
+            Route::delete('cart', [CartController::class, 'destroy'])->name('customer.cart.destroy');
+            Route::post('cart/items', [CartController::class, 'storeItem'])->name('customer.cart.items.store');
+            Route::patch('cart/items/{item}', [CartController::class, 'updateItem'])->whereNumber('item')->name('customer.cart.items.update');
+            Route::delete('cart/items/{item}', [CartController::class, 'destroyItem'])->whereNumber('item')->name('customer.cart.items.destroy');
+            Route::post('checkout', [CheckoutController::class, 'store'])->name('customer.checkout.store');
+            Route::post('checkout/pay', [PaymentController::class, 'pay'])->name('customer.checkout.pay');
+            Route::post('payments/verify', [PaymentController::class, 'verify'])->name('customer.payments.verify');
+        });
+
+        Route::post('payments/webhooks/paystack', [PaymentWebhookController::class, 'paystack'])
+            ->name('tenant.payments.webhooks.paystack');
 
         Route::middleware('tenant.guard')->group(function (): void {
             Route::prefix('auth')->name('tenant.auth.')->group(function (): void {
@@ -273,6 +304,42 @@ Route::middleware([
                 Route::post('inventory/{inventory}/reserve', [InventoryController::class, 'reserve'])->middleware('permission:inventory.adjust')->whereNumber('inventory')->name('tenant.inventory.reserve');
                 Route::post('inventory/{inventory}/release', [InventoryController::class, 'release'])->middleware('permission:inventory.adjust')->whereNumber('inventory')->name('tenant.inventory.release');
                 Route::post('inventory/{inventory}/transfer', [InventoryController::class, 'transfer'])->middleware('permission:inventory.transfer')->whereNumber('inventory')->name('tenant.inventory.transfer');
+
+                Route::get('orders', [OrderController::class, 'index'])->middleware('permission:orders.view')->name('tenant.orders.index');
+                Route::get('orders/{order}', [OrderController::class, 'show'])->middleware('permission:orders.show')->whereNumber('order')->name('tenant.orders.show');
+                Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->middleware('permission:orders.update')->whereNumber('order')->name('tenant.orders.status');
+                Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->middleware('permission:orders.cancel')->whereNumber('order')->name('tenant.orders.cancel');
+
+                Route::get('shipping-methods/options', [ShippingMethodController::class, 'options'])->middleware('permission:shipping.view')->name('tenant.shipping-methods.options');
+                Route::get('shipping-methods', [ShippingMethodController::class, 'index'])->middleware('permission:shipping.view')->name('tenant.shipping-methods.index');
+                Route::post('shipping-methods', [ShippingMethodController::class, 'store'])->middleware('permission:shipping.manage')->name('tenant.shipping-methods.store');
+                Route::get('shipping-methods/{shipping_method}', [ShippingMethodController::class, 'show'])->middleware('permission:shipping.view')->whereNumber('shipping_method')->name('tenant.shipping-methods.show');
+                Route::match(['put', 'patch'], 'shipping-methods/{shipping_method}', [ShippingMethodController::class, 'update'])->middleware('permission:shipping.manage')->whereNumber('shipping_method')->name('tenant.shipping-methods.update');
+                Route::delete('shipping-methods/{shipping_method}', [ShippingMethodController::class, 'destroy'])->middleware('permission:shipping.manage')->whereNumber('shipping_method')->name('tenant.shipping-methods.destroy');
+
+                Route::get('shipments', [ShipmentController::class, 'index'])->middleware('permission:shipments.view')->name('tenant.shipments.index');
+                Route::post('shipments', [ShipmentController::class, 'store'])->middleware('permission:shipments.manage')->name('tenant.shipments.store');
+                Route::get('shipments/{shipment}', [ShipmentController::class, 'show'])->middleware('permission:shipments.view')->whereNumber('shipment')->name('tenant.shipments.show');
+                Route::patch('shipments/{shipment}/status', [ShipmentController::class, 'updateStatus'])->middleware('permission:shipments.manage')->whereNumber('shipment')->name('tenant.shipments.status');
+
+                Route::get('suppliers/options', [SupplierController::class, 'options'])->middleware('permission:suppliers.view')->name('tenant.suppliers.options');
+                Route::get('suppliers', [SupplierController::class, 'index'])->middleware('permission:suppliers.view')->name('tenant.suppliers.index');
+                Route::post('suppliers', [SupplierController::class, 'store'])->middleware('permission:suppliers.create')->name('tenant.suppliers.store');
+                Route::get('suppliers/{supplier}', [SupplierController::class, 'show'])->middleware('permission:suppliers.show')->whereNumber('supplier')->name('tenant.suppliers.show');
+                Route::match(['put', 'patch'], 'suppliers/{supplier}', [SupplierController::class, 'update'])->middleware('permission:suppliers.update')->whereNumber('supplier')->name('tenant.suppliers.update');
+                Route::delete('suppliers/{supplier}', [SupplierController::class, 'destroy'])->middleware('permission:suppliers.delete')->whereNumber('supplier')->name('tenant.suppliers.destroy');
+
+                Route::get('purchase-orders', [PurchaseOrderController::class, 'index'])->middleware('permission:procurement.view')->name('tenant.purchase-orders.index');
+                Route::post('purchase-orders', [PurchaseOrderController::class, 'store'])->middleware('permission:procurement.create')->name('tenant.purchase-orders.store');
+                Route::get('purchase-orders/{purchase_order}', [PurchaseOrderController::class, 'show'])->middleware('permission:procurement.view')->whereNumber('purchase_order')->name('tenant.purchase-orders.show');
+                Route::post('purchase-orders/{purchase_order}/approve', [PurchaseOrderController::class, 'approve'])->middleware('permission:procurement.approve')->whereNumber('purchase_order')->name('tenant.purchase-orders.approve');
+                Route::post('purchase-orders/{purchase_order}/mark-ordered', [PurchaseOrderController::class, 'markOrdered'])->middleware('permission:procurement.update')->whereNumber('purchase_order')->name('tenant.purchase-orders.mark-ordered');
+                Route::post('purchase-orders/{purchase_order}/receive', [PurchaseOrderController::class, 'receive'])->middleware('permission:procurement.receive')->whereNumber('purchase_order')->name('tenant.purchase-orders.receive');
+
+                Route::get('accounts', [AccountController::class, 'index'])->middleware('permission:accounting.view')->name('tenant.accounts.index');
+                Route::get('journal-entries', [JournalEntryController::class, 'index'])->middleware('permission:accounting.view')->name('tenant.journal-entries.index');
+                Route::get('journal-entries/{journal_entry}', [JournalEntryController::class, 'show'])->middleware('permission:accounting.view')->whereNumber('journal_entry')->name('tenant.journal-entries.show');
+                Route::post('journal-entries', [JournalEntryController::class, 'store'])->middleware('permission:journal_entries.create')->name('tenant.journal-entries.store');
 
                 Route::get('notifications/unread-count', [NotificationInboxController::class, 'unreadCount'])->name('tenant.notifications.unread-count');
                 Route::get('notifications/unread', [NotificationInboxController::class, 'unread'])->name('tenant.notifications.unread');

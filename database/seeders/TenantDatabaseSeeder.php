@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use Database\Seeders\Tenant\ChartOfAccountsSeeder;
 use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
 use Illuminate\Database\Seeder;
@@ -21,6 +22,7 @@ class TenantDatabaseSeeder extends Seeder
         $this->call([
             PermissionSeeder::class,
             RoleSeeder::class,
+            ChartOfAccountsSeeder::class,
         ]);
     }
 }
