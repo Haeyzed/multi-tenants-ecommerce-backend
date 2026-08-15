@@ -12,6 +12,7 @@ use App\Models\Tenant\ProductPrice;
 use App\Notifications\TemplatedNotification;
 use App\Services\Notification\NotificationService;
 use App\Services\Tenant\Commerce\CartService;
+use App\Services\Tenant\Commerce\CommerceAnalyticsService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use Database\Seeders\Landlord\NotificationTemplateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -79,6 +80,7 @@ test('mark abandoned carts job marks stale carts and notifies once', function ()
     (new MarkAbandonedCartsJob)->handle(
         app(CommerceSettingService::class),
         app(NotificationService::class),
+        app(CommerceAnalyticsService::class),
     );
 
     $cart->refresh();
@@ -92,6 +94,7 @@ test('mark abandoned carts job marks stale carts and notifies once', function ()
     (new MarkAbandonedCartsJob)->handle(
         app(CommerceSettingService::class),
         app(NotificationService::class),
+        app(CommerceAnalyticsService::class),
     );
 
     expect(count(Notification::sent($customer, TemplatedNotification::class)))->toBe($sentAfterFirst);

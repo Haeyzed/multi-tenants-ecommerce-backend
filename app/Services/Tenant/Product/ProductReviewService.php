@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\Product;
 
+use App\Enums\Media\MediaCollection;
 use App\Enums\Tenant\Catalog\ProductReviewStatus;
+use App\Enums\Tenant\Commerce\OrderPaymentStatus;
+use App\Enums\Tenant\Commerce\OrderStatus;
+use App\Events\ProductReviewApproved;
 use App\Models\Tenant\Customer;
+use App\Models\Tenant\Order;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductReview;
+use App\Services\Media\MediaService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -17,6 +24,8 @@ use Illuminate\Validation\ValidationException;
  */
 class ProductReviewService
 {
+    public function __construct(private readonly MediaService $mediaService) {}
+
     /**
      * Customer creates a pending review. Never accepts verified_purchase from client.
      *
@@ -24,27 +33,63 @@ class ProductReviewService
      *     rating: int,
      *     title?: string|null,
      *     content: string,
-     *     product_variant_id?: int|null
+     *     product_variant_id?: int|null,
+     *     images?: list<UploadedFile>|null
      * }  $data
      */
     public function customerStore(Customer $customer, Product $product, array $data): ProductReview
     {
         unset($data['verified_purchase'], $data['status'], $data['approved_at']);
 
-        /** @var ProductReview $review */
-        $review = ProductReview::query()->create([
-            'customer_id' => $customer->id,
-            'product_id' => $product->id,
-            'product_variant_id' => $data['product_variant_id'] ?? null,
-            'rating' => (int) $data['rating'],
-            'title' => $data['title'] ?? null,
-            'content' => $data['content'],
-            'status' => ProductReviewStatus::Pending,
-            'verified_purchase' => false,
-            'approved_at' => null,
-        ]);
+        if (ProductReview::query()
+            ->where('customer_id', $customer->id)
+            ->where('product_id', $product->id)
+            ->exists()) {
+            throw ValidationException::withMessages([
+                'product_id' => 'You have already reviewed this product.',
+            ]);
+        }
 
-        return $review->load(['customer', 'product', 'variant']);
+        $verifiedPurchase = $this->customerHasVerifiedPurchase($customer, $product);
+        $images = $data['images'] ?? null;
+        unset($data['images']);
+
+        /** @var ProductReview $review */
+        $review = DB::transaction(function () use ($customer, $product, $data, $verifiedPurchase, $images): ProductReview {
+            /** @var ProductReview $review */
+            $review = ProductReview::query()->create([
+                'customer_id' => $customer->id,
+                'product_id' => $product->id,
+                'product_variant_id' => $data['product_variant_id'] ?? null,
+                'rating' => (int) $data['rating'],
+                'title' => $data['title'] ?? null,
+                'content' => $data['content'],
+                'status' => ProductReviewStatus::Pending,
+                'verified_purchase' => $verifiedPurchase,
+                'approved_at' => null,
+            ]);
+
+            if (is_array($images) && $images !== []) {
+                $this->mediaService->addMany($review, $images, MediaCollection::Images);
+            }
+
+            return $review;
+        });
+
+        return $review->load(['customer', 'product', 'variant', 'media']);
+    }
+
+    /**
+     * Whether the customer has a paid, completed order containing the product.
+     */
+    public function customerHasVerifiedPurchase(Customer $customer, Product $product): bool
+    {
+        return Order::query()
+            ->where('customer_id', $customer->id)
+            ->where('payment_status', OrderPaymentStatus::Paid)
+            ->where('status', OrderStatus::Completed)
+            ->whereHas('items', fn ($query) => $query->where('product_id', $product->id))
+            ->exists();
     }
 
     /**
@@ -88,7 +133,13 @@ class ProductReviewService
 
             $this->recalculateAggregates($review->product ?? Product::query()->findOrFail($review->product_id));
 
-            return $review->fresh(['customer', 'product', 'variant']) ?? $review;
+            $fresh = $review->fresh(['customer', 'product', 'variant']) ?? $review;
+
+            if ($status === ProductReviewStatus::Approved) {
+                event(new ProductReviewApproved($fresh));
+            }
+
+            return $fresh;
         });
     }
 

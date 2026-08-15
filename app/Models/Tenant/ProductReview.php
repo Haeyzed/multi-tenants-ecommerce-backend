@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Enums\Media\MediaCollection;
+use App\Enums\Media\MediaConversion;
 use App\Enums\Tenant\Catalog\ProductReviewStatus;
 use Database\Factories\Tenant\ProductReviewFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +13,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * Customer review of a catalog product.
@@ -26,10 +32,10 @@ use Illuminate\Support\Carbon;
  * @property bool $verified_purchase
  * @property Carbon|null $approved_at
  */
-class ProductReview extends Model
+class ProductReview extends Model implements HasMedia
 {
     /** @use HasFactory<ProductReviewFactory> */
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
 
     /**
      * @var list<string>
@@ -148,5 +154,27 @@ class ProductReview extends Model
         }
 
         return $query->orderBy($column, $direction)->orderBy('id');
+    }
+
+    /**
+     * Register media collections for review images.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection(MediaCollection::Images->value);
+    }
+
+    /**
+     * Register media conversions for review images.
+     */
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion(MediaConversion::Thumb->value)
+            ->fit(Fit::Crop, 200, 200)
+            ->performOnCollections(MediaCollection::Images->value);
+
+        $this->addMediaConversion(MediaConversion::Medium->value)
+            ->fit(Fit::Max, 800, 800)
+            ->performOnCollections(MediaCollection::Images->value);
     }
 }

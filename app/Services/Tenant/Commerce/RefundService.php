@@ -8,6 +8,8 @@ use App\DTO\Payment\PaymentRefundResult;
 use App\Enums\Tenant\Commerce\OrderPaymentRecordStatus;
 use App\Enums\Tenant\Commerce\OrderPaymentStatus;
 use App\Enums\Tenant\Commerce\RefundStatus;
+use App\Events\RefundCompleted;
+use App\Events\RefundInitiated;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderPayment;
 use App\Models\Tenant\Refund;
@@ -94,6 +96,8 @@ class RefundService
                 'reason' => $data['reason'] ?? null,
             ]);
 
+            event(new RefundInitiated($refund));
+
             $gateway = $this->paymentManager->driver($payment->gateway);
             $providerTransactionId = $payment->provider_transaction_id;
 
@@ -140,7 +144,10 @@ class RefundService
                 $this->accounting->postPartialRefund($order, $requestedAmount);
             }
 
-            return $refund->fresh(['order', 'payment']) ?? $refund;
+            $refund = $refund->fresh(['order', 'payment']) ?? $refund;
+            event(new RefundCompleted($refund));
+
+            return $refund;
         });
     }
 

@@ -98,6 +98,14 @@ class CommerceSettingService
     }
 
     /**
+     * Days after delivery (or fulfillment) during which returns are allowed.
+     */
+    public function returnWindowDays(): int
+    {
+        return max(0, (int) ($this->get('returns.window_days', '14') ?? '14'));
+    }
+
+    /**
      * Storefront currency code from tenant profile when tenancy is initialized.
      */
     public function currencyCode(): string

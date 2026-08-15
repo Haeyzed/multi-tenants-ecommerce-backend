@@ -182,6 +182,22 @@ final class RbacPermissions
         'refunds.view',
         'refunds.create',
         'refunds.process',
+        'returns.view',
+        'returns.create',
+        'returns.approve',
+        'returns.reject',
+        'returns.inspect',
+        'returns.complete',
+        'coupons.view',
+        'coupons.create',
+        'coupons.show',
+        'coupons.update',
+        'coupons.delete',
+        'promotions.view',
+        'promotions.create',
+        'promotions.show',
+        'promotions.update',
+        'promotions.delete',
     ];
 
     /**

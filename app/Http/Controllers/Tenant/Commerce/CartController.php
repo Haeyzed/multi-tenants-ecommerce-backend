@@ -6,12 +6,14 @@ namespace App\Http\Controllers\Tenant\Commerce;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\Commerce\AddCartItemRequest;
+use App\Http\Requests\Tenant\Commerce\ApplyCartCouponRequest;
 use App\Http\Requests\Tenant\Commerce\UpdateCartItemRequest;
 use App\Http\Resources\Tenant\Commerce\CartItemResource;
 use App\Http\Resources\Tenant\Commerce\CartResource;
 use App\Models\Tenant\CartItem;
 use App\Models\Tenant\Customer;
 use App\Services\Tenant\Commerce\CartService;
+use App\Services\Tenant\Commerce\DiscountService;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +23,10 @@ use Illuminate\Support\Facades\Auth;
  */
 class CartController extends Controller
 {
-    public function __construct(private readonly CartService $cartService) {}
+    public function __construct(
+        private readonly CartService $cartService,
+        private readonly DiscountService $discountService,
+    ) {}
 
     /**
      * Get the authenticated customer's active cart.
@@ -132,5 +137,39 @@ class CartController extends Controller
         $this->cartService->removeItem($customer, $item);
 
         return $this->deleted('Cart item removed successfully.');
+    }
+
+    /**
+     * Preview coupon discount for the active cart.
+     */
+    #[Response(
+        status: 200,
+        description: 'Coupon discount preview.',
+        type: 'array{success: true, message: string, data: array{amount: string, coupon: array|null, line_discounts: array}, meta: null, errors: null}',
+    )]
+    public function applyCoupon(ApplyCartCouponRequest $request): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = Auth::guard('customer')->user();
+        $cart = $this->cartService->getCart($customer);
+        $result = $this->discountService->previewCoupon(
+            $customer,
+            $cart,
+            (string) $request->validated('coupon_code'),
+        );
+
+        return $this->success(
+            [
+                'amount' => $result->amount,
+                'coupon' => $result->coupon !== null ? [
+                    'id' => $result->coupon->id,
+                    'code' => $result->coupon->code,
+                    'name' => $result->coupon->name,
+                    'type' => $result->coupon->type,
+                ] : null,
+                'line_discounts' => $result->lineDiscounts,
+            ],
+            'Coupon applied successfully.',
+        );
     }
 }

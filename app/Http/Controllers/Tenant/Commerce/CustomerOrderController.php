@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant\Commerce;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\Commerce\IndexCustomerOrderRequest;
 use App\Http\Resources\Tenant\Commerce\OrderResource;
+use App\Http\Resources\Tenant\Commerce\RefundResource;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Order;
 use App\Services\Tenant\Commerce\OrderService;
@@ -60,6 +61,44 @@ class CustomerOrderController extends Controller
         return $this->success(
             new OrderResource($this->orderService->customerShow($customer, $order)),
             'Order retrieved successfully.',
+        );
+    }
+
+    /**
+     * Cancel an unpaid-eligible customer order.
+     */
+    #[Response(
+        status: 200,
+        description: 'Cancelled customer order.',
+        type: 'array{success: true, message: string, data: OrderResource, meta: null, errors: null}',
+    )]
+    public function cancel(Order $order): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = Auth::guard('customer')->user();
+
+        return $this->success(
+            new OrderResource($this->orderService->customerCancel($customer, $order)),
+            'Order cancelled successfully.',
+        );
+    }
+
+    /**
+     * List refunds for a customer-owned order.
+     */
+    #[Response(
+        status: 200,
+        description: 'Refunds for a customer order.',
+        type: 'array{success: true, message: string, data: RefundResource[], meta: null, errors: null}',
+    )]
+    public function refunds(Order $order): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = Auth::guard('customer')->user();
+
+        return $this->success(
+            RefundResource::collection($this->orderService->customerRefunds($customer, $order)),
+            'Order refunds retrieved successfully.',
         );
     }
 }

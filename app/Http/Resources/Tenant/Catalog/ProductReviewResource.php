@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Tenant\Catalog;
 
+use App\Http\Resources\Media\MediaResource;
 use App\Http\Resources\Tenant\Product\ProductResource;
 use App\Http\Resources\Tenant\Product\ProductVariantResource;
 use App\Models\Tenant\ProductReview;
@@ -44,6 +45,7 @@ class ProductReviewResource extends JsonResource
             'variant' => $this->whenLoaded('variant', fn () => $review->variant
                 ? new ProductVariantResource($review->variant)
                 : null),
+            'images' => MediaResource::collection($this->whenLoaded('media')),
             'created_at' => $review->created_at,
             'updated_at' => $review->updated_at,
         ];

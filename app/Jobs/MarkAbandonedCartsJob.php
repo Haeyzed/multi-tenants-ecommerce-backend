@@ -8,6 +8,7 @@ use App\Enums\Notification\NotificationChannel;
 use App\Enums\Tenant\Commerce\CartStatus;
 use App\Models\Tenant\Cart;
 use App\Services\Notification\NotificationService;
+use App\Services\Tenant\Commerce\CommerceAnalyticsService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -30,6 +31,7 @@ class MarkAbandonedCartsJob implements ShouldQueue
     public function handle(
         CommerceSettingService $commerceSettings,
         NotificationService $notifications,
+        CommerceAnalyticsService $analytics,
     ): void {
         if ($this->tenantId !== null) {
             /** @var TenantWithDatabase|null $tenant */
@@ -48,7 +50,7 @@ class MarkAbandonedCartsJob implements ShouldQueue
             ->where('updated_at', '<=', $cutoff)
             ->whereNull('abandoned_at')
             ->whereHas('items')
-            ->chunkById(100, function ($carts) use ($notifications): void {
+            ->chunkById(100, function ($carts) use ($notifications, $analytics): void {
                 foreach ($carts as $cart) {
                     /** @var Cart $cart */
                     $cart->status = CartStatus::Abandoned;
@@ -75,6 +77,11 @@ class MarkAbandonedCartsJob implements ShouldQueue
 
                     $cart->abandoned_notified_at = now();
                     $cart->save();
+
+                    $analytics->record('cart.abandoned', $cart, $cart->customer, [
+                        'cart_id' => $cart->id,
+                        'item_count' => $cart->items->count(),
+                    ]);
                 }
             });
     }

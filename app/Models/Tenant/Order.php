@@ -27,6 +27,9 @@ use Illuminate\Support\Carbon;
  * @property FulfillmentStatus $fulfillment_status
  * @property string $subtotal
  * @property string $discount_total
+ * @property int|null $coupon_id
+ * @property string|null $coupon_code
+ * @property array<string, mixed>|null $promotion_snapshot
  * @property string $tax_total
  * @property array<string, mixed>|null $tax_snapshot
  * @property string $shipping_total
@@ -57,6 +60,9 @@ class Order extends Model
         'fulfillment_status',
         'subtotal',
         'discount_total',
+        'coupon_id',
+        'coupon_code',
+        'promotion_snapshot',
         'tax_total',
         'tax_snapshot',
         'shipping_total',
@@ -83,6 +89,8 @@ class Order extends Model
             'fulfillment_status' => FulfillmentStatus::class,
             'subtotal' => 'decimal:2',
             'discount_total' => 'decimal:2',
+            'coupon_id' => 'integer',
+            'promotion_snapshot' => 'array',
             'tax_total' => 'decimal:2',
             'tax_snapshot' => 'array',
             'shipping_total' => 'decimal:2',
@@ -94,6 +102,14 @@ class Order extends Model
             'confirmed_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return BelongsTo<Coupon, $this>
+     */
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
     }
 
     /**

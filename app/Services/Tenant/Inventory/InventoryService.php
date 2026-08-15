@@ -9,6 +9,7 @@ use App\Models\Tenant\Inventory;
 use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\WarehouseLocation;
+use App\Services\Tenant\Commerce\BackInStockNotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,10 @@ use Illuminate\Validation\ValidationException;
  */
 class InventoryService
 {
+    public function __construct(
+        private readonly BackInStockNotificationService $backInStock,
+    ) {}
+
     /**
      * Paginate inventory records with warehouse and inventoryable loaded.
      *
@@ -89,6 +94,7 @@ class InventoryService
 
             $quantityBefore = $locked->quantity;
             $quantityAfter = $quantityBefore + $delta;
+            $availableBefore = $quantityBefore - $locked->reserved_quantity;
 
             if ($quantityAfter < 0) {
                 throw ValidationException::withMessages([
@@ -116,6 +122,9 @@ class InventoryService
 
             $locked->quantity = $quantityAfter;
             $locked->save();
+
+            $availableAfter = $quantityAfter - $locked->reserved_quantity;
+            $this->backInStock->handleInventoryChange($locked, $availableBefore, $availableAfter);
 
             return $locked->fresh(['warehouse', 'inventoryable']) ?? $locked;
         });

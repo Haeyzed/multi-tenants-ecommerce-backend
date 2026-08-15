@@ -15,13 +15,18 @@ use App\Http\Controllers\Tenant\Catalog\SeoController;
 use App\Http\Controllers\Tenant\Category\CategoryController;
 use App\Http\Controllers\Tenant\Commerce\CartController;
 use App\Http\Controllers\Tenant\Commerce\CheckoutController;
+use App\Http\Controllers\Tenant\Commerce\CouponController;
 use App\Http\Controllers\Tenant\Commerce\CustomerInvoiceController;
 use App\Http\Controllers\Tenant\Commerce\CustomerOrderController;
+use App\Http\Controllers\Tenant\Commerce\CustomerOrderReturnController;
 use App\Http\Controllers\Tenant\Commerce\CustomerShipmentController;
+use App\Http\Controllers\Tenant\Commerce\CustomerWishlistController;
 use App\Http\Controllers\Tenant\Commerce\InvoiceController;
 use App\Http\Controllers\Tenant\Commerce\OrderController;
+use App\Http\Controllers\Tenant\Commerce\OrderReturnController;
 use App\Http\Controllers\Tenant\Commerce\PaymentController;
 use App\Http\Controllers\Tenant\Commerce\PaymentWebhookController;
+use App\Http\Controllers\Tenant\Commerce\PromotionController;
 use App\Http\Controllers\Tenant\Commerce\RefundController;
 use App\Http\Controllers\Tenant\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Tenant\Customer\CustomerController;
@@ -123,19 +128,30 @@ Route::middleware([
 
                 Route::get('orders', [CustomerOrderController::class, 'index'])->name('orders.index');
                 Route::get('orders/{order}', [CustomerOrderController::class, 'show'])->whereNumber('order')->name('orders.show');
+                Route::post('orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->whereNumber('order')->name('orders.cancel');
+                Route::get('orders/{order}/refunds', [CustomerOrderController::class, 'refunds'])->whereNumber('order')->name('orders.refunds');
                 Route::get('orders/{order}/shipments', [CustomerShipmentController::class, 'index'])->whereNumber('order')->name('orders.shipments.index');
                 Route::get('orders/{order}/invoice', [CustomerInvoiceController::class, 'forOrder'])->whereNumber('order')->name('orders.invoice');
+                Route::post('orders/{order}/returns', [CustomerOrderReturnController::class, 'store'])->whereNumber('order')->name('orders.returns.store');
+                Route::get('returns', [CustomerOrderReturnController::class, 'index'])->name('returns.index');
+                Route::get('returns/{order_return}', [CustomerOrderReturnController::class, 'show'])->whereNumber('order_return')->name('returns.show');
                 Route::get('invoices/{invoice}', [CustomerInvoiceController::class, 'show'])->whereNumber('invoice')->name('invoices.show');
                 Route::get('invoices/{invoice}/download', [CustomerInvoiceController::class, 'download'])->whereNumber('invoice')->name('invoices.download');
             });
         });
 
         Route::middleware(['customer.guard', 'auth:sanctum'])->group(function (): void {
+            Route::get('wishlist', [CustomerWishlistController::class, 'show'])->name('customer.wishlist.show');
+            Route::post('wishlist/items', [CustomerWishlistController::class, 'storeItem'])->name('customer.wishlist.items.store');
+            Route::delete('wishlist/items/{item}', [CustomerWishlistController::class, 'destroyItem'])->whereNumber('item')->name('customer.wishlist.items.destroy');
+            Route::get('wishlist/check/{product}', [CustomerWishlistController::class, 'check'])->whereNumber('product')->name('customer.wishlist.check');
+
             Route::get('cart', [CartController::class, 'show'])->name('customer.cart.show');
             Route::delete('cart', [CartController::class, 'destroy'])->name('customer.cart.destroy');
             Route::post('cart/items', [CartController::class, 'storeItem'])->name('customer.cart.items.store');
             Route::patch('cart/items/{item}', [CartController::class, 'updateItem'])->whereNumber('item')->name('customer.cart.items.update');
             Route::delete('cart/items/{item}', [CartController::class, 'destroyItem'])->whereNumber('item')->name('customer.cart.items.destroy');
+            Route::post('cart/coupon', [CartController::class, 'applyCoupon'])->name('customer.cart.coupon.apply');
             Route::post('checkout', [CheckoutController::class, 'store'])->name('customer.checkout.store');
             Route::post('checkout/pay', [PaymentController::class, 'pay'])->name('customer.checkout.pay');
             Route::post('payments/verify', [PaymentController::class, 'verify'])->name('customer.payments.verify');
@@ -323,6 +339,28 @@ Route::middleware([
                 Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->middleware('permission:orders.update')->whereNumber('order')->name('tenant.orders.status');
                 Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->middleware('permission:orders.cancel')->whereNumber('order')->name('tenant.orders.cancel');
                 Route::post('orders/{order}/invoice', [InvoiceController::class, 'generateForOrder'])->middleware('permission:invoices.generate')->whereNumber('order')->name('tenant.orders.invoice.generate');
+
+                Route::get('returns', [OrderReturnController::class, 'index'])->middleware('permission:returns.view')->name('tenant.returns.index');
+                Route::get('returns/{order_return}', [OrderReturnController::class, 'show'])->middleware('permission:returns.view')->whereNumber('order_return')->name('tenant.returns.show');
+                Route::post('returns/{order_return}/approve', [OrderReturnController::class, 'approve'])->middleware('permission:returns.approve')->whereNumber('order_return')->name('tenant.returns.approve');
+                Route::post('returns/{order_return}/reject', [OrderReturnController::class, 'reject'])->middleware('permission:returns.reject')->whereNumber('order_return')->name('tenant.returns.reject');
+                Route::post('returns/{order_return}/receive', [OrderReturnController::class, 'markReceived'])->middleware('permission:returns.inspect')->whereNumber('order_return')->name('tenant.returns.receive');
+                Route::post('returns/{order_return}/inspect', [OrderReturnController::class, 'startInspection'])->middleware('permission:returns.inspect')->whereNumber('order_return')->name('tenant.returns.inspect');
+                Route::post('return-items/{order_return_item}/inspect', [OrderReturnController::class, 'inspectItem'])->middleware('permission:returns.inspect')->whereNumber('order_return_item')->name('tenant.return-items.inspect');
+                Route::post('returns/{order_return}/approve-refund', [OrderReturnController::class, 'approveForRefund'])->middleware('permission:returns.complete')->whereNumber('order_return')->name('tenant.returns.approve-refund');
+                Route::post('returns/{order_return}/process-refund', [OrderReturnController::class, 'processRefund'])->middleware('permission:returns.complete')->whereNumber('order_return')->name('tenant.returns.process-refund');
+
+                Route::get('coupons', [CouponController::class, 'index'])->middleware('permission:coupons.view')->name('tenant.coupons.index');
+                Route::post('coupons', [CouponController::class, 'store'])->middleware('permission:coupons.create')->name('tenant.coupons.store');
+                Route::get('coupons/{coupon}', [CouponController::class, 'show'])->middleware('permission:coupons.view')->whereNumber('coupon')->name('tenant.coupons.show');
+                Route::match(['put', 'patch'], 'coupons/{coupon}', [CouponController::class, 'update'])->middleware('permission:coupons.update')->whereNumber('coupon')->name('tenant.coupons.update');
+                Route::delete('coupons/{coupon}', [CouponController::class, 'destroy'])->middleware('permission:coupons.delete')->whereNumber('coupon')->name('tenant.coupons.destroy');
+
+                Route::get('promotions', [PromotionController::class, 'index'])->middleware('permission:promotions.view')->name('tenant.promotions.index');
+                Route::post('promotions', [PromotionController::class, 'store'])->middleware('permission:promotions.create')->name('tenant.promotions.store');
+                Route::get('promotions/{promotion}', [PromotionController::class, 'show'])->middleware('permission:promotions.view')->whereNumber('promotion')->name('tenant.promotions.show');
+                Route::match(['put', 'patch'], 'promotions/{promotion}', [PromotionController::class, 'update'])->middleware('permission:promotions.update')->whereNumber('promotion')->name('tenant.promotions.update');
+                Route::delete('promotions/{promotion}', [PromotionController::class, 'destroy'])->middleware('permission:promotions.delete')->whereNumber('promotion')->name('tenant.promotions.destroy');
 
                 Route::get('invoices', [InvoiceController::class, 'index'])->middleware('permission:invoices.view')->name('tenant.invoices.index');
                 Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->middleware('permission:invoices.view')->whereNumber('invoice')->name('tenant.invoices.show');

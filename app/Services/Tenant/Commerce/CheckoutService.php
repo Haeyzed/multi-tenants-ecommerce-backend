@@ -25,6 +25,7 @@ use App\Services\Tenant\Marketplace\SellerOrderService;
 use App\Services\Tenant\Tax\TaxService;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -35,6 +36,7 @@ class CheckoutService
     public function __construct(
         private readonly CartService $cartService,
         private readonly CommerceSettingService $commerceSettings,
+        private readonly DiscountService $discountService,
         private readonly OrderInventoryService $orderInventory,
         private readonly SellerOrderService $sellerOrders,
         private readonly TaxService $taxService,
@@ -47,6 +49,7 @@ class CheckoutService
      *     shipping_address_id: int,
      *     billing_address_id?: int|null,
      *     shipping_method_id?: int|null,
+     *     coupon_code?: string|null,
      *     idempotency_key?: string|null,
      *     notes?: string|null
      * }  $data
@@ -109,7 +112,6 @@ class CheckoutService
 
             $totals = $this->cartService->totals($cart);
             $subtotal = $totals['subtotal'];
-            $discountTotal = '0.00';
             $shippingTotal = '0.00';
             $shippingMethod = null;
 
@@ -137,10 +139,36 @@ class CheckoutService
                 $shippingTotal = (string) $shippingMethod->amount;
             }
 
-            $taxLines = $cart->items->map(fn (CartItem $item): array => [
-                'key' => $item->id,
-                'amount' => (string) $item->subtotal,
-            ])->all();
+            $couponCode = isset($data['coupon_code']) && is_string($data['coupon_code'])
+                ? $data['coupon_code']
+                : null;
+
+            $discountApplication = $this->discountService->applyCouponsAndPromotions(
+                $customer,
+                $cart,
+                $couponCode,
+                $subtotal,
+                $shippingTotal,
+            );
+
+            $discountTotal = $discountApplication->discountTotal;
+            $shippingTotal = $discountApplication->shippingTotal;
+            $lineDiscountMap = collect($discountApplication->lineDiscounts);
+
+            $taxLines = $cart->items->map(function (CartItem $item) use ($lineDiscountMap): array {
+                $lineSubtotal = (string) $item->subtotal;
+                $lineDiscount = (string) ($lineDiscountMap->get($item->id) ?? '0.00');
+                $taxableAmount = Money::sub($lineSubtotal, $lineDiscount);
+
+                if (bccomp($taxableAmount, '0', 2) < 0) {
+                    $taxableAmount = '0.00';
+                }
+
+                return [
+                    'key' => $item->id,
+                    'amount' => $taxableAmount,
+                ];
+            })->all();
 
             $address = [
                 'country_id' => $shippingAddress->country_id,
@@ -173,7 +201,7 @@ class CheckoutService
                 'grand_total' => $grandTotal,
             ]);
 
-            $order = Order::query()->create([
+            $orderAttributes = [
                 'order_number' => $this->generateOrderNumber(),
                 'customer_id' => $customer->id,
                 'currency' => $cart->currency,
@@ -194,11 +222,28 @@ class CheckoutService
                 'notes' => $data['notes'] ?? null,
                 'idempotency_key' => $idempotencyKey,
                 'placed_at' => now(),
-            ]);
+            ];
+
+            if (Schema::hasColumn('orders', 'coupon_id')) {
+                $orderAttributes['coupon_id'] = $discountApplication->couponId;
+                $orderAttributes['coupon_code'] = $discountApplication->couponCode;
+                $orderAttributes['promotion_snapshot'] = $discountApplication->promotionSnapshot !== []
+                    ? $discountApplication->promotionSnapshot
+                    : null;
+            }
+
+            $order = Order::query()->create($orderAttributes);
 
             foreach ($cart->items as $item) {
-                $this->createOrderItem($order, $item, $lineTaxMap->get($item->id));
+                $this->createOrderItem(
+                    $order,
+                    $item,
+                    $lineTaxMap->get($item->id),
+                    (string) ($lineDiscountMap->get($item->id) ?? '0.00'),
+                );
             }
+
+            $this->discountService->recordCouponUsage($order, $discountApplication);
 
             $this->orderInventory->reserveForOrder($order->fresh(['items']) ?? $order);
 
@@ -304,8 +349,12 @@ class CheckoutService
      *
      * @throws ValidationException
      */
-    protected function createOrderItem(Order $order, CartItem $item, ?array $lineTax = null): void
-    {
+    protected function createOrderItem(
+        Order $order,
+        CartItem $item,
+        ?array $lineTax = null,
+        string $discountAmount = '0.00',
+    ): void {
         /** @var Product $product */
         $product = $item->product;
         $variant = $item->productVariant;
@@ -315,8 +364,9 @@ class CheckoutService
         $name = $variant?->name ? $product->name.' — '.$variant->name : $product->name;
         $unitPrice = (string) $item->unit_price;
         $subtotal = (string) $item->subtotal;
+        $discountAmount = Money::add($discountAmount, '0');
         $taxAmount = is_array($lineTax) ? (string) ($lineTax['tax_amount'] ?? '0.00') : '0.00';
-        $total = Money::add($subtotal, $taxAmount);
+        $total = Money::add(Money::sub($subtotal, $discountAmount), $taxAmount);
 
         $inventory = $offer !== null
             ? $this->findOfferInventoryForReservation($offer, $item->quantity)
@@ -331,7 +381,7 @@ class CheckoutService
             'sku' => $sku,
             'quantity' => $item->quantity,
             'unit_price' => $unitPrice,
-            'discount_amount' => '0.00',
+            'discount_amount' => $discountAmount,
             'tax_amount' => $taxAmount,
             'subtotal' => $subtotal,
             'total' => $total,

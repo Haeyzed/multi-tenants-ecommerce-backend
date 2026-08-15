@@ -30,6 +30,10 @@ class SmsManager
     {
         $name ??= (string) config('notifications.sms.default', 'null');
 
+        if ($name === '') {
+            $name = 'null';
+        }
+
         return match ($name) {
             'null' => $this->container->make(NullSmsProvider::class),
             'twilio' => $this->container->make(TwilioSmsProvider::class),

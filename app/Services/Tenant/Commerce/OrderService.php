@@ -7,7 +7,9 @@ namespace App\Services\Tenant\Commerce;
 use App\Enums\Tenant\Commerce\OrderStatus;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Order;
+use App\Models\Tenant\Refund;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -73,6 +75,28 @@ class OrderService
     public function adminShow(Order $order): Order
     {
         return $order->load(['customer', 'items', 'shippingMethod', 'payments', 'shipments']);
+    }
+
+    /**
+     * Cancel a customer-owned unpaid-eligible order.
+     */
+    public function customerCancel(Customer $customer, Order $order): Order
+    {
+        $this->assertCustomerOwnership($customer, $order);
+
+        return $this->cancel($order);
+    }
+
+    /**
+     * List refunds for a customer-owned order.
+     *
+     * @return Collection<int, Refund>
+     */
+    public function customerRefunds(Customer $customer, Order $order): Collection
+    {
+        $this->assertCustomerOwnership($customer, $order);
+
+        return $order->refunds()->orderByDesc('id')->get();
     }
 
     /**

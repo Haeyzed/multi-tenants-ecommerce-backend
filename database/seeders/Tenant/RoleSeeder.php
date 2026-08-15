@@ -147,6 +147,22 @@ class RoleSeeder extends Seeder
             'refunds.view',
             'refunds.create',
             'refunds.process',
+            'returns.view',
+            'returns.create',
+            'returns.approve',
+            'returns.reject',
+            'returns.inspect',
+            'returns.complete',
+            'coupons.view',
+            'coupons.create',
+            'coupons.show',
+            'coupons.update',
+            'coupons.delete',
+            'promotions.view',
+            'promotions.create',
+            'promotions.show',
+            'promotions.update',
+            'promotions.delete',
         ]);
 
         $seller = Role::findOrCreate('seller', self::GUARD);
@@ -162,6 +178,8 @@ class RoleSeeder extends Seeder
             'orders.view',
             'orders.show',
             'shipments.view',
+            'returns.view',
+            'returns.inspect',
         ]);
 
         Role::findOrCreate('customer', self::GUARD);
