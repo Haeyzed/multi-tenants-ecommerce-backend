@@ -10,7 +10,9 @@ use App\Http\Requests\Tenant\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Tenant\Auth\LoginRequest;
 use App\Http\Requests\Tenant\Auth\RegisterRequest;
 use App\Http\Requests\Tenant\Auth\ResetPasswordRequest;
+use App\Http\Requests\Tenant\Auth\StoreAvatarRequest;
 use App\Http\Requests\Tenant\Auth\UpdateProfileRequest;
+use App\Http\Resources\Media\MediaResource;
 use App\Http\Resources\Tenant\User\UserResource;
 use App\Models\Tenant\User;
 use App\Services\Tenant\Auth\AuthService;
@@ -157,6 +159,45 @@ class AuthController extends Controller
             new UserResource($user),
             'Profile updated successfully.',
         );
+    }
+
+    /**
+     * Upload or replace the authenticated tenant user's avatar.
+     */
+    #[Response(
+        status: 200,
+        description: 'Uploaded avatar media.',
+        type: 'array{success: true, message: string, data: MediaResource, meta: null, errors: null}',
+    )]
+    public function storeAvatar(StoreAvatarRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::guard('tenant')->user();
+
+        $media = $this->authService->replaceAvatar($user, $request->file('avatar'));
+
+        return $this->updated(
+            new MediaResource($media),
+            'Avatar uploaded successfully.',
+        );
+    }
+
+    /**
+     * Delete the authenticated tenant user's avatar.
+     */
+    #[Response(
+        status: 200,
+        description: 'Avatar deleted.',
+        type: 'array{success: true, message: string, data: null, meta: null, errors: null}',
+    )]
+    public function destroyAvatar(): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::guard('tenant')->user();
+
+        $this->authService->removeAvatar($user);
+
+        return $this->deleted('Avatar deleted successfully.');
     }
 
     /**

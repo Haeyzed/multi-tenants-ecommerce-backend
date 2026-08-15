@@ -9,8 +9,10 @@ use App\Http\Requests\Landlord\Auth\ChangePasswordRequest;
 use App\Http\Requests\Landlord\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Landlord\Auth\LoginRequest;
 use App\Http\Requests\Landlord\Auth\ResetPasswordRequest;
+use App\Http\Requests\Landlord\Auth\StoreAvatarRequest;
 use App\Http\Requests\Landlord\Auth\UpdateProfileRequest;
 use App\Http\Resources\Landlord\User\UserResource;
+use App\Http\Resources\Media\MediaResource;
 use App\Models\Landlord\User;
 use App\Services\Landlord\Auth\AuthService;
 use Dedoc\Scramble\Attributes\Response;
@@ -138,6 +140,45 @@ class AuthController extends Controller
             new UserResource($user),
             'Profile updated successfully.',
         );
+    }
+
+    /**
+     * Upload or replace the authenticated landlord user's avatar.
+     */
+    #[Response(
+        status: 200,
+        description: 'Uploaded avatar media.',
+        type: 'array{success: true, message: string, data: MediaResource, meta: null, errors: null}',
+    )]
+    public function storeAvatar(StoreAvatarRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::guard('landlord')->user();
+
+        $media = $this->authService->replaceAvatar($user, $request->file('avatar'));
+
+        return $this->updated(
+            new MediaResource($media),
+            'Avatar uploaded successfully.',
+        );
+    }
+
+    /**
+     * Delete the authenticated landlord user's avatar.
+     */
+    #[Response(
+        status: 200,
+        description: 'Avatar deleted.',
+        type: 'array{success: true, message: string, data: null, meta: null, errors: null}',
+    )]
+    public function destroyAvatar(): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::guard('landlord')->user();
+
+        $this->authService->removeAvatar($user);
+
+        return $this->deleted('Avatar deleted successfully.');
     }
 
     /**

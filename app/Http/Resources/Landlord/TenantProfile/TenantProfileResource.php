@@ -41,7 +41,7 @@ class TenantProfileResource extends JsonResource
             'timezone' => $profile->timezone,
             'is_public' => (bool) $profile->is_public,
             'logo' => $profile->logo_url,
-            'banner' => $profile->banner_url,
+            'cover' => $profile->cover_url,
             'created_at' => $profile->created_at,
             'updated_at' => $profile->updated_at,
         ];

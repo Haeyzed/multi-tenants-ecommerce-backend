@@ -4,18 +4,25 @@ declare(strict_types=1);
 
 namespace App\Services\Landlord\Auth;
 
+use App\Enums\Media\MediaCollection;
+use App\Events\PasswordChanged;
+use App\Events\PasswordResetRequested;
 use App\Models\Landlord\User;
+use App\Services\Media\MediaService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * Landlord authentication, profile, and password workflows.
  */
 class AuthService
 {
+    public function __construct(private readonly MediaService $mediaService) {}
+
     /**
      * Authenticate a landlord user and issue a Sanctum API token.
      *
@@ -59,9 +66,15 @@ class AuthService
      */
     public function forgotPassword(string $email): void
     {
-        Password::broker('landlord_users')->sendResetLink([
-            'email' => $email,
-        ]);
+        $user = User::query()->where('email', $email)->first();
+
+        if ($user === null) {
+            return;
+        }
+
+        $token = Password::broker('landlord_users')->createToken($user);
+
+        event(new PasswordResetRequested($user, $token));
     }
 
     /**
@@ -81,6 +94,8 @@ class AuthService
                 ])->save();
 
                 $user->tokens()->delete();
+
+                event(new PasswordChanged($user, 'reset'));
             },
         );
 
@@ -102,11 +117,26 @@ class AuthService
         $user->save();
 
         if ($avatar !== null) {
-            $user->clearMediaCollection('avatar');
-            $user->addMedia($avatar)->toMediaCollection('avatar');
+            $this->mediaService->replace($user, $avatar, MediaCollection::Avatar);
         }
 
         return $user->fresh(['roles', 'permissions']) ?? $user;
+    }
+
+    /**
+     * Replace the authenticated user's avatar.
+     */
+    public function replaceAvatar(User $user, UploadedFile $avatar): Media
+    {
+        return $this->mediaService->replace($user, $avatar, MediaCollection::Avatar);
+    }
+
+    /**
+     * Remove the authenticated user's avatar.
+     */
+    public function removeAvatar(User $user): void
+    {
+        $this->mediaService->removeCollection($user, MediaCollection::Avatar);
     }
 
     /**
@@ -129,5 +159,7 @@ class AuthService
         ])->save();
 
         $user->tokens()->delete();
+
+        event(new PasswordChanged($user, 'changed'));
     }
 }

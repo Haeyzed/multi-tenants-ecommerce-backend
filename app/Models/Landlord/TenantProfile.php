@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models\Landlord;
 
+use App\Enums\Media\MediaCollection;
+use App\Enums\Media\MediaConversion;
 use App\Models\Landlord\World\City;
 use App\Models\Landlord\World\Country;
 use App\Models\Landlord\World\Currency;
@@ -11,6 +13,7 @@ use App\Models\Landlord\World\Language;
 use App\Models\Landlord\World\State;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -74,17 +77,44 @@ class TenantProfile extends Model implements HasMedia
     }
 
     /**
-     * Register media collections for logo and banner.
+     * Register media collections for logo and cover.
      */
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('logo')
-            ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+        $mimes = config('media.mimes.image', []);
 
-        $this->addMediaCollection('banner')
+        $this->addMediaCollection(MediaCollection::Logo->value)
             ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+            ->acceptsMimeTypes($mimes);
+
+        $this->addMediaCollection(MediaCollection::Cover->value)
+            ->singleFile()
+            ->acceptsMimeTypes($mimes);
+    }
+
+    /**
+     * Register image conversions for logo and cover.
+     */
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $small = config('media.conversions.small');
+        $medium = config('media.conversions.medium');
+        $thumb = config('media.conversions.thumb');
+
+        $this->addMediaConversion(MediaConversion::Thumb->value)
+            ->fit(Fit::Max, (int) $thumb['width'], (int) $thumb['height'])
+            ->nonQueued()
+            ->performOnCollections(MediaCollection::Logo->value, MediaCollection::Cover->value);
+
+        $this->addMediaConversion(MediaConversion::Small->value)
+            ->fit(Fit::Max, (int) $small['width'], (int) $small['height'])
+            ->nonQueued()
+            ->performOnCollections(MediaCollection::Logo->value, MediaCollection::Cover->value);
+
+        $this->addMediaConversion(MediaConversion::Medium->value)
+            ->fit(Fit::Max, (int) $medium['width'], (int) $medium['height'])
+            ->nonQueued()
+            ->performOnCollections(MediaCollection::Logo->value, MediaCollection::Cover->value);
     }
 
     /**
@@ -92,21 +122,15 @@ class TenantProfile extends Model implements HasMedia
      */
     public function getLogoUrlAttribute(): ?string
     {
-        /** @var Media|null $media */
-        $media = $this->getFirstMedia('logo');
-
-        return $media?->getUrl();
+        return $this->getFirstMediaUrl(MediaCollection::Logo->value) ?: null;
     }
 
     /**
-     * Public banner URL when present.
+     * Public cover URL when present.
      */
-    public function getBannerUrlAttribute(): ?string
+    public function getCoverUrlAttribute(): ?string
     {
-        /** @var Media|null $media */
-        $media = $this->getFirstMedia('banner');
-
-        return $media?->getUrl();
+        return $this->getFirstMediaUrl(MediaCollection::Cover->value) ?: null;
     }
 
     /**

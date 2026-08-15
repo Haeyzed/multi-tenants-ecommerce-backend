@@ -3,6 +3,12 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Tenant\Auth\AuthController;
+use App\Http\Controllers\Tenant\Brand\BrandController;
+use App\Http\Controllers\Tenant\Category\CategoryController;
+use App\Http\Controllers\Tenant\Media\MediaController;
+use App\Http\Controllers\Tenant\Notification\DeviceController as NotificationDeviceController;
+use App\Http\Controllers\Tenant\Notification\InboxController as NotificationInboxController;
+use App\Http\Controllers\Tenant\Notification\PreferenceController as NotificationPreferenceController;
 use App\Http\Controllers\Tenant\RBAC\PermissionController;
 use App\Http\Controllers\Tenant\RBAC\RoleController;
 use App\Http\Controllers\Tenant\Subscription\SubscriptionController;
@@ -39,6 +45,8 @@ Route::middleware([
                 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
                 Route::get('me', [AuthController::class, 'me'])->name('me');
                 Route::match(['put', 'patch'], 'profile', [AuthController::class, 'updateProfile'])->name('profile');
+                Route::post('avatar', [AuthController::class, 'storeAvatar'])->name('avatar.store');
+                Route::delete('avatar', [AuthController::class, 'destroyAvatar'])->name('avatar.destroy');
                 Route::post('change-password', [AuthController::class, 'changePassword'])->name('change-password');
             });
         });
@@ -64,6 +72,49 @@ Route::middleware([
             Route::get('permissions/{permission}', [PermissionController::class, 'show'])->middleware('permission:permissions.show')->whereNumber('permission')->name('tenant.permissions.show');
             Route::match(['put', 'patch'], 'permissions/{permission}', [PermissionController::class, 'update'])->middleware('permission:permissions.update')->whereNumber('permission')->name('tenant.permissions.update');
             Route::delete('permissions/{permission}', [PermissionController::class, 'destroy'])->middleware('permission:permissions.delete')->whereNumber('permission')->name('tenant.permissions.destroy');
+
+            Route::get('media/options', [MediaController::class, 'options'])->name('tenant.media.options');
+            Route::get('media', [MediaController::class, 'index'])->name('tenant.media.index');
+            Route::post('media', [MediaController::class, 'store'])->name('tenant.media.store');
+            Route::get('media/{media}', [MediaController::class, 'show'])->whereNumber('media')->name('tenant.media.show');
+            Route::match(['put', 'patch'], 'media/{media}', [MediaController::class, 'update'])->whereNumber('media')->name('tenant.media.update');
+            Route::delete('media/{media}', [MediaController::class, 'destroy'])->whereNumber('media')->name('tenant.media.destroy');
+
+            Route::get('brands/options', [BrandController::class, 'options'])->middleware('permission:brands.view')->name('tenant.brands.options');
+            Route::get('brands', [BrandController::class, 'index'])->middleware('permission:brands.view')->name('tenant.brands.index');
+            Route::post('brands', [BrandController::class, 'store'])->middleware('permission:brands.create')->name('tenant.brands.store');
+            Route::get('brands/{brand}', [BrandController::class, 'show'])->middleware('permission:brands.show')->whereNumber('brand')->name('tenant.brands.show');
+            Route::match(['put', 'patch'], 'brands/{brand}', [BrandController::class, 'update'])->middleware('permission:brands.update')->whereNumber('brand')->name('tenant.brands.update');
+            Route::delete('brands/{brand}', [BrandController::class, 'destroy'])->middleware('permission:brands.delete')->whereNumber('brand')->name('tenant.brands.destroy');
+            Route::post('brands/{brand}/logo', [BrandController::class, 'storeLogo'])->middleware('permission:brands.update')->whereNumber('brand')->name('tenant.brands.logo.store');
+            Route::delete('brands/{brand}/logo', [BrandController::class, 'destroyLogo'])->middleware('permission:brands.update')->whereNumber('brand')->name('tenant.brands.logo.destroy');
+
+            Route::get('categories/options', [CategoryController::class, 'options'])->middleware('permission:categories.view')->name('tenant.categories.options');
+            Route::get('categories/tree', [CategoryController::class, 'tree'])->middleware('permission:categories.view')->name('tenant.categories.tree');
+            Route::get('categories', [CategoryController::class, 'index'])->middleware('permission:categories.view')->name('tenant.categories.index');
+            Route::post('categories', [CategoryController::class, 'store'])->middleware('permission:categories.create')->name('tenant.categories.store');
+            Route::get('categories/{category}/children', [CategoryController::class, 'children'])->middleware('permission:categories.view')->whereNumber('category')->name('tenant.categories.children');
+            Route::get('categories/{category}', [CategoryController::class, 'show'])->middleware('permission:categories.show')->whereNumber('category')->name('tenant.categories.show');
+            Route::match(['put', 'patch'], 'categories/{category}', [CategoryController::class, 'update'])->middleware('permission:categories.update')->whereNumber('category')->name('tenant.categories.update');
+            Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->middleware('permission:categories.delete')->whereNumber('category')->name('tenant.categories.destroy');
+            Route::post('categories/{category}/image', [CategoryController::class, 'storeImage'])->middleware('permission:categories.update')->whereNumber('category')->name('tenant.categories.image.store');
+            Route::delete('categories/{category}/image', [CategoryController::class, 'destroyImage'])->middleware('permission:categories.update')->whereNumber('category')->name('tenant.categories.image.destroy');
+
+            Route::get('notifications/unread-count', [NotificationInboxController::class, 'unreadCount'])->name('tenant.notifications.unread-count');
+            Route::get('notifications/unread', [NotificationInboxController::class, 'unread'])->name('tenant.notifications.unread');
+            Route::post('notifications/read-all', [NotificationInboxController::class, 'markAllRead'])->name('tenant.notifications.read-all');
+            Route::get('notifications', [NotificationInboxController::class, 'index'])->name('tenant.notifications.index');
+            Route::get('notifications/{notification}', [NotificationInboxController::class, 'show'])->name('tenant.notifications.show');
+            Route::post('notifications/{notification}/read', [NotificationInboxController::class, 'markRead'])->name('tenant.notifications.read');
+            Route::post('notifications/{notification}/unread', [NotificationInboxController::class, 'markUnread'])->name('tenant.notifications.unread-one');
+            Route::delete('notifications/{notification}', [NotificationInboxController::class, 'destroy'])->name('tenant.notifications.destroy');
+
+            Route::get('notification-preferences', [NotificationPreferenceController::class, 'index'])->name('tenant.notification-preferences.index');
+            Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('tenant.notification-preferences.update');
+
+            Route::get('devices', [NotificationDeviceController::class, 'index'])->name('tenant.devices.index');
+            Route::post('devices', [NotificationDeviceController::class, 'store'])->name('tenant.devices.store');
+            Route::delete('devices/{device}', [NotificationDeviceController::class, 'destroy'])->whereNumber('device')->name('tenant.devices.destroy');
 
             Route::prefix('subscription')->name('tenant.subscription.')->group(function (): void {
                 Route::get('/', [SubscriptionController::class, 'current'])->name('current');

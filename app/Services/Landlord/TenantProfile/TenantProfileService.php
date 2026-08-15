@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace App\Services\Landlord\TenantProfile;
 
+use App\Enums\Media\MediaCollection;
 use App\Models\Landlord\Tenant;
 use App\Models\Landlord\TenantProfile;
+use App\Services\Media\MediaService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Tenant profile CRUD scoped to a tenant, including logo/banner media.
+ * Tenant profile CRUD scoped to a tenant, including logo/cover media.
  */
 class TenantProfileService
 {
+    public function __construct(private readonly MediaService $mediaService) {}
+
     /**
      * Show the profile for a tenant.
      *
@@ -34,28 +39,13 @@ class TenantProfileService
     /**
      * Create a profile for a tenant that does not yet have one.
      *
-     * @param  array{
-     *     display_name: string,
-     *     slug?: string|null,
-     *     description?: string|null,
-     *     email?: string|null,
-     *     phone?: string|null,
-     *     website?: string|null,
-     *     address?: string|null,
-     *     country_id?: int|null,
-     *     state_id?: int|null,
-     *     city_id?: int|null,
-     *     currency_id?: int|null,
-     *     language_id?: int|null,
-     *     timezone?: string|null,
-     *     is_public?: bool
-     * }  $data
+     * @param  array<string, mixed>  $data
      */
     public function store(
         Tenant $tenant,
         array $data,
         ?UploadedFile $logo = null,
-        ?UploadedFile $banner = null,
+        ?UploadedFile $cover = null,
     ): TenantProfile {
         if ($tenant->profile()->exists()) {
             throw ValidationException::withMessages([
@@ -70,7 +60,7 @@ class TenantProfileService
             'is_public' => $data['is_public'] ?? false,
         ]);
 
-        $this->syncMedia($profile, $logo, $banner);
+        $this->syncMedia($profile, $logo, $cover);
 
         return $profile->fresh(['country', 'state', 'city', 'currency', 'language']) ?? $profile;
     }
@@ -78,22 +68,7 @@ class TenantProfileService
     /**
      * Update a tenant's profile.
      *
-     * @param  array{
-     *     display_name?: string,
-     *     slug?: string|null,
-     *     description?: string|null,
-     *     email?: string|null,
-     *     phone?: string|null,
-     *     website?: string|null,
-     *     address?: string|null,
-     *     country_id?: int|null,
-     *     state_id?: int|null,
-     *     city_id?: int|null,
-     *     currency_id?: int|null,
-     *     language_id?: int|null,
-     *     timezone?: string|null,
-     *     is_public?: bool
-     * }  $data
+     * @param  array<string, mixed>  $data
      *
      * @throws NotFoundHttpException
      */
@@ -101,16 +76,64 @@ class TenantProfileService
         Tenant $tenant,
         array $data,
         ?UploadedFile $logo = null,
-        ?UploadedFile $banner = null,
+        ?UploadedFile $cover = null,
     ): TenantProfile {
         $profile = $this->showForTenant($tenant);
 
         $profile->fill($data);
         $profile->save();
 
-        $this->syncMedia($profile, $logo, $banner);
+        $this->syncMedia($profile, $logo, $cover);
 
         return $profile->fresh(['country', 'state', 'city', 'currency', 'language']) ?? $profile;
+    }
+
+    /**
+     * Replace the tenant profile logo.
+     *
+     * @throws NotFoundHttpException
+     */
+    public function replaceLogo(Tenant $tenant, UploadedFile $logo): Media
+    {
+        $profile = $this->showForTenant($tenant);
+
+        return $this->mediaService->replace($profile, $logo, MediaCollection::Logo);
+    }
+
+    /**
+     * Remove the tenant profile logo.
+     *
+     * @throws NotFoundHttpException
+     */
+    public function removeLogo(Tenant $tenant): void
+    {
+        $profile = $this->showForTenant($tenant);
+
+        $this->mediaService->removeCollection($profile, MediaCollection::Logo);
+    }
+
+    /**
+     * Replace the tenant profile cover image.
+     *
+     * @throws NotFoundHttpException
+     */
+    public function replaceCover(Tenant $tenant, UploadedFile $cover): Media
+    {
+        $profile = $this->showForTenant($tenant);
+
+        return $this->mediaService->replace($profile, $cover, MediaCollection::Cover);
+    }
+
+    /**
+     * Remove the tenant profile cover image.
+     *
+     * @throws NotFoundHttpException
+     */
+    public function removeCover(Tenant $tenant): void
+    {
+        $profile = $this->showForTenant($tenant);
+
+        $this->mediaService->removeCollection($profile, MediaCollection::Cover);
     }
 
     /**
@@ -122,8 +145,8 @@ class TenantProfileService
     {
         $profile = $this->showForTenant($tenant);
 
-        $profile->clearMediaCollection('logo');
-        $profile->clearMediaCollection('banner');
+        $this->mediaService->removeCollection($profile, MediaCollection::Logo);
+        $this->mediaService->removeCollection($profile, MediaCollection::Cover);
         $profile->delete();
     }
 
@@ -148,21 +171,19 @@ class TenantProfileService
     }
 
     /**
-     * Attach logo and/or banner media when provided.
+     * Attach logo and/or cover media when provided.
      */
     protected function syncMedia(
         TenantProfile $profile,
         ?UploadedFile $logo = null,
-        ?UploadedFile $banner = null,
+        ?UploadedFile $cover = null,
     ): void {
         if ($logo !== null) {
-            $profile->clearMediaCollection('logo');
-            $profile->addMedia($logo)->toMediaCollection('logo');
+            $this->mediaService->replace($profile, $logo, MediaCollection::Logo);
         }
 
-        if ($banner !== null) {
-            $profile->clearMediaCollection('banner');
-            $profile->addMedia($banner)->toMediaCollection('banner');
+        if ($cover !== null) {
+            $this->mediaService->replace($profile, $cover, MediaCollection::Cover);
         }
     }
 }

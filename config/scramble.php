@@ -45,12 +45,13 @@ return [
         /*
          * API version.
          */
-        'version' => env('API_VERSION', '0.0.1'),
+        'version' => env('API_VERSION', '1.0.0'),
 
         /*
-         * Description rendered on the home page of the API documentation (`/docs/api`).
+         * Description rendered on the home page of the API documentation.
+         * Overridden per API in ScrambleDocumentationServiceProvider.
          */
-        'description' => '',
+        'description' => 'Multi-tenants e-commerce platform API.',
     ],
 
     'ui' => [
@@ -89,22 +90,11 @@ return [
     ],
 
     /*
-     * The list of servers of the API. By default, when `null`, server URL will be created from
-     * `scramble.api_path` and `scramble.api_domain` config variables. When providing an array, you
-     * will need to specify the local server URL manually (if needed).
-     *
-     * Example of non-default config (final URLs are generated using Laravel `url` helper):
-     *
-     * ```php
-     * 'servers' => [
-     *     'Live' => 'api',
-     *     'Prod' => 'https://scramble.dedoc.co/api',
-     * ],
-     * ```
+     * Default servers for the (disabled) default API. Landlord/tenant APIs override this
+     * in ScrambleDocumentationServiceProvider.
      */
     'servers' => [
         'Live' => 'api',
-        'Prod' => 'https://scramble.dedoc.co/api',
     ],
 
     /**

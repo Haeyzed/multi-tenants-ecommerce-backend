@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Landlord\TenantProfile;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Landlord\TenantProfile\StoreCoverRequest;
+use App\Http\Requests\Landlord\TenantProfile\StoreLogoRequest;
 use App\Http\Requests\Landlord\TenantProfile\StoreTenantProfileRequest;
 use App\Http\Requests\Landlord\TenantProfile\UpdateTenantProfileRequest;
 use App\Http\Resources\Landlord\TenantProfile\TenantProfileResource;
+use App\Http\Resources\Media\MediaResource;
 use App\Models\Landlord\Tenant;
 use App\Services\Landlord\TenantProfile\TenantProfileService;
 use Dedoc\Scramble\Attributes\Response;
@@ -18,14 +21,8 @@ use Illuminate\Http\JsonResponse;
  */
 class TenantProfileController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     */
     public function __construct(private readonly TenantProfileService $tenantProfileService) {}
 
-    /**
-     * Show the profile for a tenant.
-     */
     #[Response(
         status: 200,
         description: 'Tenant profile.',
@@ -39,9 +36,6 @@ class TenantProfileController extends Controller
         );
     }
 
-    /**
-     * Create a profile for a tenant.
-     */
     #[Response(
         status: 201,
         description: 'Created tenant profile.',
@@ -49,13 +43,13 @@ class TenantProfileController extends Controller
     )]
     public function store(StoreTenantProfileRequest $request, Tenant $tenant): JsonResponse
     {
-        $data = $request->safe()->except(['logo', 'banner']);
+        $data = $request->safe()->except(['logo', 'cover', 'banner']);
 
         $profile = $this->tenantProfileService->store(
             $tenant,
             $data,
             $request->file('logo'),
-            $request->file('banner'),
+            $request->file('cover') ?? $request->file('banner'),
         );
 
         return $this->created(
@@ -64,9 +58,6 @@ class TenantProfileController extends Controller
         );
     }
 
-    /**
-     * Update a tenant profile.
-     */
     #[Response(
         status: 200,
         description: 'Updated tenant profile.',
@@ -74,13 +65,13 @@ class TenantProfileController extends Controller
     )]
     public function update(UpdateTenantProfileRequest $request, Tenant $tenant): JsonResponse
     {
-        $data = $request->safe()->except(['logo', 'banner']);
+        $data = $request->safe()->except(['logo', 'cover', 'banner']);
 
         $profile = $this->tenantProfileService->update(
             $tenant,
             $data,
             $request->file('logo'),
-            $request->file('banner'),
+            $request->file('cover') ?? $request->file('banner'),
         );
 
         return $this->updated(
@@ -89,9 +80,60 @@ class TenantProfileController extends Controller
         );
     }
 
-    /**
-     * Delete a tenant profile.
-     */
+    #[Response(
+        status: 200,
+        description: 'Uploaded tenant profile logo.',
+        type: 'array{success: true, message: string, data: MediaResource, meta: null, errors: null}',
+    )]
+    public function storeLogo(StoreLogoRequest $request, Tenant $tenant): JsonResponse
+    {
+        $media = $this->tenantProfileService->replaceLogo($tenant, $request->file('logo'));
+
+        return $this->updated(
+            new MediaResource($media),
+            'Tenant logo uploaded successfully.',
+        );
+    }
+
+    #[Response(
+        status: 200,
+        description: 'Deleted tenant profile logo.',
+        type: 'array{success: true, message: string, data: null, meta: null, errors: null}',
+    )]
+    public function destroyLogo(Tenant $tenant): JsonResponse
+    {
+        $this->tenantProfileService->removeLogo($tenant);
+
+        return $this->deleted('Tenant logo deleted successfully.');
+    }
+
+    #[Response(
+        status: 200,
+        description: 'Uploaded tenant profile cover.',
+        type: 'array{success: true, message: string, data: MediaResource, meta: null, errors: null}',
+    )]
+    public function storeCover(StoreCoverRequest $request, Tenant $tenant): JsonResponse
+    {
+        $media = $this->tenantProfileService->replaceCover($tenant, $request->file('cover'));
+
+        return $this->updated(
+            new MediaResource($media),
+            'Tenant cover uploaded successfully.',
+        );
+    }
+
+    #[Response(
+        status: 200,
+        description: 'Deleted tenant profile cover.',
+        type: 'array{success: true, message: string, data: null, meta: null, errors: null}',
+    )]
+    public function destroyCover(Tenant $tenant): JsonResponse
+    {
+        $this->tenantProfileService->removeCover($tenant);
+
+        return $this->deleted('Tenant cover deleted successfully.');
+    }
+
     #[Response(
         status: 200,
         description: 'Deleted tenant profile confirmation.',

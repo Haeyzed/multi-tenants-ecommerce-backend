@@ -1,0 +1,234 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Database\Seeders\Landlord;
+
+use App\Enums\Notification\NotificationChannel;
+use App\Models\Landlord\NotificationTemplate;
+use Illuminate\Database\Seeder;
+
+/**
+ * Seeds platform notification templates.
+ */
+class NotificationTemplateSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $defaults = [
+            NotificationChannel::Database->value,
+            NotificationChannel::Email->value,
+            NotificationChannel::Push->value,
+        ];
+
+        $templates = [
+            [
+                'key' => 'auth.password_changed',
+                'name' => 'Password Changed',
+                'description' => 'Sent when a user changes their password.',
+                'channels' => $defaults,
+                'variables' => ['user_name', 'email'],
+                'title' => 'Password changed',
+                'body' => 'Hi {{user_name}}, your password was changed successfully.',
+                'email_subject' => 'Your password was changed',
+                'email_body' => 'Hi {{user_name}}, your password for {{email}} was changed successfully.',
+                'push_title' => 'Password changed',
+                'push_body' => 'Your password was changed successfully.',
+                'is_mandatory' => true,
+            ],
+            [
+                'key' => 'auth.password_reset',
+                'name' => 'Password Reset Requested',
+                'description' => 'Sent when a password reset is requested.',
+                'channels' => [NotificationChannel::Email->value],
+                'variables' => ['user_name', 'email', 'token'],
+                'title' => 'Reset your password',
+                'body' => 'Use token {{token}} to reset your password.',
+                'email_subject' => 'Reset your password',
+                'email_body' => 'Hi {{user_name}}, use this token to reset your password: {{token}}',
+                'is_mandatory' => true,
+            ],
+            [
+                'key' => 'auth.password_reset_completed',
+                'name' => 'Password Reset Completed',
+                'description' => 'Sent after a successful password reset.',
+                'channels' => $defaults,
+                'variables' => ['user_name', 'email'],
+                'title' => 'Password reset complete',
+                'body' => 'Hi {{user_name}}, your password was reset successfully.',
+                'email_subject' => 'Your password was reset',
+                'email_body' => 'Hi {{user_name}}, your password for {{email}} was reset successfully.',
+                'push_title' => 'Password reset',
+                'push_body' => 'Your password was reset successfully.',
+                'is_mandatory' => true,
+            ],
+            [
+                'key' => 'user.created',
+                'name' => 'User Welcome',
+                'description' => 'Welcome notification for newly created users.',
+                'channels' => $defaults,
+                'variables' => ['user_name', 'email'],
+                'title' => 'Welcome',
+                'body' => 'Hi {{user_name}}, your account has been created.',
+                'email_subject' => 'Welcome aboard',
+                'email_body' => 'Hi {{user_name}}, your account ({{email}}) is ready.',
+                'push_title' => 'Welcome',
+                'push_body' => 'Your account has been created.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'tenant.created',
+                'name' => 'Tenant Created',
+                'description' => 'Notifies landlord admins when a tenant is provisioned.',
+                'channels' => $defaults,
+                'variables' => ['tenant_name', 'tenant_id', 'tenant_email'],
+                'title' => 'New tenant created',
+                'body' => 'Tenant {{tenant_name}} ({{tenant_id}}) was provisioned.',
+                'email_subject' => 'New tenant: {{tenant_name}}',
+                'email_body' => 'Tenant {{tenant_name}} ({{tenant_email}}) was provisioned.',
+                'push_title' => 'New tenant',
+                'push_body' => '{{tenant_name}} was provisioned.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'tenant.activated',
+                'name' => 'Tenant Activated',
+                'description' => 'Notifies when a tenant is activated.',
+                'channels' => $defaults,
+                'variables' => ['tenant_name', 'tenant_id'],
+                'title' => 'Tenant activated',
+                'body' => 'Tenant {{tenant_name}} is now active.',
+                'email_subject' => 'Tenant activated: {{tenant_name}}',
+                'email_body' => 'Tenant {{tenant_name}} ({{tenant_id}}) is now active.',
+                'push_title' => 'Tenant activated',
+                'push_body' => '{{tenant_name}} is active.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'tenant.suspended',
+                'name' => 'Tenant Suspended',
+                'description' => 'Notifies when a tenant is suspended.',
+                'channels' => $defaults,
+                'variables' => ['tenant_name', 'tenant_id'],
+                'title' => 'Tenant suspended',
+                'body' => 'Tenant {{tenant_name}} has been suspended.',
+                'email_subject' => 'Tenant suspended: {{tenant_name}}',
+                'email_body' => 'Tenant {{tenant_name}} ({{tenant_id}}) has been suspended.',
+                'push_title' => 'Tenant suspended',
+                'push_body' => '{{tenant_name}} was suspended.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'subscription.activated',
+                'name' => 'Subscription Activated',
+                'description' => 'Sent when a subscription becomes active or trialing.',
+                'channels' => $defaults,
+                'variables' => ['plan_name', 'subscription_id', 'status'],
+                'title' => 'Subscription activated',
+                'body' => 'Your {{plan_name}} subscription is {{status}}.',
+                'email_subject' => 'Subscription activated',
+                'email_body' => 'Your {{plan_name}} subscription ({{subscription_id}}) is now {{status}}.',
+                'push_title' => 'Subscription activated',
+                'push_body' => '{{plan_name}} is {{status}}.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'subscription.cancelled',
+                'name' => 'Subscription Cancelled',
+                'description' => 'Sent when a subscription is cancelled.',
+                'channels' => $defaults,
+                'variables' => ['plan_name', 'subscription_id', 'status'],
+                'title' => 'Subscription cancelled',
+                'body' => 'Your {{plan_name}} subscription was cancelled.',
+                'email_subject' => 'Subscription cancelled',
+                'email_body' => 'Your {{plan_name}} subscription ({{subscription_id}}) was cancelled.',
+                'push_title' => 'Subscription cancelled',
+                'push_body' => '{{plan_name}} was cancelled.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'subscription.trial_started',
+                'name' => 'Trial Started',
+                'description' => 'Sent when a subscription trial begins.',
+                'channels' => $defaults,
+                'variables' => ['plan_name', 'subscription_id'],
+                'title' => 'Trial started',
+                'body' => 'Your {{plan_name}} trial has started.',
+                'email_subject' => 'Trial started',
+                'email_body' => 'Your {{plan_name}} trial ({{subscription_id}}) has started.',
+                'push_title' => 'Trial started',
+                'push_body' => '{{plan_name}} trial started.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'subscription.expiring',
+                'name' => 'Subscription Expiring',
+                'description' => 'Sent when a subscription is about to expire.',
+                'channels' => $defaults,
+                'variables' => ['plan_name', 'subscription_id', 'ends_at'],
+                'title' => 'Subscription expiring',
+                'body' => 'Your {{plan_name}} subscription expires on {{ends_at}}.',
+                'email_subject' => 'Subscription expiring soon',
+                'email_body' => 'Your {{plan_name}} subscription ({{subscription_id}}) expires on {{ends_at}}.',
+                'push_title' => 'Subscription expiring',
+                'push_body' => '{{plan_name}} expires on {{ends_at}}.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'subscription.expired',
+                'name' => 'Subscription Expired',
+                'description' => 'Sent when a subscription has expired.',
+                'channels' => $defaults,
+                'variables' => ['plan_name', 'subscription_id'],
+                'title' => 'Subscription expired',
+                'body' => 'Your {{plan_name}} subscription has expired.',
+                'email_subject' => 'Subscription expired',
+                'email_body' => 'Your {{plan_name}} subscription ({{subscription_id}}) has expired.',
+                'push_title' => 'Subscription expired',
+                'push_body' => '{{plan_name}} has expired.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'payment.successful',
+                'name' => 'Payment Successful',
+                'description' => 'Sent after a successful payment.',
+                'channels' => $defaults,
+                'variables' => ['amount', 'currency', 'reference', 'plan_name', 'tenant_id'],
+                'title' => 'Payment successful',
+                'body' => 'Payment of {{amount}} {{currency}} for {{plan_name}} succeeded.',
+                'email_subject' => 'Payment successful',
+                'email_body' => 'Payment {{reference}} of {{amount}} {{currency}} for {{plan_name}} succeeded.',
+                'push_title' => 'Payment successful',
+                'push_body' => '{{amount}} {{currency}} paid for {{plan_name}}.',
+                'is_mandatory' => false,
+            ],
+            [
+                'key' => 'payment.failed',
+                'name' => 'Payment Failed',
+                'description' => 'Sent after a failed payment.',
+                'channels' => $defaults,
+                'variables' => ['amount', 'currency', 'reference', 'plan_name', 'reason'],
+                'title' => 'Payment failed',
+                'body' => 'Payment of {{amount}} {{currency}} for {{plan_name}} failed.',
+                'email_subject' => 'Payment failed',
+                'email_body' => 'Payment {{reference}} of {{amount}} {{currency}} failed. {{reason}}',
+                'push_title' => 'Payment failed',
+                'push_body' => 'Payment for {{plan_name}} failed.',
+                'is_mandatory' => false,
+            ],
+        ];
+
+        foreach ($templates as $template) {
+            NotificationTemplate::query()->updateOrCreate(
+                ['key' => $template['key']],
+                array_merge([
+                    'sms_body' => null,
+                    'is_active' => true,
+                ], $template),
+            );
+        }
+    }
+}

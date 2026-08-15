@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Landlord\TenantProfile;
 
 use App\Http\Requests\BaseRequest;
+use App\Support\Media\MediaValidation;
 use Illuminate\Validation\Rule;
 
 /**
@@ -32,8 +33,9 @@ class StoreTenantProfileRequest extends BaseRequest
             'language_id' => ['sometimes', 'nullable', 'integer'],
             'timezone' => ['sometimes', 'nullable', 'string', 'max:100'],
             'is_public' => ['sometimes', 'boolean'],
-            'logo' => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
-            'banner' => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
+            'logo' => MediaValidation::image(required: false),
+            'cover' => MediaValidation::image(required: false),
+            'banner' => MediaValidation::image(required: false),
         ];
     }
 }

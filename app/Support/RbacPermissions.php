@@ -60,6 +60,22 @@ final class RbacPermissions
         'subscriptions.show',
         'subscriptions.update',
         'subscriptions.delete',
+        'notifications.view',
+        'notification-templates.view',
+        'notification-templates.create',
+        'notification-templates.show',
+        'notification-templates.update',
+        'notification-templates.delete',
+        'brands.view',
+        'brands.create',
+        'brands.show',
+        'brands.update',
+        'brands.delete',
+        'categories.view',
+        'categories.create',
+        'categories.show',
+        'categories.update',
+        'categories.delete',
     ];
 
     /**

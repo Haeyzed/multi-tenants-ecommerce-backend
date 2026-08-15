@@ -10,6 +10,10 @@ use App\Enums\Landlord\BillingInterval;
 use App\Enums\Landlord\PaymentProvider;
 use App\Enums\Landlord\PaymentTransactionStatus;
 use App\Enums\Landlord\SubscriptionStatus;
+use App\Events\PaymentFailed;
+use App\Events\PaymentSucceeded;
+use App\Events\SubscriptionActivated;
+use App\Events\SubscriptionCancelled;
 use App\Models\Landlord\PaymentTransaction;
 use App\Models\Landlord\Plan;
 use App\Models\Landlord\Subscription;
@@ -124,6 +128,8 @@ class SubscriptionService
                 ]),
             ]);
 
+            event(new PaymentFailed($transaction->fresh() ?? $transaction, $result->message));
+
             throw ValidationException::withMessages([
                 'reference' => [$result->message ?? 'Payment verification failed.'],
             ]);
@@ -202,7 +208,12 @@ class SubscriptionService
                 'paid_at' => $paidAt ?? now(),
             ]);
 
-            return $subscription->fresh(['plan.features']) ?? $subscription->load(['plan.features']);
+            $subscription = $subscription->fresh(['plan.features']) ?? $subscription->load(['plan.features']);
+
+            event(new SubscriptionActivated($subscription));
+            event(new PaymentSucceeded($transaction->fresh() ?? $transaction));
+
+            return $subscription;
         });
     }
 
@@ -233,7 +244,11 @@ class SubscriptionService
 
         $subscription->save();
 
-        return $subscription->fresh(['plan.features']) ?? $subscription->load(['plan.features']);
+        $subscription = $subscription->fresh(['plan.features']) ?? $subscription->load(['plan.features']);
+
+        event(new SubscriptionCancelled($subscription));
+
+        return $subscription;
     }
 
     /**
@@ -297,7 +312,11 @@ class SubscriptionService
                 'metadata' => $options['metadata'] ?? null,
             ]);
 
-            return $subscription->load(['plan.features']);
+            $subscription = $subscription->load(['plan.features']);
+
+            event(new SubscriptionActivated($subscription));
+
+            return $subscription;
         });
     }
 

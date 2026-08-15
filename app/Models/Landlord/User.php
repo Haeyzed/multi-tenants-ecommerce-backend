@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models\Landlord;
 
+use App\Enums\Media\MediaCollection;
+use App\Enums\Media\MediaConversion;
 use Database\Factories\Landlord\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -30,8 +33,6 @@ class User extends Authenticatable implements HasMedia
     protected string $guard_name = 'landlord';
 
     /**
-     * Get the attributes that should be cast.
-     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -43,13 +44,34 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
-     * Register the avatar media collection.
+     * Register media collections for the landlord user.
      */
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('avatar')
+        $this->addMediaCollection(MediaCollection::Avatar->value)
             ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+            ->acceptsMimeTypes(config('media.mimes.image', []));
+
+        $this->addMediaCollection(MediaCollection::Library->value)
+            ->acceptsMimeTypes([
+                ...config('media.mimes.image', []),
+                ...config('media.mimes.document', []),
+                ...config('media.mimes.video', []),
+                ...config('media.mimes.audio', []),
+            ]);
+    }
+
+    /**
+     * Register image conversions for avatar and library images.
+     */
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $thumb = config('media.conversions.thumb');
+
+        $this->addMediaConversion(MediaConversion::Thumb->value)
+            ->fit(Fit::Max, (int) $thumb['width'], (int) $thumb['height'])
+            ->nonQueued()
+            ->performOnCollections(MediaCollection::Avatar->value, MediaCollection::Library->value);
     }
 
     /**
@@ -57,15 +79,10 @@ class User extends Authenticatable implements HasMedia
      */
     public function getAvatarUrlAttribute(): ?string
     {
-        /** @var Media|null $media */
-        $media = $this->getFirstMedia('avatar');
-
-        return $media?->getUrl();
+        return $this->getFirstMediaUrl(MediaCollection::Avatar->value) ?: null;
     }
 
     /**
-     * Apply search and filter constraints to the user query.
-     *
      * @param  Builder<User>  $query
      * @param  array{search?: string|null}  $params
      * @return Builder<User>

@@ -5,6 +5,11 @@ declare(strict_types=1);
 use App\Http\Controllers\Landlord\Auth\AuthController;
 use App\Http\Controllers\Landlord\Domain\DomainController;
 use App\Http\Controllers\Landlord\Feature\FeatureController;
+use App\Http\Controllers\Landlord\Media\MediaController;
+use App\Http\Controllers\Landlord\Notification\DeviceController as NotificationDeviceController;
+use App\Http\Controllers\Landlord\Notification\InboxController as NotificationInboxController;
+use App\Http\Controllers\Landlord\Notification\NotificationTemplateController;
+use App\Http\Controllers\Landlord\Notification\PreferenceController as NotificationPreferenceController;
 use App\Http\Controllers\Landlord\Plan\PlanController;
 use App\Http\Controllers\Landlord\RBAC\PermissionController;
 use App\Http\Controllers\Landlord\RBAC\RoleController;
@@ -49,6 +54,8 @@ $registerLandlordApi = function (): void {
                 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
                 Route::get('me', [AuthController::class, 'me'])->name('me');
                 Route::match(['put', 'patch'], 'profile', [AuthController::class, 'updateProfile'])->name('profile');
+                Route::post('avatar', [AuthController::class, 'storeAvatar'])->name('avatar.store');
+                Route::delete('avatar', [AuthController::class, 'destroyAvatar'])->name('avatar.destroy');
                 Route::post('change-password', [AuthController::class, 'changePassword'])->name('change-password');
             });
         });
@@ -93,6 +100,10 @@ $registerLandlordApi = function (): void {
             Route::post('tenants/{tenant}/profile', [TenantProfileController::class, 'store'])->middleware('permission:tenant-profiles.create')->name('landlord.tenants.profile.store');
             Route::match(['put', 'patch'], 'tenants/{tenant}/profile', [TenantProfileController::class, 'update'])->middleware('permission:tenant-profiles.update')->name('landlord.tenants.profile.update');
             Route::delete('tenants/{tenant}/profile', [TenantProfileController::class, 'destroy'])->middleware('permission:tenant-profiles.delete')->name('landlord.tenants.profile.destroy');
+            Route::post('tenants/{tenant}/profile/logo', [TenantProfileController::class, 'storeLogo'])->middleware('permission:tenant-profiles.update')->name('landlord.tenants.profile.logo.store');
+            Route::delete('tenants/{tenant}/profile/logo', [TenantProfileController::class, 'destroyLogo'])->middleware('permission:tenant-profiles.update')->name('landlord.tenants.profile.logo.destroy');
+            Route::post('tenants/{tenant}/profile/cover', [TenantProfileController::class, 'storeCover'])->middleware('permission:tenant-profiles.update')->name('landlord.tenants.profile.cover.store');
+            Route::delete('tenants/{tenant}/profile/cover', [TenantProfileController::class, 'destroyCover'])->middleware('permission:tenant-profiles.update')->name('landlord.tenants.profile.cover.destroy');
 
             Route::get('tenants/{tenant}/subscription', [LandlordSubscriptionController::class, 'current'])->middleware('permission:subscriptions.show')->name('landlord.tenants.subscription.current');
             Route::post('tenants/{tenant}/subscription/subscribe', [LandlordSubscriptionController::class, 'subscribe'])->middleware('permission:subscriptions.create')->name('landlord.tenants.subscription.subscribe');
@@ -114,6 +125,37 @@ $registerLandlordApi = function (): void {
             Route::match(['put', 'patch'], 'plans/{plan}', [PlanController::class, 'update'])->middleware('permission:plans.update')->whereNumber('plan')->name('landlord.plans.update');
             Route::delete('plans/{plan}', [PlanController::class, 'destroy'])->middleware('permission:plans.delete')->whereNumber('plan')->name('landlord.plans.destroy');
             Route::put('plans/{plan}/features', [PlanController::class, 'syncFeatures'])->middleware('permission:plans.update')->whereNumber('plan')->name('landlord.plans.features');
+
+            Route::get('media/options', [MediaController::class, 'options'])->name('landlord.media.options');
+            Route::get('media', [MediaController::class, 'index'])->name('landlord.media.index');
+            Route::post('media', [MediaController::class, 'store'])->name('landlord.media.store');
+            Route::get('media/{media}', [MediaController::class, 'show'])->whereNumber('media')->name('landlord.media.show');
+            Route::match(['put', 'patch'], 'media/{media}', [MediaController::class, 'update'])->whereNumber('media')->name('landlord.media.update');
+            Route::delete('media/{media}', [MediaController::class, 'destroy'])->whereNumber('media')->name('landlord.media.destroy');
+
+            Route::get('notifications/unread-count', [NotificationInboxController::class, 'unreadCount'])->name('landlord.notifications.unread-count');
+            Route::get('notifications/unread', [NotificationInboxController::class, 'unread'])->name('landlord.notifications.unread');
+            Route::post('notifications/read-all', [NotificationInboxController::class, 'markAllRead'])->name('landlord.notifications.read-all');
+            Route::get('notifications', [NotificationInboxController::class, 'index'])->name('landlord.notifications.index');
+            Route::get('notifications/{notification}', [NotificationInboxController::class, 'show'])->name('landlord.notifications.show');
+            Route::post('notifications/{notification}/read', [NotificationInboxController::class, 'markRead'])->name('landlord.notifications.read');
+            Route::post('notifications/{notification}/unread', [NotificationInboxController::class, 'markUnread'])->name('landlord.notifications.unread-one');
+            Route::delete('notifications/{notification}', [NotificationInboxController::class, 'destroy'])->name('landlord.notifications.destroy');
+
+            Route::get('notification-preferences', [NotificationPreferenceController::class, 'index'])->name('landlord.notification-preferences.index');
+            Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('landlord.notification-preferences.update');
+
+            Route::get('devices', [NotificationDeviceController::class, 'index'])->name('landlord.devices.index');
+            Route::post('devices', [NotificationDeviceController::class, 'store'])->name('landlord.devices.store');
+            Route::delete('devices/{device}', [NotificationDeviceController::class, 'destroy'])->whereNumber('device')->name('landlord.devices.destroy');
+
+            Route::get('notification-templates/options', [NotificationTemplateController::class, 'options'])->middleware('permission:notification-templates.view')->name('landlord.notification-templates.options');
+            Route::get('notification-templates', [NotificationTemplateController::class, 'index'])->middleware('permission:notification-templates.view')->name('landlord.notification-templates.index');
+            Route::post('notification-templates', [NotificationTemplateController::class, 'store'])->middleware('permission:notification-templates.create')->name('landlord.notification-templates.store');
+            Route::get('notification-templates/{notification_template}', [NotificationTemplateController::class, 'show'])->middleware('permission:notification-templates.show')->whereNumber('notification_template')->name('landlord.notification-templates.show');
+            Route::match(['put', 'patch'], 'notification-templates/{notification_template}', [NotificationTemplateController::class, 'update'])->middleware('permission:notification-templates.update')->whereNumber('notification_template')->name('landlord.notification-templates.update');
+            Route::delete('notification-templates/{notification_template}', [NotificationTemplateController::class, 'destroy'])->middleware('permission:notification-templates.delete')->whereNumber('notification_template')->name('landlord.notification-templates.destroy');
+            Route::post('notification-templates/{notification_template}/preview', [NotificationTemplateController::class, 'preview'])->middleware('permission:notification-templates.view')->whereNumber('notification_template')->name('landlord.notification-templates.preview');
         });
     });
 

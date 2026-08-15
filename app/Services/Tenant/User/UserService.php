@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\User;
 
+use App\Enums\Media\MediaCollection;
+use App\Events\UserCreated;
 use App\Models\Tenant\User;
+use App\Services\Media\MediaService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -15,6 +18,8 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class UserService
 {
+    public function __construct(private readonly MediaService $mediaService) {}
+
     /**
      * Retrieve a paginated list of tenant users.
      *
@@ -52,13 +57,16 @@ class UserService
         }
 
         if ($avatar !== null) {
-            $user->clearMediaCollection('avatar');
-            $user->addMedia($avatar)->toMediaCollection('avatar');
+            $this->mediaService->replace($user, $avatar, MediaCollection::Avatar);
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        return $user->load(['roles', 'permissions']);
+        $user = $user->load(['roles', 'permissions']);
+
+        event(new UserCreated($user));
+
+        return $user;
     }
 
     /**
@@ -96,8 +104,7 @@ class UserService
         }
 
         if ($avatar !== null) {
-            $user->clearMediaCollection('avatar');
-            $user->addMedia($avatar)->toMediaCollection('avatar');
+            $this->mediaService->replace($user, $avatar, MediaCollection::Avatar);
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -111,7 +118,7 @@ class UserService
     public function destroy(User $user): void
     {
         $user->tokens()->delete();
-        $user->clearMediaCollection('avatar');
+        $this->mediaService->removeCollection($user, MediaCollection::Avatar);
         $user->delete();
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

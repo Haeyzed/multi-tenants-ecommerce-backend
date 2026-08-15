@@ -39,6 +39,16 @@ class RoleSeeder extends Seeder
             'roles.show',
             'permissions.view',
             'permissions.show',
+            'brands.view',
+            'brands.create',
+            'brands.show',
+            'brands.update',
+            'brands.delete',
+            'categories.view',
+            'categories.create',
+            'categories.show',
+            'categories.update',
+            'categories.delete',
         ]);
 
         Role::findOrCreate('customer', self::GUARD);

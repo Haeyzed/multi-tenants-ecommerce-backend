@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Landlord\Tenant;
 
 use App\Enums\Landlord\TenantStatus;
+use App\Events\TenantProvisioned;
 use App\Models\Landlord\Tenant;
 use App\Models\Landlord\TenantProfile;
 use App\Models\Tenant\User as TenantUser;
@@ -119,7 +120,11 @@ class TenantService
             $user->assignRole('admin');
         });
 
-        return $tenant->load(['domains', 'profile']);
+        $tenant = $tenant->load(['domains', 'profile']);
+
+        event(new TenantProvisioned($tenant));
+
+        return $tenant;
     }
 
     /**

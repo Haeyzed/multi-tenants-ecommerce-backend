@@ -6,6 +6,7 @@ namespace App\Http\Requests\Landlord\User;
 
 use App\Http\Requests\BaseRequest;
 use App\Models\Landlord\User;
+use App\Support\Media\MediaValidation;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -41,7 +42,7 @@ class UpdateUserRequest extends BaseRequest
             'roles.*' => ['string', Rule::exists('roles', 'name')->where('guard_name', 'landlord')],
             'permissions' => ['sometimes', 'array'],
             'permissions.*' => ['string', Rule::exists('permissions', 'name')->where('guard_name', 'landlord')],
-            'avatar' => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
+            'avatar' => MediaValidation::image(required: false),
         ];
     }
 }

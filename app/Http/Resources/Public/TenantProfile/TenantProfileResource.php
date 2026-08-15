@@ -33,7 +33,7 @@ class TenantProfileResource extends JsonResource
             'address' => $profile->address,
             'timezone' => $profile->timezone,
             'logo' => $profile->logo_url,
-            'banner' => $profile->banner_url,
+            'cover' => $profile->cover_url,
             'country' => $this->whenLoaded('country', fn () => [
                 'id' => $profile->country?->id,
                 'name' => $profile->country?->name ?? null,

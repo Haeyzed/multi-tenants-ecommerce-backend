@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Models\Landlord\User;
 use Database\Seeders\Landlord\FeatureSeeder;
+use Database\Seeders\Landlord\NotificationTemplateSeeder;
 use Database\Seeders\Landlord\PermissionSeeder;
 use Database\Seeders\Landlord\PlanSeeder;
 use Database\Seeders\Landlord\RoleSeeder;
@@ -30,6 +31,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             FeatureSeeder::class,
             PlanSeeder::class,
+            NotificationTemplateSeeder::class,
         ]);
 
         $user = User::query()->firstOrCreate(
