@@ -9,8 +9,18 @@ use App\Contracts\Notification\SmsProvider;
 use App\Contracts\Payment\PaymentGateway;
 use App\Models\Tenant\Brand;
 use App\Models\Tenant\Category;
+use App\Models\Tenant\Inventory;
+use App\Models\Tenant\Product;
+use App\Models\Tenant\ProductVariant;
+use App\Models\Tenant\Unit;
+use App\Models\Tenant\Warehouse;
 use App\Policies\Tenant\BrandPolicy;
 use App\Policies\Tenant\CategoryPolicy;
+use App\Policies\Tenant\InventoryPolicy;
+use App\Policies\Tenant\ProductPolicy;
+use App\Policies\Tenant\ProductVariantPolicy;
+use App\Policies\Tenant\UnitPolicy;
+use App\Policies\Tenant\WarehousePolicy;
 use App\Services\Notification\ChannelResolver;
 use App\Services\Notification\Channels\DatabaseChannel;
 use App\Services\Notification\Channels\EmailChannel;
@@ -64,6 +74,11 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Brand::class, BrandPolicy::class);
         Gate::policy(Category::class, CategoryPolicy::class);
+        Gate::policy(Unit::class, UnitPolicy::class);
+        Gate::policy(Warehouse::class, WarehousePolicy::class);
+        Gate::policy(Product::class, ProductPolicy::class);
+        Gate::policy(ProductVariant::class, ProductVariantPolicy::class);
+        Gate::policy(Inventory::class, InventoryPolicy::class);
 
         Gate::define('viewApiDocs', function ($user = null): bool {
             // RestrictedDocsAccess already allows local; this gate covers non-local environments.

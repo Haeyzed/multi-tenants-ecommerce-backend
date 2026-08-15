@@ -6,47 +6,53 @@ namespace App\Models\Tenant;
 
 use App\Enums\Media\MediaCollection;
 use App\Enums\Media\MediaConversion;
-use Database\Factories\Tenant\CategoryFactory;
+use Database\Factories\Tenant\ProductVariantFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Spatie\Sluggable\HasSlug;
-use Spatie\Sluggable\SlugOptions;
 
 /**
- * Tenant catalog category with optional parent hierarchy.
- *
- * Category belongsToMany Products via category_product (direct products only).
+ * Sellable SKU variant of a product.
  *
  * @property int $id
- * @property int|null $parent_id
- * @property string $name
- * @property string $slug
- * @property string|null $description
+ * @property int $product_id
+ * @property string|null $name
+ * @property string $sku
+ * @property string|null $barcode
+ * @property int|null $unit_id
  * @property bool $is_active
+ * @property string|null $weight
+ * @property string|null $length
+ * @property string|null $width
+ * @property string|null $height
  * @property int $sort_order
  */
-class Category extends Model implements HasMedia
+class ProductVariant extends Model implements HasMedia
 {
-    /** @use HasFactory<CategoryFactory> */
-    use HasFactory, HasSlug, InteractsWithMedia;
+    /** @use HasFactory<ProductVariantFactory> */
+    use HasFactory, InteractsWithMedia;
 
     /**
      * @var list<string>
      */
     protected $fillable = [
-        'parent_id',
+        'product_id',
         'name',
-        'slug',
-        'description',
+        'sku',
+        'barcode',
+        'unit_id',
         'is_active',
+        'weight',
+        'length',
+        'width',
+        'height',
         'sort_order',
     ];
 
@@ -56,38 +62,28 @@ class Category extends Model implements HasMedia
     protected function casts(): array
     {
         return [
-            'parent_id' => 'integer',
+            'product_id' => 'integer',
+            'unit_id' => 'integer',
             'is_active' => 'boolean',
+            'weight' => 'decimal:3',
+            'length' => 'decimal:3',
+            'width' => 'decimal:3',
+            'height' => 'decimal:3',
             'sort_order' => 'integer',
         ];
     }
 
     /**
-     * Configure slug generation from the category name.
-     *
-     * Slugs stay stable after first save (SEO-friendly).
-     * Uniqueness is tenant-wide; Spatie appends suffixes on collision.
-     */
-    public function getSlugOptions(): SlugOptions
-    {
-        return SlugOptions::create()
-            ->generateSlugsFrom('name')
-            ->saveSlugsTo('slug')
-            ->skipGenerateWhen(fn (): bool => filled($this->slug));
-    }
-
-    /**
-     * Register the single-file category image collection.
+     * Register the variant image collection.
      */
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection(MediaCollection::Image->value)
-            ->singleFile()
+        $this->addMediaCollection(MediaCollection::Images->value)
             ->acceptsMimeTypes(config('media.mimes.image', []));
     }
 
     /**
-     * Register image conversions for category images.
+     * Register image conversions for variant images.
      */
     public function registerMediaConversions(?Media $media = null): void
     {
@@ -98,66 +94,72 @@ class Category extends Model implements HasMedia
         $this->addMediaConversion(MediaConversion::Thumb->value)
             ->fit(Fit::Max, (int) $thumb['width'], (int) $thumb['height'])
             ->nonQueued()
-            ->performOnCollections(MediaCollection::Image->value);
+            ->performOnCollections(MediaCollection::Images->value);
 
         $this->addMediaConversion(MediaConversion::Small->value)
             ->fit(Fit::Max, (int) $small['width'], (int) $small['height'])
             ->nonQueued()
-            ->performOnCollections(MediaCollection::Image->value);
+            ->performOnCollections(MediaCollection::Images->value);
 
         $this->addMediaConversion(MediaConversion::Medium->value)
             ->fit(Fit::Max, (int) $medium['width'], (int) $medium['height'])
             ->nonQueued()
-            ->performOnCollections(MediaCollection::Image->value);
+            ->performOnCollections(MediaCollection::Images->value);
     }
 
     /**
-     * Products directly assigned to this category.
-     *
-     * @return BelongsToMany<Product, $this>
+     * @return BelongsTo<Product, $this>
      */
-    public function products(): BelongsToMany
+    public function product(): BelongsTo
     {
-        return $this->belongsToMany(Product::class, 'category_product')->withTimestamps();
+        return $this->belongsTo(Product::class);
     }
 
     /**
-     * Parent category (null for root categories).
-     *
-     * @return BelongsTo<Category, $this>
+     * @return BelongsTo<Unit, $this>
      */
-    public function parent(): BelongsTo
+    public function unit(): BelongsTo
     {
-        return $this->belongsTo(self::class, 'parent_id');
+        return $this->belongsTo(Unit::class);
     }
 
     /**
-     * Immediate child categories.
+     * Option values that define this variant.
      *
-     * @return HasMany<Category, $this>
+     * @return BelongsToMany<ProductOptionValue, $this>
      */
-    public function children(): HasMany
+    public function optionValues(): BelongsToMany
     {
-        return $this->hasMany(self::class, 'parent_id')->orderBy('sort_order')->orderBy('id');
+        return $this->belongsToMany(
+            ProductOptionValue::class,
+            'product_variant_option_value',
+            'product_variant_id',
+            'product_option_value_id',
+        )->withTimestamps();
     }
 
     /**
-     * Recursive children for tree endpoints.
-     *
-     * @return HasMany<Category, $this>
+     * @return MorphMany<ProductPrice, $this>
      */
-    public function childrenRecursive(): HasMany
+    public function prices(): MorphMany
     {
-        return $this->children()->with('childrenRecursive');
+        return $this->morphMany(ProductPrice::class, 'priceable');
+    }
+
+    /**
+     * @return MorphMany<Inventory, $this>
+     */
+    public function inventories(): MorphMany
+    {
+        return $this->morphMany(Inventory::class, 'inventoryable');
     }
 
     /**
      * @param  Builder<$this>  $query
      * @param  array{
      *     search?: string|null,
-     *     is_active?: bool|null,
-     *     parent_id?: int|null,
-     *     root?: bool|null
+     *     product_id?: int|null,
+     *     is_active?: bool|null
      * }  $params
      * @return Builder<$this>
      */
@@ -168,17 +170,15 @@ class Category extends Model implements HasMedia
                 $like = '%'.$search.'%';
                 $query->where(function (Builder $query) use ($like): void {
                     $query->where('name', 'like', $like)
-                        ->orWhere('slug', 'like', $like);
+                        ->orWhere('sku', 'like', $like)
+                        ->orWhere('barcode', 'like', $like);
                 });
+            })
+            ->when(array_key_exists('product_id', $params) && $params['product_id'] !== null, function (Builder $query) use ($params): void {
+                $query->where('product_id', (int) $params['product_id']);
             })
             ->when(array_key_exists('is_active', $params) && $params['is_active'] !== null, function (Builder $query) use ($params): void {
                 $query->where('is_active', (bool) $params['is_active']);
-            })
-            ->when(array_key_exists('parent_id', $params) && $params['parent_id'] !== null, function (Builder $query) use ($params): void {
-                $query->where('parent_id', (int) $params['parent_id']);
-            })
-            ->when(! empty($params['root']), function (Builder $query): void {
-                $query->whereNull('parent_id');
             });
     }
 
@@ -190,7 +190,7 @@ class Category extends Model implements HasMedia
      */
     public function scopeApplySort(Builder $query, ?string $sort = null): Builder
     {
-        $allowed = ['name', 'slug', 'sort_order', 'created_at', 'updated_at', 'id'];
+        $allowed = ['name', 'sku', 'sort_order', 'created_at', 'updated_at', 'id'];
         $sort = $sort ?: 'sort_order';
         $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
         $column = ltrim($sort, '-');

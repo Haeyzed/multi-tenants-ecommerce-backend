@@ -308,12 +308,11 @@ class CategoryService
     /**
      * Whether the category has products (prepared for Product module).
      */
+    /**
+     * Whether the category has associated products.
+     */
     protected function hasAssociatedProducts(Category $category): bool
     {
-        if (! method_exists($category, 'products')) {
-            return false;
-        }
-
         return $category->products()->exists();
     }
 

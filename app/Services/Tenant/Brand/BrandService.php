@@ -164,14 +164,10 @@ class BrandService
     }
 
     /**
-     * Whether the brand has products (prepared for Product module).
+     * Whether the brand has associated products.
      */
     protected function hasAssociatedProducts(Brand $brand): bool
     {
-        if (! method_exists($brand, 'products')) {
-            return false;
-        }
-
         return $brand->products()->exists();
     }
 

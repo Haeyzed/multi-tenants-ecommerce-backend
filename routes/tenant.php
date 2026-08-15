@@ -5,14 +5,19 @@ declare(strict_types=1);
 use App\Http\Controllers\Tenant\Auth\AuthController;
 use App\Http\Controllers\Tenant\Brand\BrandController;
 use App\Http\Controllers\Tenant\Category\CategoryController;
+use App\Http\Controllers\Tenant\Inventory\InventoryController;
 use App\Http\Controllers\Tenant\Media\MediaController;
 use App\Http\Controllers\Tenant\Notification\DeviceController as NotificationDeviceController;
 use App\Http\Controllers\Tenant\Notification\InboxController as NotificationInboxController;
 use App\Http\Controllers\Tenant\Notification\PreferenceController as NotificationPreferenceController;
+use App\Http\Controllers\Tenant\Product\ProductController;
+use App\Http\Controllers\Tenant\Product\ProductVariantController;
 use App\Http\Controllers\Tenant\RBAC\PermissionController;
 use App\Http\Controllers\Tenant\RBAC\RoleController;
 use App\Http\Controllers\Tenant\Subscription\SubscriptionController;
+use App\Http\Controllers\Tenant\Unit\UnitController;
 use App\Http\Controllers\Tenant\User\UserController;
+use App\Http\Controllers\Tenant\Warehouse\WarehouseController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware;
 
@@ -99,6 +104,48 @@ Route::middleware([
             Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->middleware('permission:categories.delete')->whereNumber('category')->name('tenant.categories.destroy');
             Route::post('categories/{category}/image', [CategoryController::class, 'storeImage'])->middleware('permission:categories.update')->whereNumber('category')->name('tenant.categories.image.store');
             Route::delete('categories/{category}/image', [CategoryController::class, 'destroyImage'])->middleware('permission:categories.update')->whereNumber('category')->name('tenant.categories.image.destroy');
+
+            Route::get('units/options', [UnitController::class, 'options'])->middleware('permission:units.view')->name('tenant.units.options');
+            Route::get('units', [UnitController::class, 'index'])->middleware('permission:units.view')->name('tenant.units.index');
+            Route::post('units', [UnitController::class, 'store'])->middleware('permission:units.create')->name('tenant.units.store');
+            Route::get('units/{unit}', [UnitController::class, 'show'])->middleware('permission:units.show')->whereNumber('unit')->name('tenant.units.show');
+            Route::match(['put', 'patch'], 'units/{unit}', [UnitController::class, 'update'])->middleware('permission:units.update')->whereNumber('unit')->name('tenant.units.update');
+            Route::delete('units/{unit}', [UnitController::class, 'destroy'])->middleware('permission:units.delete')->whereNumber('unit')->name('tenant.units.destroy');
+
+            Route::get('warehouses/options', [WarehouseController::class, 'options'])->middleware('permission:warehouses.view')->name('tenant.warehouses.options');
+            Route::get('warehouses', [WarehouseController::class, 'index'])->middleware('permission:warehouses.view')->name('tenant.warehouses.index');
+            Route::post('warehouses', [WarehouseController::class, 'store'])->middleware('permission:warehouses.create')->name('tenant.warehouses.store');
+            Route::get('warehouses/{warehouse}', [WarehouseController::class, 'show'])->middleware('permission:warehouses.show')->whereNumber('warehouse')->name('tenant.warehouses.show');
+            Route::match(['put', 'patch'], 'warehouses/{warehouse}', [WarehouseController::class, 'update'])->middleware('permission:warehouses.update')->whereNumber('warehouse')->name('tenant.warehouses.update');
+            Route::delete('warehouses/{warehouse}', [WarehouseController::class, 'destroy'])->middleware('permission:warehouses.delete')->whereNumber('warehouse')->name('tenant.warehouses.destroy');
+            Route::get('warehouses/{warehouse}/locations', [WarehouseController::class, 'indexLocations'])->middleware('permission:warehouses.view')->whereNumber('warehouse')->name('tenant.warehouses.locations.index');
+            Route::post('warehouses/{warehouse}/locations', [WarehouseController::class, 'storeLocation'])->middleware('permission:warehouses.update')->whereNumber('warehouse')->name('tenant.warehouses.locations.store');
+            Route::match(['put', 'patch'], 'warehouses/{warehouse}/locations/{location}', [WarehouseController::class, 'updateLocation'])->middleware('permission:warehouses.update')->whereNumber(['warehouse', 'location'])->name('tenant.warehouses.locations.update');
+            Route::delete('warehouses/{warehouse}/locations/{location}', [WarehouseController::class, 'destroyLocation'])->middleware('permission:warehouses.update')->whereNumber(['warehouse', 'location'])->name('tenant.warehouses.locations.destroy');
+
+            Route::get('products/options', [ProductController::class, 'options'])->middleware('permission:products.view')->name('tenant.products.options');
+            Route::get('products', [ProductController::class, 'index'])->middleware('permission:products.view')->name('tenant.products.index');
+            Route::post('products', [ProductController::class, 'store'])->middleware('permission:products.create')->name('tenant.products.store');
+            Route::get('products/{product}', [ProductController::class, 'show'])->middleware('permission:products.show')->whereNumber('product')->name('tenant.products.show');
+            Route::match(['put', 'patch'], 'products/{product}', [ProductController::class, 'update'])->middleware('permission:products.update')->whereNumber('product')->name('tenant.products.update');
+            Route::delete('products/{product}', [ProductController::class, 'destroy'])->middleware('permission:products.delete')->whereNumber('product')->name('tenant.products.destroy');
+            Route::post('products/{product}/images', [ProductController::class, 'storeImages'])->middleware('permission:products.update')->whereNumber('product')->name('tenant.products.images.store');
+            Route::delete('products/{product}/images', [ProductController::class, 'destroyImages'])->middleware('permission:products.update')->whereNumber('product')->name('tenant.products.images.destroy');
+
+            Route::get('products/{product}/variants', [ProductVariantController::class, 'index'])->middleware('permission:variants.view')->whereNumber('product')->name('tenant.products.variants.index');
+            Route::post('products/{product}/variants', [ProductVariantController::class, 'store'])->middleware('permission:variants.create')->whereNumber('product')->name('tenant.products.variants.store');
+            Route::get('products/{product}/variants/{variant}', [ProductVariantController::class, 'show'])->middleware('permission:variants.show')->whereNumber(['product', 'variant'])->name('tenant.products.variants.show');
+            Route::match(['put', 'patch'], 'products/{product}/variants/{variant}', [ProductVariantController::class, 'update'])->middleware('permission:variants.update')->whereNumber(['product', 'variant'])->name('tenant.products.variants.update');
+            Route::delete('products/{product}/variants/{variant}', [ProductVariantController::class, 'destroy'])->middleware('permission:variants.delete')->whereNumber(['product', 'variant'])->name('tenant.products.variants.destroy');
+            Route::post('products/{product}/variants/{variant}/image', [ProductVariantController::class, 'storeImage'])->middleware('permission:variants.update')->whereNumber(['product', 'variant'])->name('tenant.products.variants.image.store');
+            Route::delete('products/{product}/variants/{variant}/image', [ProductVariantController::class, 'destroyImage'])->middleware('permission:variants.update')->whereNumber(['product', 'variant'])->name('tenant.products.variants.image.destroy');
+
+            Route::get('inventory', [InventoryController::class, 'index'])->middleware('permission:inventory.view')->name('tenant.inventory.index');
+            Route::get('inventory/{inventory}', [InventoryController::class, 'show'])->middleware('permission:inventory.view')->whereNumber('inventory')->name('tenant.inventory.show');
+            Route::post('inventory/{inventory}/adjust', [InventoryController::class, 'adjust'])->middleware('permission:inventory.adjust')->whereNumber('inventory')->name('tenant.inventory.adjust');
+            Route::post('inventory/{inventory}/reserve', [InventoryController::class, 'reserve'])->middleware('permission:inventory.adjust')->whereNumber('inventory')->name('tenant.inventory.reserve');
+            Route::post('inventory/{inventory}/release', [InventoryController::class, 'release'])->middleware('permission:inventory.adjust')->whereNumber('inventory')->name('tenant.inventory.release');
+            Route::post('inventory/{inventory}/transfer', [InventoryController::class, 'transfer'])->middleware('permission:inventory.transfer')->whereNumber('inventory')->name('tenant.inventory.transfer');
 
             Route::get('notifications/unread-count', [NotificationInboxController::class, 'unreadCount'])->name('tenant.notifications.unread-count');
             Route::get('notifications/unread', [NotificationInboxController::class, 'unread'])->name('tenant.notifications.unread');

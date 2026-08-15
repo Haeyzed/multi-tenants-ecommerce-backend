@@ -10,6 +10,7 @@ use Database\Factories\Tenant\BrandFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -20,7 +21,6 @@ use Spatie\Sluggable\SlugOptions;
 /**
  * Tenant catalog brand.
  *
- * Product relationships are prepared for a future Product module:
  * Brand hasMany Products (nullable brand_id on products).
  *
  * @property int $id
@@ -68,6 +68,16 @@ class Brand extends Model implements HasMedia
             ->generateSlugsFrom('name')
             ->saveSlugsTo('slug')
             ->skipGenerateWhen(fn (): bool => filled($this->slug));
+    }
+
+    /**
+     * Products belonging to this brand.
+     *
+     * @return HasMany<Product, $this>
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
     }
 
     /**
