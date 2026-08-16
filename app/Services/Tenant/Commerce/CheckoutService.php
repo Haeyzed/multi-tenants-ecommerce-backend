@@ -25,6 +25,9 @@ use App\Models\Tenant\ProductVariant;
 use App\Models\Tenant\SellerOffer;
 use App\Models\Tenant\ShippingMethod;
 use App\Services\Landlord\Feature\FeatureGate;
+use App\Services\Landlord\Feature\UsageLimiter;
+use App\Services\Tenant\Accounting\AccountingService;
+use App\Services\Tenant\Marketplace\CommissionService;
 use App\Services\Tenant\Marketplace\SellerOrderService;
 use App\Services\Tenant\Tax\TaxService;
 use App\Support\Money;
@@ -38,8 +41,10 @@ use Illuminate\Validation\ValidationException;
 class CheckoutService
 {
     public function __construct(
+        private readonly AccountingService $accounting,
         private readonly CartService $cartService,
         private readonly CommerceSettingService $commerceSettings,
+        private readonly CommissionService $commissions,
         private readonly DiscountService $discountService,
         private readonly FeatureGate $featureGate,
         private readonly GiftCardService $giftCardService,
@@ -47,6 +52,7 @@ class CheckoutService
         private readonly SellerOrderService $sellerOrders,
         private readonly StoreCreditService $storeCreditService,
         private readonly TaxService $taxService,
+        private readonly UsageLimiter $usageLimiter,
     ) {}
 
     /**
@@ -75,6 +81,11 @@ class CheckoutService
     public function checkout(Customer $customer, array $data): Order
     {
         return DB::transaction(function () use ($customer, $data): Order {
+            $tenant = tenant();
+            if ($tenant instanceof Tenant && $tenant->activeSubscription() !== null) {
+                $this->usageLimiter->assertCanCreate('orders', $tenant);
+            }
+
             $idempotencyKey = $data['idempotency_key'] ?? null;
 
             if (is_string($idempotencyKey) && $idempotencyKey !== '') {
@@ -300,6 +311,12 @@ class CheckoutService
 
             if ($isFullyPrepaid) {
                 $this->orderInventory->commitSaleForOrder($order->fresh(['items']) ?? $order);
+
+                if ($this->commerceSettings->isMarketplaceEnabled()) {
+                    $this->commissions->createForOrder($order->fresh(['items']) ?? $order);
+                }
+
+                $this->accounting->postSale($order->fresh(['items']) ?? $order);
             }
 
             if ($this->commerceSettings->isMarketplaceEnabled()) {

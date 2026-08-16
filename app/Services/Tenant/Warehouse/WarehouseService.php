@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\Warehouse;
 
+use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\WarehouseLocation;
+use App\Services\Landlord\Feature\UsageLimiter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,8 @@ use Illuminate\Validation\ValidationException;
  */
 class WarehouseService
 {
+    public function __construct(private readonly UsageLimiter $usageLimiter) {}
+
     /**
      * Paginate warehouses with search, filters, and sorts.
      *
@@ -76,6 +80,11 @@ class WarehouseService
      */
     public function store(array $data): Warehouse
     {
+        $tenant = tenant();
+        if ($tenant instanceof Tenant && $tenant->activeSubscription() !== null) {
+            $this->usageLimiter->assertCanCreate('inventory', $tenant);
+        }
+
         return DB::transaction(function () use ($data): Warehouse {
             if (($data['is_default'] ?? false) === true) {
                 Warehouse::query()->where('is_default', true)->update(['is_default' => false]);

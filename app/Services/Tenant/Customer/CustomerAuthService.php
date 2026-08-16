@@ -8,7 +8,9 @@ use App\Enums\Tenant\Customer\CustomerStatus;
 use App\Events\CustomerRegistered;
 use App\Events\PasswordChanged;
 use App\Events\PasswordResetRequested;
+use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Customer;
+use App\Services\Landlord\Feature\UsageLimiter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -20,6 +22,8 @@ use Laravel\Sanctum\PersonalAccessToken;
  */
 class CustomerAuthService
 {
+    public function __construct(private readonly UsageLimiter $usageLimiter) {}
+
     /**
      * Register a new customer and issue a Sanctum API token.
      *
@@ -28,6 +32,11 @@ class CustomerAuthService
      */
     public function register(array $data): array
     {
+        $tenant = tenant();
+        if ($tenant instanceof Tenant && $tenant->activeSubscription() !== null) {
+            $this->usageLimiter->assertCanCreate('customers', $tenant);
+        }
+
         $customer = Customer::query()->create($data);
 
         event(new CustomerRegistered($customer));

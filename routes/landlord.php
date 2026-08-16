@@ -18,10 +18,23 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-foreach (config('tenancy.identification.central_domains') as $domain) {
+foreach (config('tenancy.identification.central_domains') as $index => $domain) {
+    // Canonical names on the primary central domain only; prefix secondary domains
+    // so `php artisan route:cache` can serialize multi-domain central routes.
+    if ($index === 0) {
+        Route::domain($domain)
+            ->middleware('central')
+            ->group(function (): void {
+                Route::get('/', HomeController::class)->name('landlord.home');
+            });
+
+        continue;
+    }
+
     Route::domain($domain)
         ->middleware('central')
-        ->group(function () {
+        ->name("central{$index}.")
+        ->group(function (): void {
             Route::get('/', HomeController::class)->name('landlord.home');
         });
 }

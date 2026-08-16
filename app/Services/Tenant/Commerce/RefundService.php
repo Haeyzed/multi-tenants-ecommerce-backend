@@ -26,6 +26,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * Process full and partial payment refunds.
@@ -76,7 +77,6 @@ class RefundService
         }
 
         $requestedAmount = isset($data['amount']) ? (string) $data['amount'] : (string) $payment->amount;
-        $refundable = $this->refundableAmount($payment);
 
         if (bccomp($requestedAmount, '0', 2) <= 0) {
             throw ValidationException::withMessages([
@@ -84,21 +84,45 @@ class RefundService
             ]);
         }
 
-        if (bccomp($requestedAmount, $refundable, 2) > 0) {
+        $providerTransactionId = $payment->provider_transaction_id;
+
+        if ($providerTransactionId === null || $providerTransactionId === '') {
             throw ValidationException::withMessages([
-                'amount' => 'Refund amount exceeds the refundable balance.',
+                'payment' => 'Payment has no provider transaction id for refund.',
             ]);
         }
 
         $reference = 'REF-'.$order->order_number.'-'.uniqid();
-        $isFullRefund = bccomp($requestedAmount, $refundable, 2) === 0;
 
-        return DB::transaction(function () use ($order, $payment, $data, $requestedAmount, $reference, $isFullRefund): Refund {
+        /** @var array{refund: Refund, is_full_refund: bool} $claim */
+        $claim = DB::transaction(function () use ($order, $payment, $data, $requestedAmount, $reference): array {
+            /** @var OrderPayment $lockedPayment */
+            $lockedPayment = OrderPayment::query()
+                ->whereKey($payment->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::query()
+                ->whereKey($order->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $refundable = $this->refundableAmount($lockedPayment);
+
+            if (bccomp($requestedAmount, $refundable, 2) > 0) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Refund amount exceeds the refundable balance.',
+                ]);
+            }
+
+            $isFullRefund = bccomp($requestedAmount, $refundable, 2) === 0;
+
             $refund = Refund::query()->create([
-                'order_id' => $order->id,
-                'order_payment_id' => $payment->id,
+                'order_id' => $lockedOrder->id,
+                'order_payment_id' => $lockedPayment->id,
                 'amount' => $requestedAmount,
-                'currency' => $payment->currency,
+                'currency' => $lockedPayment->currency,
                 'reference' => $reference,
                 'status' => RefundStatus::Processing,
                 'reason' => $data['reason'] ?? null,
@@ -106,14 +130,17 @@ class RefundService
 
             event(new RefundInitiated($refund));
 
-            $gateway = $this->paymentManager->driver($payment->gateway);
-            $providerTransactionId = $payment->provider_transaction_id;
+            return [
+                'refund' => $refund,
+                'is_full_refund' => $isFullRefund,
+            ];
+        });
 
-            if ($providerTransactionId === null || $providerTransactionId === '') {
-                throw ValidationException::withMessages([
-                    'payment' => 'Payment has no provider transaction id for refund.',
-                ]);
-            }
+        $refund = $claim['refund'];
+        $isFullRefund = $claim['is_full_refund'];
+
+        try {
+            $gateway = $this->paymentManager->driver($payment->gateway);
 
             $result = $gateway instanceof PaystackGateway
                 ? $gateway->refundPaymentDetailed(
@@ -124,43 +151,71 @@ class RefundService
                 : new PaymentRefundResult(
                     successful: $gateway->refundPayment($providerTransactionId, $requestedAmount),
                 );
+        } catch (Throwable $exception) {
+            $this->markRefundFailed($refund, [
+                'exception' => $exception->getMessage(),
+            ]);
 
-            if (! $result->successful) {
-                $refund->status = RefundStatus::Failed;
-                $refund->metadata = ['gateway' => $result->raw, 'message' => $result->message];
-                $refund->save();
+            throw $exception;
+        }
 
-                throw ValidationException::withMessages([
-                    'refund' => $result->message ?? 'Gateway refund failed.',
-                ]);
+        if (! $result->successful) {
+            $this->markRefundFailed($refund, [
+                'gateway' => $result->raw,
+                'message' => $result->message,
+            ]);
+
+            throw ValidationException::withMessages([
+                'refund' => $result->message ?? 'Gateway refund failed.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($refund, $payment, $order, $requestedAmount, $isFullRefund, $result): Refund {
+            /** @var Refund $lockedRefund */
+            $lockedRefund = Refund::query()->whereKey($refund->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($lockedRefund->status === RefundStatus::Completed) {
+                return $lockedRefund->load(['order', 'payment']);
             }
 
-            $refund->status = RefundStatus::Completed;
-            $refund->provider_refund_id = $result->providerRefundId;
-            $refund->processed_at = now();
-            $refund->metadata = ['gateway' => $result->raw];
-            $refund->save();
+            /** @var OrderPayment $lockedPayment */
+            $lockedPayment = OrderPayment::query()
+                ->whereKey($payment->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            $remaining = $this->refundableAmount($payment->fresh() ?? $payment);
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::query()
+                ->whereKey($order->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $lockedRefund->status = RefundStatus::Completed;
+            $lockedRefund->provider_refund_id = $result->providerRefundId;
+            $lockedRefund->processed_at = now();
+            $lockedRefund->metadata = ['gateway' => $result->raw];
+            $lockedRefund->save();
+
+            $remaining = $this->refundableAmount($lockedPayment);
 
             if (bccomp($remaining, '0', 2) === 0) {
-                $order->payment_status = OrderPaymentStatus::Refunded;
+                $lockedOrder->payment_status = OrderPaymentStatus::Refunded;
             } else {
-                $order->payment_status = OrderPaymentStatus::PartiallyRefunded;
+                $lockedOrder->payment_status = OrderPaymentStatus::PartiallyRefunded;
             }
-            $order->save();
+            $lockedOrder->save();
 
             if ($isFullRefund) {
-                $this->accounting->postRefund($order);
-                $this->restoreAlternativeFunding($order);
+                $this->accounting->postRefund($lockedOrder);
+                $this->restoreAlternativeFunding($lockedOrder);
             } else {
-                $this->accounting->postPartialRefund($order, $requestedAmount);
+                $this->accounting->postPartialRefund($lockedOrder, $requestedAmount);
             }
 
-            $refund = $refund->fresh(['order', 'payment']) ?? $refund;
-            event(new RefundCompleted($refund));
+            $lockedRefund = $lockedRefund->fresh(['order', 'payment']) ?? $lockedRefund;
+            event(new RefundCompleted($lockedRefund));
 
-            return $refund;
+            return $lockedRefund;
         });
     }
 
@@ -223,6 +278,16 @@ class RefundService
         return $restored;
     }
 
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    protected function markRefundFailed(Refund $refund, array $metadata): void
+    {
+        $refund->status = RefundStatus::Failed;
+        $refund->metadata = $metadata;
+        $refund->save();
+    }
+
     protected function giftCardAlreadyRestored(Order $order): bool
     {
         return GiftCardTransaction::query()
@@ -240,11 +305,14 @@ class RefundService
             ->exists();
     }
 
+    /**
+     * Remaining refundable amount excluding completed and in-flight processing refunds.
+     */
     protected function refundableAmount(OrderPayment $payment): string
     {
         $refunded = Refund::query()
             ->where('order_payment_id', $payment->id)
-            ->where('status', RefundStatus::Completed)
+            ->whereIn('status', [RefundStatus::Completed, RefundStatus::Processing])
             ->sum('amount');
 
         return Money::sub((string) $payment->amount, (string) $refunded);

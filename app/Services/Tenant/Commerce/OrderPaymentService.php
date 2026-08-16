@@ -14,10 +14,14 @@ use App\Events\OrderPaid;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderPayment;
+use App\Models\Tenant\PaymentWebhookEvent;
 use App\Services\Payment\PaymentManager;
 use App\Services\Tenant\Accounting\AccountingService;
 use App\Services\Tenant\Marketplace\CommissionService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -52,56 +56,63 @@ class OrderPaymentService
             ]);
         }
 
-        if ($order->payment_status === OrderPaymentStatus::Paid) {
-            throw ValidationException::withMessages([
-                'order' => 'Order is already paid.',
+        /** @var OrderPayment $payment */
+        $payment = DB::transaction(function () use ($order, $customer): OrderPayment {
+            /** @var Order $locked */
+            $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->payment_status === OrderPaymentStatus::Paid) {
+                throw ValidationException::withMessages([
+                    'order' => 'Order is already paid.',
+                ]);
+            }
+
+            if (bccomp((string) $locked->grand_total, '0', 2) <= 0) {
+                throw ValidationException::withMessages([
+                    'order' => 'Order has no remaining balance to charge.',
+                ]);
+            }
+
+            $existing = OrderPayment::query()
+                ->where('order_id', $locked->id)
+                ->where('status', OrderPaymentRecordStatus::Pending)
+                ->lockForUpdate()
+                ->latest('id')
+                ->first();
+
+            if ($existing !== null) {
+                return $existing;
+            }
+
+            $reference = 'ORDPAY-'.$locked->order_number.'-'.uniqid();
+            $gateway = (string) config('payment.default', 'paystack');
+
+            $created = OrderPayment::query()->create([
+                'order_id' => $locked->id,
+                'customer_id' => $customer->id,
+                'amount' => $locked->grand_total,
+                'currency' => $locked->currency,
+                'gateway' => $gateway,
+                'reference' => $reference,
+                'status' => OrderPaymentRecordStatus::Pending,
+                'metadata' => [
+                    'order_id' => $locked->id,
+                    'order_number' => $locked->order_number,
+                ],
             ]);
-        }
 
-        if (bccomp((string) $order->grand_total, '0', 2) <= 0) {
-            throw ValidationException::withMessages([
-                'order' => 'Order has no remaining balance to charge.',
-            ]);
-        }
+            $locked->payment_status = OrderPaymentStatus::Pending;
+            $locked->save();
 
-        $existing = OrderPayment::query()
-            ->where('order_id', $order->id)
-            ->where('status', OrderPaymentRecordStatus::Pending)
-            ->latest('id')
-            ->first();
+            return $created;
+        });
 
-        if ($existing !== null) {
-            $initiation = $this->paymentManager->driver($existing->gateway)->initializePayment(
-                new PaymentInitiationRequest(
-                    amount: (string) $existing->amount,
-                    currency: $existing->currency,
-                    email: $customer->email,
-                    reference: $existing->reference,
-                    metadata: [
-                        'order_id' => $order->id,
-                        'order_number' => $order->order_number,
-                        'customer_id' => $customer->id,
-                    ],
-                    customerName: trim($customer->first_name.' '.$customer->last_name),
-                ),
-            );
-
-            return [
-                'initiation' => $initiation,
-                'payment' => $existing->fresh() ?? $existing,
-            ];
-        }
-
-        $order->loadMissing('customer');
-        $reference = 'ORDPAY-'.$order->order_number.'-'.uniqid();
-        $gateway = (string) config('payment.default', 'paystack');
-
-        $initiation = $this->paymentManager->driver($gateway)->initializePayment(
+        $initiation = $this->paymentManager->driver($payment->gateway)->initializePayment(
             new PaymentInitiationRequest(
-                amount: (string) $order->grand_total,
-                currency: $order->currency,
+                amount: (string) $payment->amount,
+                currency: $payment->currency,
                 email: $customer->email,
-                reference: $reference,
+                reference: $payment->reference,
                 metadata: [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,
@@ -110,23 +121,6 @@ class OrderPaymentService
                 customerName: trim($customer->first_name.' '.$customer->last_name),
             ),
         );
-
-        $payment = OrderPayment::query()->create([
-            'order_id' => $order->id,
-            'customer_id' => $customer->id,
-            'amount' => $order->grand_total,
-            'currency' => $order->currency,
-            'gateway' => $gateway,
-            'reference' => $reference,
-            'status' => OrderPaymentRecordStatus::Pending,
-            'metadata' => [
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-            ],
-        ]);
-
-        $order->payment_status = OrderPaymentStatus::Pending;
-        $order->save();
 
         return [
             'initiation' => $initiation,
@@ -206,6 +200,16 @@ class OrderPaymentService
             $locked->failed_at = null;
             $locked->save();
 
+            if ($order->payment_status === OrderPaymentStatus::Paid) {
+                Log::warning('Duplicate successful payment recorded for an already-paid order; skipping sale side effects.', [
+                    'order_id' => $order->id,
+                    'payment_id' => $locked->id,
+                    'reference' => $locked->reference,
+                ]);
+
+                return $locked->fresh(['order']) ?? $locked;
+            }
+
             $order->payment_status = OrderPaymentStatus::Paid;
             $order->status = OrderStatus::Confirmed;
             if ($order->confirmed_at === null) {
@@ -262,7 +266,7 @@ class OrderPaymentService
      * Never marks successful without a successful gateway verify + amount/currency match.
      *
      * @param  array<string, mixed>  $payload
-     * @return array{processed: bool, payment?: OrderPayment|null}
+     * @return array{processed: bool, duplicate?: bool, payment?: OrderPayment|null}
      */
     public function handleWebhook(array $payload, ?string $signature, ?string $rawBody = null): array
     {
@@ -281,6 +285,18 @@ class OrderPaymentService
             return ['processed' => false];
         }
 
+        $eventId = $this->resolveWebhookEventId($payload, $rawBody, $reference);
+
+        if (! $this->claimWebhookEvent($eventId, $eventType, $reference, $payload)) {
+            $payment = OrderPayment::query()->where('reference', $reference)->first();
+
+            return [
+                'processed' => false,
+                'duplicate' => true,
+                'payment' => $payment,
+            ];
+        }
+
         $payment = OrderPayment::query()->where('reference', $reference)->first();
 
         if ($payment === null) {
@@ -294,6 +310,57 @@ class OrderPaymentService
         $verified = $this->verify($reference);
 
         return ['processed' => true, 'payment' => $verified];
+    }
+
+    /**
+     * Claim a webhook event id before side effects. Returns false when already claimed.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    protected function claimWebhookEvent(
+        string $eventId,
+        ?string $eventType,
+        string $reference,
+        array $payload,
+    ): bool {
+        if (! Schema::hasTable('payment_webhook_events')) {
+            return true;
+        }
+
+        try {
+            PaymentWebhookEvent::query()->create([
+                'provider' => 'paystack',
+                'event_id' => $eventId,
+                'event_type' => $eventType,
+                'reference' => $reference,
+                'payload' => $payload,
+                'processed_at' => now(),
+            ]);
+
+            return true;
+        } catch (UniqueConstraintViolationException) {
+            return false;
+        }
+    }
+
+    /**
+     * Resolve a stable provider event id for idempotency.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    protected function resolveWebhookEventId(array $payload, ?string $rawBody, string $reference): string
+    {
+        $data = is_array($payload['data'] ?? null) ? $payload['data'] : [];
+
+        if (isset($data['id'])) {
+            return (string) $data['id'];
+        }
+
+        if (isset($payload['event'])) {
+            return (string) $payload['event'].':'.$reference;
+        }
+
+        return hash('sha256', $rawBody ?? json_encode($payload, JSON_THROW_ON_ERROR));
     }
 
     /**

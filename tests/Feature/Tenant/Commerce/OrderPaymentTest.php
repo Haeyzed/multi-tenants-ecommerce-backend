@@ -294,6 +294,46 @@ test('webhook without valid signature is rejected', function (): void {
         ->toThrow(AccessDeniedHttpException::class);
 });
 
+test('duplicate paystack webhook event ids are ignored after the first successful process', function (): void {
+    config(['payment.drivers.paystack.webhook_secret' => 'test_secret']);
+
+    $this->artisan('migrate', [
+        '--path' => database_path('migrations/tenant/2026_08_16_071511_create_payment_webhook_events_table.php'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
+
+    $fixture = paymentFixture();
+    $gateway = mockPaymentGateway(verifySuccess: true);
+
+    $this->mock(PaymentManager::class, function ($mock) use ($gateway): void {
+        $mock->shouldReceive('driver')->andReturn($gateway);
+    });
+
+    $service = app(OrderPaymentService::class);
+    $init = $service->initialize($fixture['order'], $fixture['customer']);
+
+    $payload = [
+        'event' => 'charge.success',
+        'data' => [
+            'id' => 424242,
+            'reference' => $init['payment']->reference,
+        ],
+    ];
+    $raw = json_encode($payload, JSON_THROW_ON_ERROR);
+    $signature = hash_hmac('sha512', $raw, 'test_secret');
+
+    $first = $service->handleWebhook($payload, $signature, $raw);
+    $second = $service->handleWebhook($payload, $signature, $raw);
+
+    expect($first['processed'])->toBeTrue()
+        ->and($first['payment']->status)->toBe(OrderPaymentRecordStatus::Successful)
+        ->and($second['processed'])->toBeFalse()
+        ->and($second['duplicate'] ?? false)->toBeTrue()
+        ->and(OrderPayment::query()->where('order_id', $fixture['order']->id)->count())->toBe(1)
+        ->and(JournalEntry::query()->where('entry_type', 'sale')->count())->toBe(1);
+});
+
 test('paid order cannot be cancelled via transition', function (): void {
     $fixture = paymentFixture();
     $gateway = mockPaymentGateway(verifySuccess: true);

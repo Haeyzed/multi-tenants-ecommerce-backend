@@ -200,6 +200,15 @@ $registerLandlordApi = function (): void {
     });
 };
 
-foreach (config('tenancy.identification.central_domains', []) as $domain) {
-    Route::domain($domain)->group($registerLandlordApi);
+foreach (config('tenancy.identification.central_domains', []) as $index => $domain) {
+    // Named routes must be unique for `route:cache`. Keep canonical names on the
+    // primary central domain; prefix secondary domains so the same URI tree can
+    // exist on localhost / 127.0.0.1 / APP_URL host without colliding.
+    if ($index === 0) {
+        Route::domain($domain)->group($registerLandlordApi);
+
+        continue;
+    }
+
+    Route::domain($domain)->name("central{$index}.")->group($registerLandlordApi);
 }
