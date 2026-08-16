@@ -155,6 +155,24 @@ test('return rejects quantity above returnable', function (): void {
     ]))->toThrow(ValidationException::class);
 });
 
+test('return line refund amount uses proportional net line total not gross unit price', function (): void {
+    $fixture = returnEligibleOrderFixture();
+    $item = $fixture['item'];
+    $item->discount_amount = '40.00';
+    $item->subtotal = '200.00';
+    $item->tax_amount = '0.00';
+    $item->total = '160.00';
+    $item->save();
+
+    $return = app(OrderReturnService::class)->request($fixture['customer'], $fixture['order'], [
+        'items' => [
+            ['order_item_id' => $item->id, 'quantity' => 1],
+        ],
+    ]);
+
+    expect($return->items->first()->refund_amount)->toBe('80.00');
+});
+
 test('return approval receive inspect and restock flow', function (): void {
     $fixture = returnEligibleOrderFixture();
     $service = app(OrderReturnService::class);

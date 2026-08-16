@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\DTO\Payment\PaymentRefundResult;
 use App\Enums\Tenant\Catalog\InventoryMovementType;
+use App\Enums\Tenant\Commerce\OrderPaymentRecordStatus;
 use App\Enums\Tenant\Commerce\OrderPaymentStatus;
 use App\Enums\Tenant\Commerce\RefundStatus;
 use App\Events\OrderCreated;
@@ -12,11 +14,14 @@ use App\Jobs\GenerateInvoicePdfJob;
 use App\Jobs\MarkAbandonedCartsJob;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerAddress;
+use App\Models\Tenant\OrderPayment;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductPrice;
+use App\Models\Tenant\Refund;
 use App\Models\Tenant\Warehouse;
 use App\Rules\MoneyAmount;
 use App\Services\Notification\NotificationService;
+use App\Services\Payment\Gateways\PaystackGateway;
 use App\Services\Tenant\Commerce\CartService;
 use App\Services\Tenant\Commerce\CheckoutService;
 use App\Services\Tenant\Commerce\CommerceAnalyticsService;
@@ -151,4 +156,70 @@ test('tenant commerce jobs exit safely when tenant id is missing', function (): 
 
     expect(fn () => (new GenerateInvoicePdfJob(1, null))->handle())
         ->not->toThrow(Throwable::class);
+});
+
+test('refundAllocated draws gateway balance before prepaid remainder', function (): void {
+    Event::fake([OrderCreated::class, OrderPaid::class]);
+
+    $customer = Customer::factory()->create();
+    $address = CustomerAddress::factory()->for($customer)->default()->create();
+    $product = Product::factory()->active()->create(['allow_backorder' => false]);
+    ProductPrice::query()->create([
+        'priceable_type' => Product::class,
+        'priceable_id' => $product->id,
+        'currency' => 'NGN',
+        'amount' => '100.00',
+        'is_active' => true,
+    ]);
+    $warehouse = Warehouse::factory()->create(['is_default' => true]);
+    $inventory = app(InventoryService::class)->getOrCreate($warehouse, $product);
+    app(InventoryService::class)->adjust($inventory, 10, InventoryMovementType::OpeningStock, 'Opening');
+
+    [$giftCard, $plainCode] = app(GiftCardService::class)->create([
+        'amount' => '50.00',
+        'currency' => 'NGN',
+        'activate' => true,
+    ]);
+
+    app(CartService::class)->addItem($customer, $product->id, null, 2);
+    $order = app(CheckoutService::class)->checkout($customer, [
+        'shipping_address_id' => $address->id,
+        'gift_card_code' => $plainCode,
+    ]);
+
+    expect($order->grand_total)->toBe('150.00')
+        ->and($order->gift_card_amount)->toBe('50.00');
+
+    OrderPayment::query()->create([
+        'order_id' => $order->id,
+        'customer_id' => $customer->id,
+        'amount' => $order->grand_total,
+        'currency' => $order->currency,
+        'gateway' => 'paystack',
+        'reference' => 'ORDPAY-MIX-'.$order->id,
+        'provider_transaction_id' => 'txn_mix',
+        'status' => OrderPaymentRecordStatus::Successful,
+        'paid_at' => now(),
+    ]);
+
+    $mock = Mockery::mock(PaystackGateway::class);
+    $mock->shouldReceive('refundPaymentDetailed')
+        ->once()
+        ->withArgs(fn ($txn, $amount): bool => $txn === 'txn_mix' && $amount === '150.00')
+        ->andReturn(new PaymentRefundResult(
+            successful: true,
+            providerRefundId: 'rf_mix',
+            amount: '150.00',
+            currency: 'NGN',
+        ));
+    app()->instance(PaystackGateway::class, $mock);
+
+    $refund = app(RefundService::class)->refundAllocated($order, '200.00', [
+        'reason' => 'Full mixed return',
+    ]);
+
+    expect($refund->status)->toBe(RefundStatus::Completed)
+        ->and($giftCard->fresh()->balance)->toBe('50.00')
+        ->and($order->fresh()->payment_status)->toBe(OrderPaymentStatus::Refunded)
+        ->and(Refund::query()->where('order_id', $order->id)->count())->toBe(2);
 });

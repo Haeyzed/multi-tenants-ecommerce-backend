@@ -20,7 +20,6 @@ use App\Events\OrderReturnRequested;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderItem;
-use App\Models\Tenant\OrderPayment;
 use App\Models\Tenant\OrderReturn;
 use App\Models\Tenant\OrderReturnItem;
 use App\Models\Tenant\User;
@@ -139,8 +138,7 @@ class OrderReturnService
                     ]);
                 }
 
-                $unitRefund = Money::add((string) $orderItem->unit_price, '0');
-                $lineRefund = Money::mul($unitRefund, (string) $quantity);
+                $lineRefund = $this->lineRefundAmount($orderItem, $quantity);
 
                 $prepared[] = [
                     'order_item' => $orderItem,
@@ -374,27 +372,15 @@ class OrderReturnService
             ]);
         }
 
-        /** @var OrderPayment|null $payment */
-        $payment = $return->order?->payments()
-            ->where('status', 'successful')
-            ->latest('id')
-            ->first();
-
         if ($return->order === null) {
             throw ValidationException::withMessages([
                 'order' => 'Return order is missing.',
             ]);
         }
 
-        $refund = $payment === null
-            ? $this->refunds->createPrepaid($return->order, [
-                'amount' => $amount,
-                'reason' => 'Return '.$return->return_number,
-            ])
-            : $this->refunds->create($return->order, $payment, [
-                'amount' => $amount,
-                'reason' => 'Return '.$return->return_number,
-            ]);
+        $refund = $this->refunds->refundAllocated($return->order, $amount, [
+            'reason' => 'Return '.$return->return_number,
+        ]);
 
         $return->refund_id = $refund->id;
         $return->save();
@@ -477,6 +463,23 @@ class OrderReturnService
                 'order' => "The {$windowDays}-day return window has expired.",
             ]);
         }
+    }
+
+    /**
+     * Proportional share of the line's net total (after discount, including tax).
+     */
+    protected function lineRefundAmount(OrderItem $orderItem, int $quantity): string
+    {
+        if ($orderItem->quantity <= 0 || $quantity <= 0) {
+            return '0.00';
+        }
+
+        $share = Money::mul(
+            (string) $orderItem->total,
+            bcdiv((string) $quantity, (string) $orderItem->quantity, 8),
+        );
+
+        return Money::add($share, '0');
     }
 
     /**

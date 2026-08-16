@@ -60,7 +60,7 @@ class RefundService
     }
 
     /**
-     * @param  array{amount?: string|null, reason?: string|null}  $data
+     * @param  array{amount?: string|null, reason?: string|null, restore_prepaid?: bool|null}  $data
      */
     public function create(Order $order, OrderPayment $payment, array $data = []): Refund
     {
@@ -138,6 +138,7 @@ class RefundService
 
         $refund = $claim['refund'];
         $isFullRefund = $claim['is_full_refund'];
+        $restorePrepaid = (bool) ($data['restore_prepaid'] ?? true);
 
         try {
             $gateway = $this->paymentManager->driver($payment->gateway);
@@ -170,7 +171,7 @@ class RefundService
             ]);
         }
 
-        return DB::transaction(function () use ($refund, $payment, $order, $requestedAmount, $isFullRefund, $result): Refund {
+        return DB::transaction(function () use ($refund, $payment, $order, $requestedAmount, $isFullRefund, $restorePrepaid, $result): Refund {
             /** @var Refund $lockedRefund */
             $lockedRefund = Refund::query()->whereKey($refund->getKey())->lockForUpdate()->firstOrFail();
 
@@ -196,21 +197,14 @@ class RefundService
             $lockedRefund->metadata = ['gateway' => $result->raw];
             $lockedRefund->save();
 
-            $remaining = $this->refundableAmount($lockedPayment);
-
-            if (bccomp($remaining, '0', 2) === 0) {
-                $lockedOrder->payment_status = OrderPaymentStatus::Refunded;
-            } else {
-                $lockedOrder->payment_status = OrderPaymentStatus::PartiallyRefunded;
-            }
-            $lockedOrder->save();
-
-            if ($isFullRefund) {
+            if ($isFullRefund && $restorePrepaid) {
                 $this->accounting->postRefund($lockedOrder);
                 $this->restoreAlternativeFunding($lockedOrder);
             } else {
                 $this->accounting->postPartialRefund($lockedOrder, $requestedAmount);
             }
+
+            $this->syncOrderPaymentStatus($lockedOrder, $lockedPayment);
 
             $lockedRefund = $lockedRefund->fresh(['order', 'payment']) ?? $lockedRefund;
             event(new RefundCompleted($lockedRefund));
@@ -220,7 +214,70 @@ class RefundService
     }
 
     /**
-     * Refund an order funded only by gift card / store credit (no gateway payment).
+     * Allocate a refund across remaining gateway balance first, then prepaid tenders.
+     *
+     * @param  array{reason?: string|null}  $data
+     */
+    public function refundAllocated(Order $order, string $amount, array $data = []): Refund
+    {
+        if (bccomp($amount, '0', 2) <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'Refund amount must be greater than zero.',
+            ]);
+        }
+
+        /** @var OrderPayment|null $payment */
+        $payment = OrderPayment::query()
+            ->where('order_id', $order->id)
+            ->where('status', OrderPaymentRecordStatus::Successful)
+            ->latest('id')
+            ->first();
+
+        $gatewayRemaining = $payment !== null
+            ? $this->refundableAmount($payment)
+            : '0.00';
+        $prepaidRemaining = $this->prepaidRemaining($order);
+        $available = Money::add($gatewayRemaining, $prepaidRemaining);
+
+        if (bccomp($amount, $available, 2) > 0) {
+            throw ValidationException::withMessages([
+                'amount' => 'Refund amount exceeds the remaining refundable balance.',
+            ]);
+        }
+
+        $gatewayShare = bccomp($amount, $gatewayRemaining, 2) > 0
+            ? $gatewayRemaining
+            : $amount;
+        $prepaidShare = Money::sub($amount, $gatewayShare);
+
+        $primary = null;
+
+        if ($payment !== null && bccomp($gatewayShare, '0', 2) > 0) {
+            $primary = $this->create($order, $payment, [
+                'amount' => $gatewayShare,
+                'reason' => $data['reason'] ?? null,
+                'restore_prepaid' => false,
+            ]);
+        }
+
+        if (bccomp($prepaidShare, '0', 2) > 0) {
+            $primary = $this->createPrepaid($order->fresh() ?? $order, [
+                'amount' => $prepaidShare,
+                'reason' => $data['reason'] ?? null,
+            ]);
+        }
+
+        if ($primary === null) {
+            throw ValidationException::withMessages([
+                'amount' => 'No refundable gateway or prepaid balance remains.',
+            ]);
+        }
+
+        return $primary;
+    }
+
+    /**
+     * Refund an order's prepaid gift card / store credit (optionally alongside a gateway payment).
      *
      * @param  array{amount?: string|null, reason?: string|null}  $data
      */
@@ -230,17 +287,11 @@ class RefundService
             /** @var Order $lockedOrder */
             $lockedOrder = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
 
-            $hasSuccessfulPayment = OrderPayment::query()
+            OrderPayment::query()
                 ->where('order_id', $lockedOrder->id)
                 ->where('status', OrderPaymentRecordStatus::Successful)
                 ->lockForUpdate()
-                ->exists();
-
-            if ($hasSuccessfulPayment) {
-                throw ValidationException::withMessages([
-                    'payment' => 'Orders with a successful gateway payment must be refunded through that payment.',
-                ]);
-            }
+                ->get();
 
             $prepaidRemaining = $this->prepaidRemaining($lockedOrder);
 
@@ -266,7 +317,7 @@ class RefundService
                 ]);
             }
 
-            $isFullRefund = bccomp(Money::sub($prepaidRemaining, $requestedAmount), '0', 2) === 0;
+            $isFullPrepaidRestore = bccomp(Money::sub($prepaidRemaining, $requestedAmount), '0', 2) === 0;
             $reference = 'REF-PREPAID-'.$lockedOrder->order_number.'-'.uniqid();
 
             $refund = Refund::query()->create([
@@ -280,7 +331,7 @@ class RefundService
                 'processed_at' => now(),
                 'metadata' => [
                     'type' => 'prepaid_restore',
-                    'full' => $isFullRefund,
+                    'full' => $isFullPrepaidRestore,
                 ],
             ]);
 
@@ -288,14 +339,13 @@ class RefundService
 
             $this->restoreAlternativeFunding($lockedOrder, $requestedAmount);
 
-            if ($isFullRefund) {
-                $lockedOrder->payment_status = OrderPaymentStatus::Refunded;
+            if ($isFullPrepaidRestore && bccomp($this->gatewayRefundableTotal($lockedOrder), '0', 2) === 0) {
                 $this->accounting->postRefund($lockedOrder);
             } else {
-                $lockedOrder->payment_status = OrderPaymentStatus::PartiallyRefunded;
                 $this->accounting->postPartialRefund($lockedOrder, $requestedAmount);
             }
-            $lockedOrder->save();
+
+            $this->syncOrderPaymentStatus($lockedOrder);
 
             $refund = $refund->fresh(['order', 'payment']) ?? $refund;
             event(new RefundCompleted($refund));
@@ -457,6 +507,38 @@ class RefundService
         $remaining = Money::sub($this->storeCreditSnapshot($order), $this->storeCreditRestoredAmount($order));
 
         return bccomp($remaining, '0', 2) > 0 ? $remaining : '0.00';
+    }
+
+    protected function syncOrderPaymentStatus(Order $order, ?OrderPayment $payment = null): void
+    {
+        $gatewayRemaining = $payment !== null
+            ? $this->refundableAmount($payment)
+            : $this->gatewayRefundableTotal($order);
+        $prepaidRemaining = $this->prepaidRemaining($order);
+
+        if (bccomp($gatewayRemaining, '0', 2) === 0 && bccomp($prepaidRemaining, '0', 2) === 0) {
+            $order->payment_status = OrderPaymentStatus::Refunded;
+        } else {
+            $order->payment_status = OrderPaymentStatus::PartiallyRefunded;
+        }
+
+        $order->save();
+    }
+
+    protected function gatewayRefundableTotal(Order $order): string
+    {
+        $total = '0.00';
+
+        $payments = OrderPayment::query()
+            ->where('order_id', $order->id)
+            ->where('status', OrderPaymentRecordStatus::Successful)
+            ->get();
+
+        foreach ($payments as $payment) {
+            $total = Money::add($total, $this->refundableAmount($payment));
+        }
+
+        return $total;
     }
 
     /**

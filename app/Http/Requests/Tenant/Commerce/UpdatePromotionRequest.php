@@ -6,6 +6,7 @@ namespace App\Http\Requests\Tenant\Commerce;
 
 use App\Enums\Tenant\Commerce\PromotionType;
 use App\Http\Requests\BaseRequest;
+use App\Rules\MoneyAmount;
 use Illuminate\Validation\Rule;
 
 class UpdatePromotionRequest extends BaseRequest
@@ -22,9 +23,9 @@ class UpdatePromotionRequest extends BaseRequest
             'slug' => ['sometimes', 'string', 'max:255', Rule::unique('promotions', 'slug')->ignore($promotionId)],
             'description' => ['sometimes', 'nullable', 'string'],
             'type' => ['sometimes', 'string', Rule::enum(PromotionType::class)],
-            'value' => ['sometimes', 'numeric', 'min:0'],
-            'min_order_amount' => ['sometimes', 'numeric', 'min:0'],
-            'max_discount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'value' => ['sometimes', new MoneyAmount(allowZero: true)],
+            'min_order_amount' => ['sometimes', new MoneyAmount(allowZero: true)],
+            'max_discount' => ['sometimes', 'nullable', new MoneyAmount(allowZero: true, allowNull: true)],
             'priority' => ['sometimes', 'integer', 'min:0'],
             'is_exclusive' => ['sometimes', 'boolean'],
             'is_stackable' => ['sometimes', 'boolean'],

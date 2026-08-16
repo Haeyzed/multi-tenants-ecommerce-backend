@@ -8,6 +8,7 @@ use App\Enums\Tenant\Catalog\ProductStatus;
 use App\Enums\Tenant\Catalog\ProductType;
 use App\Enums\Tenant\Catalog\ProductVisibility;
 use App\Http\Requests\BaseRequest;
+use App\Rules\MoneyAmount;
 use App\Support\Media\MediaValidation;
 use Illuminate\Validation\Rule;
 
@@ -52,9 +53,9 @@ class StoreProductRequest extends BaseRequest
             'category_ids.*' => ['integer', Rule::exists('categories', 'id')],
             'price' => ['sometimes', 'array'],
             'price.currency' => ['required_with:price', 'string', 'size:3'],
-            'price.amount' => ['required_with:price', 'numeric', 'min:0'],
-            'price.compare_at_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'price.cost_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'price.amount' => ['required_with:price', new MoneyAmount(allowZero: true)],
+            'price.compare_at_amount' => ['sometimes', 'nullable', new MoneyAmount(allowZero: true, allowNull: true)],
+            'price.cost_amount' => ['sometimes', 'nullable', new MoneyAmount(allowZero: true, allowNull: true)],
             'price.is_active' => ['sometimes', 'boolean'],
             'price.starts_at' => ['sometimes', 'nullable', 'date'],
             'price.ends_at' => ['sometimes', 'nullable', 'date', 'after_or_equal:price.starts_at'],

@@ -583,6 +583,7 @@ class CheckoutService
             ->with('warehouse')
             ->where('inventoryable_type', $offer->getMorphClass())
             ->where('inventoryable_id', $offer->getKey())
+            ->lockForUpdate()
             ->get();
 
         $withStock = $inventories
@@ -620,6 +621,7 @@ class CheckoutService
             ->with('warehouse')
             ->where('inventoryable_type', $stockable->getMorphClass())
             ->where('inventoryable_id', $stockable->getKey())
+            ->lockForUpdate()
             ->get();
 
         $withStock = $inventories
