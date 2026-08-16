@@ -201,7 +201,7 @@ class RefundService
                 $this->accounting->postRefund($lockedOrder);
                 $this->restoreAlternativeFunding($lockedOrder);
             } else {
-                $this->accounting->postPartialRefund($lockedOrder, $requestedAmount);
+                $this->accounting->postPartialRefund($lockedOrder, $requestedAmount, $lockedRefund);
             }
 
             $this->syncOrderPaymentStatus($lockedOrder, $lockedPayment);
@@ -342,7 +342,7 @@ class RefundService
             if ($isFullPrepaidRestore && bccomp($this->gatewayRefundableTotal($lockedOrder), '0', 2) === 0) {
                 $this->accounting->postRefund($lockedOrder);
             } else {
-                $this->accounting->postPartialRefund($lockedOrder, $requestedAmount);
+                $this->accounting->postPartialRefund($lockedOrder, $requestedAmount, $refund);
             }
 
             $this->syncOrderPaymentStatus($lockedOrder);

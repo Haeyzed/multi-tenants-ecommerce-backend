@@ -55,9 +55,17 @@ class GenerateInvoicePdfJob implements ShouldQueue
         };
 
         if ($this->tenantId === null || $this->tenantId === '') {
-            Log::warning('GenerateInvoicePdfJob: tenant id is required', [
-                'invoice_id' => $this->invoiceId,
-            ]);
+            // Queued workers must not touch the central connection. Synchronous
+            // handle() (tests / same-request) may run on the current connection.
+            if ($this->job !== null) {
+                Log::warning('GenerateInvoicePdfJob: tenant id is required', [
+                    'invoice_id' => $this->invoiceId,
+                ]);
+
+                return;
+            }
+
+            $callback();
 
             return;
         }

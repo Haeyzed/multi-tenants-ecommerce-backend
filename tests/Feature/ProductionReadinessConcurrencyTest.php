@@ -166,7 +166,7 @@ test('duplicate successful payments do not post a second sale journal', function
 
     $result = app(OrderPaymentService::class)->markSuccessful($duplicate, '9999999999');
 
-    expect($result->status)->toBe(OrderPaymentRecordStatus::Successful)
+    expect($result->status)->toBe(OrderPaymentRecordStatus::Cancelled)
         ->and($order->fresh()->payment_status)->toBe(OrderPaymentStatus::Paid)
         ->and(JournalEntry::query()->where('entry_type', 'sale')->count())->toBe(1);
 });

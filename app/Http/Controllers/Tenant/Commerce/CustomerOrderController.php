@@ -14,6 +14,7 @@ use App\Services\Tenant\Commerce\OrderService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -88,17 +89,20 @@ class CustomerOrderController extends Controller
      */
     #[Response(
         status: 200,
-        description: 'Refunds for a customer order.',
-        type: 'array{success: true, message: string, data: RefundResource[], meta: null, errors: null}',
+        description: 'Paginated refunds for a customer order.',
+        type: 'array{success: true, message: string, data: RefundResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}',
     )]
-    public function refunds(Order $order): JsonResponse
+    public function refunds(Request $request, Order $order): JsonResponse
     {
         /** @var Customer $customer */
         $customer = Auth::guard('customer')->user();
 
+        $refunds = $this->orderService->customerRefunds($customer, $order, $request->only(['per_page']));
+
         return $this->success(
-            RefundResource::collection($this->orderService->customerRefunds($customer, $order)),
+            RefundResource::collection($refunds->items()),
             'Order refunds retrieved successfully.',
+            $this->paginationMeta($refunds),
         );
     }
 }

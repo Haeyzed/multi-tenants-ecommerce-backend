@@ -12,7 +12,6 @@ use App\Models\Tenant\Shipment;
 use App\Models\Tenant\ShippingMethod;
 use App\Services\Shipping\ShippingCarrierManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -151,11 +150,15 @@ class ShipmentService
     }
 
     /**
-     * @return Collection<int, Shipment>
+     * @param  array{per_page?: int|null}  $params
+     * @return LengthAwarePaginator<int, Shipment>
      */
-    public function forCustomerOrder(Order $order): Collection
+    public function forCustomerOrder(Order $order, array $params = []): LengthAwarePaginator
     {
-        return $order->shipments()->with('shippingMethod')->latest('id')->get();
+        return $order->shipments()
+            ->with('shippingMethod')
+            ->latest('id')
+            ->paginate($this->perPage($params));
     }
 
     /**

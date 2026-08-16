@@ -7,6 +7,7 @@ use App\Enums\Tenant\Catalog\InventoryMovementType;
 use App\Enums\Tenant\Commerce\OrderPaymentRecordStatus;
 use App\Enums\Tenant\Commerce\OrderPaymentStatus;
 use App\Enums\Tenant\Commerce\RefundStatus;
+use App\Enums\Tenant\Commerce\ShipmentStatus;
 use App\Events\OrderCreated;
 use App\Events\OrderPaid;
 use App\Http\Requests\Tenant\Commerce\StoreGiftCardRequest;
@@ -15,10 +16,13 @@ use App\Jobs\GenerateInvoicePdfJob;
 use App\Jobs\MarkAbandonedCartsJob;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerAddress;
+use App\Models\Tenant\JournalEntry;
+use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderPayment;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductPrice;
 use App\Models\Tenant\Refund;
+use App\Models\Tenant\Shipment;
 use App\Models\Tenant\Warehouse;
 use App\Rules\MoneyAmount;
 use App\Services\Notification\NotificationService;
@@ -28,8 +32,10 @@ use App\Services\Tenant\Commerce\CheckoutService;
 use App\Services\Tenant\Commerce\CommerceAnalyticsService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use App\Services\Tenant\Commerce\GiftCardService;
+use App\Services\Tenant\Commerce\OrderService;
 use App\Services\Tenant\Commerce\RefundService;
 use App\Services\Tenant\Inventory\InventoryService;
+use App\Services\Tenant\Shipping\ShipmentService;
 use Database\Seeders\Tenant\ChartOfAccountsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -66,6 +72,7 @@ beforeEach(function (): void {
         '2026_08_15_060006_create_order_items_table.php',
         '2026_08_15_060007_create_checkout_sessions_table.php',
         '2026_08_15_060008_create_order_payments_table.php',
+        '2026_08_15_060009_create_shipments_table.php',
         '2026_08_15_070001_create_sellers_table.php',
         '2026_08_15_070003_create_seller_offers_table.php',
         '2026_08_15_070004_add_seller_offer_to_cart_and_order_items.php',
@@ -260,4 +267,91 @@ test('refundAllocated draws gateway balance before prepaid remainder', function 
         ->and($giftCard->fresh()->balance)->toBe('50.00')
         ->and($order->fresh()->payment_status)->toBe(OrderPaymentStatus::Refunded)
         ->and(Refund::query()->where('order_id', $order->id)->count())->toBe(2);
+});
+
+test('equal partial prepaid refunds post distinct journals', function (): void {
+    Event::fake([OrderCreated::class, OrderPaid::class]);
+
+    $customer = Customer::factory()->create();
+    $address = CustomerAddress::factory()->for($customer)->default()->create();
+    $product = Product::factory()->active()->create(['allow_backorder' => false]);
+    ProductPrice::query()->create([
+        'priceable_type' => Product::class,
+        'priceable_id' => $product->id,
+        'currency' => 'NGN',
+        'amount' => '100.00',
+        'is_active' => true,
+    ]);
+    $warehouse = Warehouse::factory()->create(['is_default' => true]);
+    $inventory = app(InventoryService::class)->getOrCreate($warehouse, $product);
+    app(InventoryService::class)->adjust($inventory, 10, InventoryMovementType::OpeningStock, 'Opening');
+
+    [, $plainCode] = app(GiftCardService::class)->create([
+        'amount' => '200.00',
+        'currency' => 'NGN',
+        'activate' => true,
+    ]);
+
+    app(CartService::class)->addItem($customer, $product->id, null, 2);
+    $order = app(CheckoutService::class)->checkout($customer, [
+        'shipping_address_id' => $address->id,
+        'gift_card_code' => $plainCode,
+    ]);
+
+    $first = app(RefundService::class)->createPrepaid($order, [
+        'amount' => '50.00',
+        'reason' => 'Partial 1',
+    ]);
+    $second = app(RefundService::class)->createPrepaid($order->fresh(), [
+        'amount' => '50.00',
+        'reason' => 'Partial 2',
+    ]);
+
+    expect(JournalEntry::query()->where('entry_type', 'partial_refund_'.$first->id)->count())->toBe(1)
+        ->and(JournalEntry::query()->where('entry_type', 'partial_refund_'.$second->id)->count())->toBe(1)
+        ->and(JournalEntry::query()->where('entry_type', 'like', 'partial_refund_%')->count())->toBe(2);
+});
+
+test('customer order refunds and shipments are paginated', function (): void {
+    $customer = Customer::factory()->create();
+    $order = Order::factory()->create([
+        'customer_id' => $customer->id,
+        'payment_status' => OrderPaymentStatus::Paid,
+        'currency' => 'NGN',
+        'grand_total' => '100.00',
+    ]);
+
+    Refund::query()->create([
+        'order_id' => $order->id,
+        'order_payment_id' => null,
+        'amount' => '10.00',
+        'currency' => 'NGN',
+        'reference' => 'REF-PAGE-1',
+        'status' => RefundStatus::Completed,
+        'processed_at' => now(),
+    ]);
+    Refund::query()->create([
+        'order_id' => $order->id,
+        'order_payment_id' => null,
+        'amount' => '15.00',
+        'currency' => 'NGN',
+        'reference' => 'REF-PAGE-2',
+        'status' => RefundStatus::Completed,
+        'processed_at' => now(),
+    ]);
+
+    Shipment::query()->create([
+        'order_id' => $order->id,
+        'status' => ShipmentStatus::Pending,
+        'tracking_number' => 'TRK-1',
+    ]);
+
+    $refunds = app(OrderService::class)->customerRefunds($customer, $order, ['per_page' => 1]);
+    $shipments = app(ShipmentService::class)->forCustomerOrder($order, ['per_page' => 1]);
+
+    expect($refunds->total())->toBe(2)
+        ->and($refunds->perPage())->toBe(1)
+        ->and($refunds->count())->toBe(1)
+        ->and($shipments->total())->toBe(1)
+        ->and($shipments->perPage())->toBe(1);
 });

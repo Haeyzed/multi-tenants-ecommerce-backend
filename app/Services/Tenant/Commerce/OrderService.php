@@ -9,7 +9,6 @@ use App\Models\Tenant\Customer;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\Refund;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -88,15 +87,18 @@ class OrderService
     }
 
     /**
-     * List refunds for a customer-owned order.
+     * Paginate refunds for a customer-owned order.
      *
-     * @return Collection<int, Refund>
+     * @param  array{per_page?: int|null}  $params
+     * @return LengthAwarePaginator<int, Refund>
      */
-    public function customerRefunds(Customer $customer, Order $order): Collection
+    public function customerRefunds(Customer $customer, Order $order, array $params = []): LengthAwarePaginator
     {
         $this->assertCustomerOwnership($customer, $order);
 
-        return $order->refunds()->orderByDesc('id')->get();
+        return $order->refunds()
+            ->orderByDesc('id')
+            ->paginate($this->perPage($params));
     }
 
     /**

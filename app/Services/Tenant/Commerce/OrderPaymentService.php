@@ -194,14 +194,13 @@ class OrderPaymentService
             /** @var Order $order */
             $order = Order::query()->whereKey($locked->order_id)->lockForUpdate()->firstOrFail();
 
-            $locked->status = OrderPaymentRecordStatus::Successful;
-            $locked->provider_transaction_id = $providerTransactionId ?? $locked->provider_transaction_id;
-            $locked->paid_at = $paidAt !== null ? $paidAt : now();
-            $locked->failed_at = null;
-            $locked->save();
-
             if ($order->payment_status === OrderPaymentStatus::Paid) {
-                Log::warning('Duplicate successful payment recorded for an already-paid order; skipping sale side effects.', [
+                $locked->status = OrderPaymentRecordStatus::Cancelled;
+                $locked->provider_transaction_id = $providerTransactionId ?? $locked->provider_transaction_id;
+                $locked->failed_at = now();
+                $locked->save();
+
+                Log::warning('Duplicate payment cancelled for an already-paid order; skipping sale side effects.', [
                     'order_id' => $order->id,
                     'payment_id' => $locked->id,
                     'reference' => $locked->reference,
@@ -209,6 +208,12 @@ class OrderPaymentService
 
                 return $locked->fresh(['order']) ?? $locked;
             }
+
+            $locked->status = OrderPaymentRecordStatus::Successful;
+            $locked->provider_transaction_id = $providerTransactionId ?? $locked->provider_transaction_id;
+            $locked->paid_at = $paidAt !== null ? $paidAt : now();
+            $locked->failed_at = null;
+            $locked->save();
 
             $order->payment_status = OrderPaymentStatus::Paid;
             $order->status = OrderStatus::Confirmed;

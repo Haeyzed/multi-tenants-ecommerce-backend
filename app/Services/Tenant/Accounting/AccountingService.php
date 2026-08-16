@@ -8,6 +8,7 @@ use App\Models\Tenant\Account;
 use App\Models\Tenant\GoodsReceipt;
 use App\Models\Tenant\JournalEntry;
 use App\Models\Tenant\Order;
+use App\Models\Tenant\Refund;
 use App\Models\Tenant\SellerCommission;
 use App\Models\Tenant\SellerPayout;
 use App\Services\Tenant\Commerce\CommerceSettingService;
@@ -305,13 +306,14 @@ class AccountingService
     }
 
     /**
-     * Post a partial refund journal (idempotent via entry_type=partial_refund + reference suffix).
+     * Post a partial refund journal (idempotent per refund id, not per amount).
      */
-    public function postPartialRefund(Order $order, string $amount): ?JournalEntry
+    public function postPartialRefund(Order $order, string $amount, Refund $refund): ?JournalEntry
     {
-        $referenceSuffix = str_replace('.', '', $amount);
+        $entryType = 'partial_refund_'.$refund->id;
+        $referenceSuffix = (string) $refund->id;
 
-        return $this->journals->postUnique($order, 'partial_refund_'.$referenceSuffix, function (JournalEntryService $journals) use ($order, $amount, $referenceSuffix): JournalEntry {
+        return $this->journals->postUnique($order, $entryType, function (JournalEntryService $journals) use ($order, $amount, $entryType, $referenceSuffix): JournalEntry {
             $cashId = $this->accountId('accounting.cash');
             $salesId = $this->accountId('accounting.sales');
             $taxId = $this->accountId('accounting.tax_payable');
@@ -359,7 +361,7 @@ class AccountingService
                 entryDate: now()->toDateString(),
                 lines: $lines,
                 source: $order,
-                entryType: 'partial_refund_'.$referenceSuffix,
+                entryType: $entryType,
             );
         });
     }
