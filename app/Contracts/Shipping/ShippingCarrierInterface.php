@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Contracts\Shipping;
 
+use App\DTO\Shipping\ShipmentCancellationResult;
 use App\DTO\Shipping\ShipmentCreationResult;
+use App\DTO\Shipping\ShipmentLabelResult;
 use App\DTO\Shipping\ShipmentTrackingResult;
 use App\DTO\Shipping\ShippingRateQuote;
 
@@ -32,4 +34,18 @@ interface ShippingCarrierInterface
      * Track an existing shipment.
      */
     public function trackShipment(string $trackingNumber): ShipmentTrackingResult;
+
+    /**
+     * Cancel an existing shipment with the carrier.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function cancelShipment(string $trackingNumber, array $context = []): ShipmentCancellationResult;
+
+    /**
+     * Fetch a printable shipping label for a tracking number.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function getLabel(string $trackingNumber, array $context = []): ShipmentLabelResult;
 }

@@ -16,4 +16,19 @@ return [
         'retention_days' => (int) env('DRIVER_LOCATION_RETENTION_DAYS', 14),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Driver assignment
+    |--------------------------------------------------------------------------
+    |
+    | strategy: manual|automatic
+    | radius_km: optional proximity filter when delivery + driver coords exist
+    |
+    */
+
+    'assignment' => [
+        'strategy' => env('DELIVERY_ASSIGNMENT_STRATEGY', 'manual'),
+        'radius_km' => (float) env('DELIVERY_ASSIGNMENT_RADIUS_KM', 15),
+    ],
+
 ];

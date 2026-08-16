@@ -22,8 +22,10 @@ use Illuminate\Support\Carbon;
  * @property DeliveryStatus $status
  * @property Carbon|null $assigned_at
  * @property Carbon|null $accepted_at
+ * @property Carbon|null $rejected_at
  * @property Carbon|null $picked_up_at
  * @property Carbon|null $out_for_delivery_at
+ * @property Carbon|null $arrived_at
  * @property Carbon|null $delivered_at
  * @property Carbon|null $failed_at
  * @property Carbon|null $cancelled_at
@@ -45,8 +47,10 @@ class Delivery extends Model
         'status',
         'assigned_at',
         'accepted_at',
+        'rejected_at',
         'picked_up_at',
         'out_for_delivery_at',
+        'arrived_at',
         'delivered_at',
         'failed_at',
         'cancelled_at',
@@ -66,8 +70,10 @@ class Delivery extends Model
             'status' => DeliveryStatus::class,
             'assigned_at' => 'datetime',
             'accepted_at' => 'datetime',
+            'rejected_at' => 'datetime',
             'picked_up_at' => 'datetime',
             'out_for_delivery_at' => 'datetime',
+            'arrived_at' => 'datetime',
             'delivered_at' => 'datetime',
             'failed_at' => 'datetime',
             'cancelled_at' => 'datetime',
@@ -116,6 +122,7 @@ class Delivery extends Model
                 DeliveryStatus::Accepted,
                 DeliveryStatus::PickedUp,
                 DeliveryStatus::OutForDelivery,
+                DeliveryStatus::Arrived,
             ], true);
     }
 }

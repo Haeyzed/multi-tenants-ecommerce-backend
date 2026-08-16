@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Services\Shipping\Carriers;
 
 use App\Contracts\Shipping\ShippingCarrierInterface;
+use App\DTO\Shipping\ShipmentCancellationResult;
 use App\DTO\Shipping\ShipmentCreationResult;
+use App\DTO\Shipping\ShipmentLabelResult;
 use App\DTO\Shipping\ShipmentTrackingResult;
 use App\DTO\Shipping\ShippingRateQuote;
 
@@ -65,6 +67,42 @@ class FakeCarrier implements ShippingCarrierInterface
             status: 'in_transit',
             trackingUrl: 'https://example.test/track/'.$trackingNumber,
             raw: ['tracking_number' => $trackingNumber, 'status' => 'in_transit'],
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function cancelShipment(string $trackingNumber, array $context = []): ShipmentCancellationResult
+    {
+        return new ShipmentCancellationResult(
+            successful: true,
+            message: 'Shipment cancelled.',
+            raw: [
+                'tracking_number' => $trackingNumber,
+                'cancelled' => true,
+                'context' => $context,
+            ],
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function getLabel(string $trackingNumber, array $context = []): ShipmentLabelResult
+    {
+        $pdf = "%PDF-1.4\n% Fake shipping label for {$trackingNumber}\n";
+
+        return new ShipmentLabelResult(
+            successful: true,
+            contentType: 'application/pdf',
+            contentBase64: base64_encode($pdf),
+            url: 'https://example.test/labels/'.$trackingNumber.'.pdf',
+            raw: [
+                'tracking_number' => $trackingNumber,
+                'format' => 'pdf',
+                'context' => $context,
+            ],
         );
     }
 }

@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 use App\Enums\Tenant\Catalog\InventoryMovementType;
 use App\Enums\Tenant\Commerce\CouponType;
+use App\Enums\Tenant\Commerce\OrderStatus;
+use App\Enums\Tenant\Customer\CustomerSegmentRule;
+use App\Events\FlashSaleEnded;
 use App\Events\FlashSaleItemSoldOut;
+use App\Events\FlashSaleStarted;
 use App\Events\OrderCreated;
 use App\Models\Tenant\Coupon;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerAddress;
+use App\Models\Tenant\CustomerSegment;
 use App\Models\Tenant\FlashSale;
 use App\Models\Tenant\FlashSaleItem;
 use App\Models\Tenant\Inventory;
+use App\Models\Tenant\Order;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductPrice;
 use App\Models\Tenant\Warehouse;
@@ -19,6 +25,7 @@ use App\Services\Tenant\Commerce\CartService;
 use App\Services\Tenant\Commerce\CheckoutService;
 use App\Services\Tenant\Commerce\FlashSaleService;
 use App\Services\Tenant\Inventory\InventoryService;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -86,8 +93,12 @@ function flashSaleMigrationFiles(): array
         '2026_08_15_090106_create_promotion_product_table.php',
         '2026_08_15_090107_create_promotion_category_table.php',
         '2026_08_15_090108_add_coupon_and_promotion_fields_to_orders_table.php',
+        '2026_08_15_100402_create_customer_segments_table.php',
+        '2026_08_16_110000_create_customer_groups_table.php',
+        '2026_08_16_140000_create_customer_segment_members_table.php',
         '2026_08_16_130000_create_flash_sales_table.php',
         '2026_08_16_130001_create_flash_sale_items_table.php',
+        '2026_08_16_130002_add_customer_segment_id_to_flash_sale_items_table.php',
     ];
 }
 
@@ -325,4 +336,40 @@ test('sold out event fires when qty_limit is reached', function (): void {
     ]);
 
     Event::assertDispatched(FlashSaleItemSoldOut::class);
+});
+
+test('flash sale item restricted by customer segment is not applied to outsiders', function (): void {
+    $fixture = flashSaleFixture(stock: 10, price: '100.00');
+    $returning = Customer::factory()->create();
+    Order::factory()->create([
+        'customer_id' => $returning->id,
+        'status' => OrderStatus::Confirmed,
+        'grand_total' => '25.00',
+        'placed_at' => now(),
+    ]);
+
+    $segment = CustomerSegment::factory()->rule(CustomerSegmentRule::ReturningCustomer)->create();
+    $sale = FlashSale::factory()->create();
+    FlashSaleItem::factory()->create([
+        'flash_sale_id' => $sale->id,
+        'product_id' => $fixture['product']->id,
+        'sale_price' => '40.00',
+        'customer_segment_id' => $segment->id,
+    ]);
+
+    $service = app(FlashSaleService::class);
+    $forReturning = $service->resolveSalePrice($fixture['product'], null, $returning);
+
+    expect($service->resolveSalePrice($fixture['product'], null, $fixture['customer']))->toBeNull()
+        ->and($forReturning)->not->toBeNull()
+        ->and($forReturning['price'])->toBe('40.00');
+});
+
+test('flash sale lifecycle events implement ShouldBroadcastNow', function (): void {
+    $sale = FlashSale::factory()->make(['id' => 1]);
+    $item = FlashSaleItem::factory()->make(['id' => 1, 'flash_sale_id' => 1]);
+
+    expect(new FlashSaleStarted($sale))->toBeInstanceOf(ShouldBroadcastNow::class)
+        ->and(new FlashSaleEnded($sale))->toBeInstanceOf(ShouldBroadcastNow::class)
+        ->and(new FlashSaleItemSoldOut($item))->toBeInstanceOf(ShouldBroadcastNow::class);
 });

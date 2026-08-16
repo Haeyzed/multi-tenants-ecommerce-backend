@@ -93,6 +93,23 @@ test('fake carrier returns rates and tracking', function (): void {
         ->and($tracking->status)->toBe('in_transit');
 });
 
+test('fake carrier cancels shipment and returns label', function (): void {
+    $carrier = app(FakeCarrier::class);
+    $tracking = 'FAKE-LABELTEST01';
+
+    $cancelled = $carrier->cancelShipment($tracking);
+    expect($cancelled->successful)->toBeTrue()
+        ->and($cancelled->message)->toBe('Shipment cancelled.')
+        ->and($cancelled->raw['tracking_number'])->toBe($tracking);
+
+    $label = $carrier->getLabel($tracking);
+    expect($label->successful)->toBeTrue()
+        ->and($label->contentType)->toBe('application/pdf')
+        ->and($label->contentBase64)->not->toBeEmpty()
+        ->and(base64_decode((string) $label->contentBase64, true))->toContain('%PDF-1.4')
+        ->and($label->url)->toBe('https://example.test/labels/'.$tracking.'.pdf');
+});
+
 test('shipping carrier manager resolves fake driver', function (): void {
     $manager = app(ShippingCarrierManager::class);
     expect($manager->driver('fake'))->toBeInstanceOf(FakeCarrier::class);

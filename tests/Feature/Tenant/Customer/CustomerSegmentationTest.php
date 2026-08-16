@@ -48,6 +48,7 @@ function customerSegmentationMigrationFiles(): array
         '2026_08_15_090200_create_wishlists_table.php',
         '2026_08_15_090201_create_wishlist_items_table.php',
         '2026_08_15_100402_create_customer_segments_table.php',
+        '2026_08_16_140000_create_customer_segment_members_table.php',
     ];
 }
 

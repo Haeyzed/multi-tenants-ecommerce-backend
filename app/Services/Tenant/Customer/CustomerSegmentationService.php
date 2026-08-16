@@ -7,20 +7,24 @@ namespace App\Services\Tenant\Customer;
 use App\Enums\Tenant\Commerce\CartStatus;
 use App\Enums\Tenant\Commerce\OrderStatus;
 use App\Enums\Tenant\Customer\CustomerSegmentRule;
+use App\Jobs\MaterializeCustomerSegmentMembershipJob;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerSegment;
+use App\Models\Tenant\CustomerSegmentMember;
 use App\Models\Tenant\Order;
 use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
- * Evaluates rule-based customer segments directly against customer data.
+ * Evaluates rule-based customer segments and materializes membership for fast reads.
  *
- * Membership is computed on demand rather than materialised, so segments always
- * reflect current order, wishlist, and cart state.
+ * Rule evaluation remains the source of truth when refreshing; list/count/evaluate
+ * prefer the membership pivot after materialization.
  */
 class CustomerSegmentationService
 {
@@ -60,7 +64,7 @@ class CustomerSegmentationService
      */
     public function store(array $data): CustomerSegment
     {
-        return CustomerSegment::query()->create([
+        $segment = CustomerSegment::query()->create([
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             'rules' => [
@@ -71,10 +75,14 @@ class CustomerSegmentationService
             'sort_order' => $data['sort_order'] ?? 0,
             'customers_count' => 0,
         ]);
+
+        $this->dispatchMaterialize($segment);
+
+        return $segment;
     }
 
     /**
-     * Retrieve a segment with a live membership count.
+     * Retrieve a segment with a membership count (materialized when available).
      */
     public function show(CustomerSegment $segment): CustomerSegment
     {
@@ -97,6 +105,8 @@ class CustomerSegmentationService
      */
     public function update(CustomerSegment $segment, array $data): CustomerSegment
     {
+        $rulesChanged = array_key_exists('conditions', $data) || array_key_exists('match', $data);
+
         if (array_key_exists('name', $data)) {
             $segment->name = $data['name'];
         }
@@ -113,7 +123,7 @@ class CustomerSegmentationService
             $segment->sort_order = (int) $data['sort_order'];
         }
 
-        if (array_key_exists('conditions', $data) || array_key_exists('match', $data)) {
+        if ($rulesChanged) {
             $rules = $segment->rules ?? ['match' => 'all', 'conditions' => []];
             $rules['match'] = ($data['match'] ?? $segment->matchMode()) === 'any' ? 'any' : 'all';
 
@@ -125,6 +135,10 @@ class CustomerSegmentationService
         }
 
         $segment->save();
+
+        if ($rulesChanged || array_key_exists('is_active', $data)) {
+            $this->dispatchMaterialize($segment);
+        }
 
         return $segment->fresh() ?? $segment;
     }
@@ -138,36 +152,118 @@ class CustomerSegmentationService
     }
 
     /**
+     * Rebuild membership rows for a segment from current rule evaluation.
+     */
+    public function materialize(CustomerSegment $segment): CustomerSegment
+    {
+        return DB::transaction(function () use ($segment): CustomerSegment {
+            $matchingIds = $this->query($segment)->pluck('id')->map(fn ($id): int => (int) $id)->all();
+            $now = now();
+
+            $stale = CustomerSegmentMember::query()->where('customer_segment_id', $segment->id);
+
+            if ($matchingIds !== []) {
+                $stale->whereNotIn('customer_id', $matchingIds);
+            }
+
+            $stale->delete();
+
+            foreach (array_chunk($matchingIds, 500) as $chunk) {
+                $rows = [];
+
+                foreach ($chunk as $customerId) {
+                    $rows[] = [
+                        'customer_segment_id' => $segment->id,
+                        'customer_id' => $customerId,
+                        'entered_at' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+
+                CustomerSegmentMember::query()->upsert(
+                    $rows,
+                    ['customer_segment_id', 'customer_id'],
+                    ['updated_at'],
+                );
+            }
+
+            $segment->forceFill([
+                'customers_count' => count($matchingIds),
+                'membership_refreshed_at' => $now,
+            ])->saveQuietly();
+
+            return $segment->fresh() ?? $segment;
+        });
+    }
+
+    /**
      * Slugs of every active segment the customer currently belongs to.
      *
      * @return list<string>
      */
     public function evaluate(Customer $customer): array
     {
+        if ($this->hasAnyMaterializedMembership()) {
+            return CustomerSegmentMember::query()
+                ->where('customer_id', $customer->id)
+                ->whereHas('segment', fn (Builder $query) => $query->where('is_active', true))
+                ->with('segment:id,slug')
+                ->get()
+                ->pluck('segment.slug')
+                ->filter()
+                ->values()
+                ->all();
+        }
+
         return $this->activeSegments()
-            ->filter(fn (CustomerSegment $segment): bool => $this->matches($customer, $segment))
+            ->filter(fn (CustomerSegment $segment): bool => $this->matchesLive($customer, $segment))
             ->map(fn (CustomerSegment $segment): string => $segment->slug)
             ->values()
             ->all();
     }
 
     /**
-     * Whether a single customer satisfies a segment's rules.
+     * Whether a single customer satisfies a segment (prefer membership when refreshed).
      */
     public function matches(Customer $customer, CustomerSegment $segment): bool
+    {
+        if ($segment->membership_refreshed_at !== null) {
+            return CustomerSegmentMember::query()
+                ->where('customer_segment_id', $segment->id)
+                ->where('customer_id', $customer->id)
+                ->exists();
+        }
+
+        return $this->matchesLive($customer, $segment);
+    }
+
+    /**
+     * Live rule evaluation without reading the membership pivot.
+     */
+    public function matchesLive(Customer $customer, CustomerSegment $segment): bool
     {
         return $this->query($segment)->whereKey($customer->getKey())->exists();
     }
 
     /**
-     * Paginate the customers currently inside a segment.
+     * Paginate the customers currently inside a segment (materialized when available).
      *
      * @param  array{search?: string|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Customer>
      */
     public function customers(CustomerSegment $segment, array $params = []): LengthAwarePaginator
     {
-        return $this->query($segment)
+        $base = $segment->membership_refreshed_at !== null
+            ? Customer::query()->whereIn(
+                'id',
+                CustomerSegmentMember::query()
+                    ->select('customer_id')
+                    ->where('customer_segment_id', $segment->id),
+            )
+            : $this->query($segment);
+
+        return $base
             ->filter($params)
             ->applySort($params['sort'] ?? null)
             ->paginate(max(1, min((int) ($params['per_page'] ?? 15), 100)));
@@ -178,6 +274,10 @@ class CustomerSegmentationService
      */
     public function count(CustomerSegment $segment): int
     {
+        if ($segment->membership_refreshed_at !== null) {
+            return (int) $segment->customers_count;
+        }
+
         return $this->query($segment)->count();
     }
 
@@ -216,6 +316,35 @@ class CustomerSegmentationService
                 $this->applyRule($query, $rule, $value);
             }
         });
+    }
+
+    /**
+     * Queue membership materialization for a segment when tenancy is initialized.
+     *
+     * Without a tenant context (e.g. isolated unit tests), leave membership for the
+     * scheduled refresh job so callers are not forced to load the full commerce schema.
+     */
+    protected function dispatchMaterialize(CustomerSegment $segment): void
+    {
+        $tenantId = tenant('id');
+
+        if (! is_string($tenantId) || $tenantId === '') {
+            return;
+        }
+
+        MaterializeCustomerSegmentMembershipJob::dispatch($tenantId, (int) $segment->id);
+    }
+
+    /**
+     * Whether any membership rows exist for the tenant.
+     */
+    protected function hasAnyMaterializedMembership(): bool
+    {
+        if (! Schema::hasTable('customer_segment_members')) {
+            return false;
+        }
+
+        return CustomerSegmentMember::query()->exists();
     }
 
     /**

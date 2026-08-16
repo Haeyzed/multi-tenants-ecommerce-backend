@@ -81,6 +81,17 @@ class DeliveryController extends Controller
         );
     }
 
+    #[Response(status: 200, description: 'Automatically assigned delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
+    public function assignAutomatic(Delivery $delivery): JsonResponse
+    {
+        $this->authorize('update', $delivery);
+
+        return $this->updated(
+            new DeliveryResource($this->deliveryService->assignAutomatically($delivery)),
+            'Delivery assigned automatically.',
+        );
+    }
+
     #[Response(status: 200, description: 'Cancelled delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function cancel(Delivery $delivery): JsonResponse
     {

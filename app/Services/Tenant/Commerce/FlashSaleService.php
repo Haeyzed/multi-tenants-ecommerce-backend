@@ -12,11 +12,13 @@ use App\Events\FlashSaleStarted;
 use App\Models\Tenant\Cart;
 use App\Models\Tenant\CartItem;
 use App\Models\Tenant\Customer;
+use App\Models\Tenant\CustomerSegment;
 use App\Models\Tenant\FlashSale;
 use App\Models\Tenant\FlashSaleItem;
 use App\Models\Tenant\OrderItem;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductVariant;
+use App\Services\Tenant\Customer\CustomerSegmentationService;
 use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,6 +32,10 @@ use Illuminate\Validation\ValidationException;
  */
 class FlashSaleService
 {
+    public function __construct(
+        private readonly CustomerSegmentationService $segmentation,
+    ) {}
+
     /**
      * @param  array{search?: string|null, is_active?: bool|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, FlashSale>
@@ -188,7 +194,7 @@ class FlashSaleService
         $variantId = $variant?->id;
 
         $candidates = FlashSaleItem::query()
-            ->with('flashSale')
+            ->with(['flashSale', 'customerSegment'])
             ->where('product_id', $product->id)
             ->where(function (Builder $query) use ($variantId): void {
                 if ($variantId !== null) {
@@ -221,6 +227,12 @@ class FlashSaleService
 
             if ($item->customer_group_id !== null) {
                 if ($customer === null || (int) $customer->customer_group_id !== (int) $item->customer_group_id) {
+                    continue;
+                }
+            }
+
+            if ($item->customer_segment_id !== null) {
+                if ($customer === null || ! $this->customerMatchesSegment($customer, $item)) {
                     continue;
                 }
             }
@@ -357,6 +369,12 @@ class FlashSaleService
                 ]);
             }
 
+            if ($locked->customer_segment_id !== null && ! $this->customerMatchesSegment($customer, $locked)) {
+                throw ValidationException::withMessages([
+                    'cart' => 'A flash sale is not available for your customer segment.',
+                ]);
+            }
+
             $quantity = (int) $cartItem->quantity;
 
             if ($locked->qty_limit !== null && ($locked->sold_qty + $quantity) > $locked->qty_limit) {
@@ -451,6 +469,7 @@ class FlashSaleService
             'qty_limit',
             'per_customer_limit',
             'customer_group_id',
+            'customer_segment_id',
         ] as $key) {
             if (array_key_exists($key, $data)) {
                 $attributes[$key] = $data[$key];
@@ -481,6 +500,19 @@ class FlashSaleService
         if ($current === FlashSaleStatus::Inactive && $previous === FlashSaleStatus::Active) {
             event(new FlashSaleEnded($flashSale));
         }
+    }
+
+    protected function customerMatchesSegment(Customer $customer, FlashSaleItem $item): bool
+    {
+        $segment = $item->relationLoaded('customerSegment')
+            ? $item->customerSegment
+            : CustomerSegment::query()->find($item->customer_segment_id);
+
+        if ($segment === null) {
+            return false;
+        }
+
+        return $this->segmentation->matches($customer, $segment);
     }
 
     /**

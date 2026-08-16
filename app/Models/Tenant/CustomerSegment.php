@@ -8,6 +8,7 @@ use Database\Factories\Tenant\CustomerSegmentFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -38,6 +39,7 @@ class CustomerSegment extends Model
         'is_active',
         'sort_order',
         'customers_count',
+        'membership_refreshed_at',
     ];
 
     /**
@@ -58,7 +60,18 @@ class CustomerSegment extends Model
             'is_active' => 'boolean',
             'sort_order' => 'integer',
             'customers_count' => 'integer',
+            'membership_refreshed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Materialized members of this segment.
+     *
+     * @return HasMany<CustomerSegmentMember, $this>
+     */
+    public function members(): HasMany
+    {
+        return $this->hasMany(CustomerSegmentMember::class);
     }
 
     /**

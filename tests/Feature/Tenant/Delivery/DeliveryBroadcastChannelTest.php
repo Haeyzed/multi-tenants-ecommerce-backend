@@ -29,6 +29,12 @@ beforeEach(function (): void {
             '--force' => true,
         ]);
     }
+
+    $this->artisan('migrate', [
+        '--path' => database_path('migrations/tenant/2026_08_16_120951_add_rejected_and_arrived_timestamps_to_deliveries_table.php'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
 });
 
 test('delivery assigned event broadcasts on expected channels', function (): void {

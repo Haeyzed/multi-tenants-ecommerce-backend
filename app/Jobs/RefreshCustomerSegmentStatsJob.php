@@ -15,7 +15,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Refresh cached membership counts for rule-based customer segments.
+ * Materialize segment membership (and refresh counts) for all tenant segments.
  */
 class RefreshCustomerSegmentStatsJob implements ShouldQueue
 {
@@ -26,7 +26,7 @@ class RefreshCustomerSegmentStatsJob implements ShouldQueue
     ) {}
 
     /**
-     * Recount segment membership inside an isolated tenant context when a tenant id is provided.
+     * Materialize membership inside an isolated tenant context when a tenant id is provided.
      */
     public function handle(CustomerSegmentationService $segmentation): void
     {
@@ -34,9 +34,7 @@ class RefreshCustomerSegmentStatsJob implements ShouldQueue
             CustomerSegment::query()->orderBy('id')->chunkById(50, function ($segments) use ($segmentation): void {
                 foreach ($segments as $segment) {
                     /** @var CustomerSegment $segment */
-                    $segment->forceFill([
-                        'customers_count' => $segmentation->count($segment),
-                    ])->saveQuietly();
+                    $segmentation->materialize($segment);
                 }
             });
         };

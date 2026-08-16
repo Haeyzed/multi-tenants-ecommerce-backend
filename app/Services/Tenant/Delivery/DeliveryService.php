@@ -30,14 +30,18 @@ class DeliveryService
      */
     private const array TRANSITIONS = [
         'pending' => [DeliveryStatus::Assigned, DeliveryStatus::Cancelled],
-        'assigned' => [DeliveryStatus::Accepted, DeliveryStatus::Cancelled],
+        'assigned' => [DeliveryStatus::Accepted, DeliveryStatus::Rejected, DeliveryStatus::Cancelled],
         'accepted' => [DeliveryStatus::PickedUp, DeliveryStatus::Cancelled],
+        'rejected' => [],
         'picked_up' => [DeliveryStatus::OutForDelivery],
-        'out_for_delivery' => [DeliveryStatus::Delivered, DeliveryStatus::Failed, DeliveryStatus::Cancelled],
+        'out_for_delivery' => [DeliveryStatus::Arrived, DeliveryStatus::Delivered, DeliveryStatus::Failed, DeliveryStatus::Cancelled],
+        'arrived' => [DeliveryStatus::Delivered, DeliveryStatus::Failed, DeliveryStatus::Cancelled],
         'delivered' => [],
         'failed' => [],
         'cancelled' => [],
     ];
+
+    public function __construct(private readonly DriverAssignmentManager $assignmentManager) {}
 
     /**
      * @param  array{
@@ -142,6 +146,7 @@ class DeliveryService
                 'status' => DeliveryStatus::Assigned,
                 'assigned_at' => now(),
                 'accepted_at' => null,
+                'rejected_at' => null,
             ])->save();
 
             $fresh = $locked->fresh(['order', 'shipment', 'driver']) ?? $locked;
@@ -150,6 +155,24 @@ class DeliveryService
 
             return $fresh;
         });
+    }
+
+    /**
+     * Assign a driver using the configured assignment strategy.
+     *
+     * @throws ValidationException
+     */
+    public function assignAutomatically(Delivery $delivery): Delivery
+    {
+        $driver = $this->assignmentManager->assign($delivery);
+
+        if ($driver === null) {
+            throw ValidationException::withMessages([
+                'driver_id' => ['No available driver found for automatic assignment.'],
+            ]);
+        }
+
+        return $this->assign($delivery, $driver);
     }
 
     /**
@@ -184,7 +207,7 @@ class DeliveryService
     }
 
     /**
-     * Driver rejects an assigned delivery (returns to pending).
+     * Driver rejects an assigned delivery.
      *
      * @throws ValidationException
      */
@@ -195,18 +218,15 @@ class DeliveryService
             $locked = Delivery::query()->whereKey($delivery->getKey())->lockForUpdate()->firstOrFail();
 
             $this->assertDriverOwns($locked, $driver);
-
-            if ($locked->status !== DeliveryStatus::Assigned) {
-                throw ValidationException::withMessages([
-                    'status' => ['Only assigned deliveries can be rejected.'],
-                ]);
-            }
+            $this->assertCanTransition($locked, DeliveryStatus::Rejected);
 
             $locked->forceFill([
-                'driver_id' => null,
-                'status' => DeliveryStatus::Pending,
-                'assigned_at' => null,
-                'accepted_at' => null,
+                'status' => DeliveryStatus::Rejected,
+                'rejected_at' => now(),
+            ])->save();
+
+            $driver->forceFill([
+                'availability' => DriverAvailability::Available,
             ])->save();
 
             return $locked->fresh(['order', 'shipment', 'driver']) ?? $locked;
@@ -235,6 +255,18 @@ class DeliveryService
         return $this->advance($delivery, DeliveryStatus::OutForDelivery, $driver, function (Delivery $locked): void {
             $locked->out_for_delivery_at = now();
         }, broadcastStarted: true);
+    }
+
+    /**
+     * Mark delivery as arrived at the drop-off location.
+     *
+     * @throws ValidationException
+     */
+    public function markArrived(Delivery $delivery, ?Driver $driver = null): Delivery
+    {
+        return $this->advance($delivery, DeliveryStatus::Arrived, $driver, function (Delivery $locked): void {
+            $locked->arrived_at = now();
+        });
     }
 
     /**

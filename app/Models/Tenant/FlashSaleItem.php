@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property int $sold_qty
  * @property int|null $per_customer_limit
  * @property int|null $customer_group_id
+ * @property int|null $customer_segment_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -42,6 +43,7 @@ class FlashSaleItem extends Model
         'sold_qty',
         'per_customer_limit',
         'customer_group_id',
+        'customer_segment_id',
     ];
 
     /**
@@ -94,6 +96,14 @@ class FlashSaleItem extends Model
     public function customerGroup(): BelongsTo
     {
         return $this->belongsTo(CustomerGroup::class);
+    }
+
+    /**
+     * @return BelongsTo<CustomerSegment, $this>
+     */
+    public function customerSegment(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSegment::class);
     }
 
     /**

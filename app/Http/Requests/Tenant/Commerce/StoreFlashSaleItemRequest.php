@@ -21,6 +21,7 @@ class StoreFlashSaleItemRequest extends BaseRequest
             'qty_limit' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'per_customer_limit' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'customer_group_id' => ['sometimes', 'nullable', 'integer', 'exists:customer_groups,id'],
+            'customer_segment_id' => ['sometimes', 'nullable', 'integer', 'exists:customer_segments,id'],
         ];
     }
 }

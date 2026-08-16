@@ -237,6 +237,7 @@ final class RbacPermissions
         'drivers.show',
         'drivers.update',
         'drivers.delete',
+        // Staff delivery management. Driver self-actions (accept/reject/arrived/etc.) are policy-based on the driver guard, not Spatie.
         'deliveries.view',
         'deliveries.manage',
     ];

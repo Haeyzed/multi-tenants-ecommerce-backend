@@ -183,6 +183,7 @@ Route::middleware([
                 Route::post('deliveries/{delivery}/reject', [DriverDeliveryController::class, 'reject'])->whereNumber('delivery')->name('deliveries.reject');
                 Route::post('deliveries/{delivery}/picked-up', [DriverDeliveryController::class, 'markPickedUp'])->whereNumber('delivery')->name('deliveries.picked-up');
                 Route::post('deliveries/{delivery}/out-for-delivery', [DriverDeliveryController::class, 'markOutForDelivery'])->whereNumber('delivery')->name('deliveries.out-for-delivery');
+                Route::post('deliveries/{delivery}/arrived', [DriverDeliveryController::class, 'markArrived'])->whereNumber('delivery')->name('deliveries.arrived');
                 Route::post('deliveries/{delivery}/delivered', [DriverDeliveryController::class, 'markDelivered'])->whereNumber('delivery')->name('deliveries.delivered');
                 Route::post('deliveries/{delivery}/failed', [DriverDeliveryController::class, 'markFailed'])->whereNumber('delivery')->name('deliveries.failed');
 
@@ -542,6 +543,7 @@ Route::middleware([
                 Route::post('deliveries', [DeliveryController::class, 'store'])->middleware('permission:deliveries.manage')->name('tenant.deliveries.store');
                 Route::get('deliveries/{delivery}', [DeliveryController::class, 'show'])->middleware('permission:deliveries.view')->whereNumber('delivery')->name('tenant.deliveries.show');
                 Route::post('deliveries/{delivery}/assign', [DeliveryController::class, 'assign'])->middleware('permission:deliveries.manage')->whereNumber('delivery')->name('tenant.deliveries.assign');
+                Route::post('deliveries/{delivery}/assign-automatic', [DeliveryController::class, 'assignAutomatic'])->middleware('permission:deliveries.manage')->whereNumber('delivery')->name('tenant.deliveries.assign-automatic');
                 Route::post('deliveries/{delivery}/cancel', [DeliveryController::class, 'cancel'])->middleware('permission:deliveries.manage')->whereNumber('delivery')->name('tenant.deliveries.cancel');
                 Route::post('deliveries/{delivery}/fail', [DeliveryController::class, 'fail'])->middleware('permission:deliveries.manage')->whereNumber('delivery')->name('tenant.deliveries.fail');
 

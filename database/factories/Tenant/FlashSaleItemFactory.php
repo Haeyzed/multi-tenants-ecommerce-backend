@@ -33,6 +33,7 @@ class FlashSaleItemFactory extends Factory
             'sold_qty' => 0,
             'per_customer_limit' => null,
             'customer_group_id' => null,
+            'customer_segment_id' => null,
         ];
     }
 

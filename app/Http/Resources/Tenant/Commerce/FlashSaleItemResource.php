@@ -31,6 +31,7 @@ class FlashSaleItemResource extends JsonResource
             'sold_qty' => $item->sold_qty,
             'per_customer_limit' => $item->per_customer_limit,
             'customer_group_id' => $item->customer_group_id,
+            'customer_segment_id' => $item->customer_segment_id,
             'remaining_quantity' => $item->remainingQuantity(),
             'is_sold_out' => $item->isSoldOut(),
             'created_at' => $item->created_at,

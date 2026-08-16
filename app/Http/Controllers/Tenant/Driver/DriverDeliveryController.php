@@ -110,6 +110,20 @@ class DriverDeliveryController extends Controller
         );
     }
 
+    #[Response(status: 200, description: 'Arrived at destination.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
+    public function markArrived(Delivery $delivery): JsonResponse
+    {
+        /** @var Driver $driver */
+        $driver = Auth::guard('driver')->user();
+
+        $this->authorize('drive', $delivery);
+
+        return $this->updated(
+            new DeliveryResource($this->deliveryService->markArrived($delivery, $driver)),
+            'Delivery marked as arrived.',
+        );
+    }
+
     #[Response(status: 200, description: 'Delivered delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function markDelivered(Delivery $delivery): JsonResponse
     {

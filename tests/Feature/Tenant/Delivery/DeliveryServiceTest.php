@@ -26,6 +26,7 @@ beforeEach(function (): void {
         '2026_08_15_060009_create_shipments_table.php',
         '2026_08_16_120000_create_drivers_table.php',
         '2026_08_16_120002_create_deliveries_table.php',
+        '2026_08_16_120951_add_rejected_and_arrived_timestamps_to_deliveries_table.php',
     ];
 
     foreach ($migrationFiles as $file) {
@@ -35,6 +36,12 @@ beforeEach(function (): void {
             '--force' => true,
         ]);
     }
+
+    $this->artisan('migrate', [
+        '--path' => database_path('migrations/tenant/2026_08_16_120951_add_rejected_and_arrived_timestamps_to_deliveries_table.php'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
 });
 
 test('delivery status transitions follow the machine', function (): void {
@@ -78,6 +85,8 @@ test('delivery status transitions follow the machine', function (): void {
 });
 
 test('invalid delivery transition throws validation exception', function (): void {
+    Event::fake([DeliveryAssigned::class]);
+
     $order = Order::factory()->create(['customer_id' => Customer::factory()]);
     $driver = Driver::factory()->create();
     $service = app(DeliveryService::class);
@@ -97,6 +106,8 @@ test('invalid delivery transition throws validation exception', function (): voi
 });
 
 test('driver can reject assignment and pending can cancel', function (): void {
+    Event::fake([DeliveryAssigned::class]);
+
     $order = Order::factory()->create(['customer_id' => Customer::factory()]);
     $driver = Driver::factory()->create();
     $service = app(DeliveryService::class);
@@ -105,16 +116,49 @@ test('driver can reject assignment and pending can cancel', function (): void {
     $delivery = $service->assign($delivery, $driver);
     $delivery = $service->reject($delivery, $driver);
 
-    expect($delivery->status)->toBe(DeliveryStatus::Pending)
-        ->and($delivery->driver_id)->toBeNull();
+    expect($delivery->status)->toBe(DeliveryStatus::Rejected)
+        ->and($delivery->rejected_at)->not->toBeNull()
+        ->and($delivery->driver_id)->toBe($driver->id)
+        ->and($driver->fresh()->availability)->toBe(DriverAvailability::Available);
 
-    $cancelled = $service->cancel($delivery);
+    $pending = $service->createForOrder($order);
+    $cancelled = $service->cancel($pending);
 
     expect($cancelled->status)->toBe(DeliveryStatus::Cancelled)
         ->and($cancelled->cancelled_at)->not->toBeNull();
 });
 
+test('driver can mark arrived before delivered', function (): void {
+    Event::fake([
+        DeliveryAssigned::class,
+        DeliveryAccepted::class,
+        DeliveryStarted::class,
+        DeliveryCompleted::class,
+    ]);
+
+    $order = Order::factory()->create(['customer_id' => Customer::factory()]);
+    $driver = Driver::factory()->create();
+    $service = app(DeliveryService::class);
+
+    $delivery = $service->createForOrder($order);
+    $delivery = $service->assign($delivery, $driver);
+    $delivery = $service->accept($delivery, $driver);
+    $delivery = $service->markPickedUp($delivery, $driver);
+    $delivery = $service->markOutForDelivery($delivery, $driver);
+    $delivery = $service->markArrived($delivery, $driver);
+
+    expect($delivery->status)->toBe(DeliveryStatus::Arrived)
+        ->and($delivery->arrived_at)->not->toBeNull();
+
+    $delivery = $service->markDelivered($delivery, $driver);
+
+    expect($delivery->status)->toBe(DeliveryStatus::Delivered)
+        ->and($driver->fresh()->availability)->toBe(DriverAvailability::Available);
+});
+
 test('wrong driver cannot accept delivery', function (): void {
+    Event::fake([DeliveryAssigned::class]);
+
     $order = Order::factory()->create(['customer_id' => Customer::factory()]);
     $assigned = Driver::factory()->create();
     $other = Driver::factory()->create();

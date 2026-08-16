@@ -9,6 +9,7 @@ use App\Contracts\Marketplace\SellerPayoutDriverInterface;
 use App\Contracts\Notification\PushNotificationProvider;
 use App\Contracts\Notification\SmsProvider;
 use App\Contracts\Payment\PaymentGateway;
+use App\Contracts\Shipping\CarrierHttpClientInterface;
 use App\Models\Tenant\Account;
 use App\Models\Tenant\Brand;
 use App\Models\Tenant\Category;
@@ -104,12 +105,15 @@ use App\Services\Notification\NotificationPreferenceService;
 use App\Services\Notification\Push\FcmPushProvider;
 use App\Services\Notification\Sms\SmsManager;
 use App\Services\Payment\PaymentManager;
+use App\Services\Shipping\CarrierWebhookManager;
+use App\Services\Shipping\Http\LaravelCarrierHttpClient;
 use App\Services\Shipping\ShippingCarrierManager;
 use App\Services\Tenant\Catalog\DatabaseProductSearchDriver;
 use App\Services\Tenant\Catalog\ProductRecommendationService;
 use App\Services\Tenant\Catalog\Recommendations\PopularProductsProvider;
 use App\Services\Tenant\Catalog\Recommendations\RecentlyViewedProvider;
 use App\Services\Tenant\Catalog\Recommendations\RelatedProductsProvider;
+use App\Services\Tenant\Delivery\DriverAssignmentManager;
 use App\Services\Tenant\Marketplace\Payout\ManualPayoutDriver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -123,6 +127,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PaymentManager::class);
         $this->app->singleton(ShippingCarrierManager::class);
+        $this->app->singleton(CarrierWebhookManager::class);
+        $this->app->singleton(DriverAssignmentManager::class);
+        $this->app->bind(CarrierHttpClientInterface::class, LaravelCarrierHttpClient::class);
 
         $this->app->bind(SellerPayoutDriverInterface::class, ManualPayoutDriver::class);
 
