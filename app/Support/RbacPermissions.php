@@ -214,6 +214,9 @@ final class RbacPermissions
         'store_credit.manage',
         'loyalty.view',
         'loyalty.manage',
+        'integrations.view',
+        'integrations.create',
+        'integrations.delete',
     ];
 
     /**

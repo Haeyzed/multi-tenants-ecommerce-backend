@@ -10,6 +10,7 @@ use App\Models\Landlord\PaymentTransaction;
 use App\Models\Landlord\WebhookEvent;
 use App\Services\Landlord\Subscription\SubscriptionService;
 use App\Services\Payment\PaymentManager;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -43,10 +44,7 @@ class PaystackWebhookHandler
         $eventType = isset($payload['event']) ? (string) $payload['event'] : null;
         $eventId = $this->resolveEventId($payload, $request);
 
-        if (WebhookEvent::query()
-            ->where('provider', PaymentProvider::Paystack)
-            ->where('event_id', $eventId)
-            ->exists()) {
+        if (! $this->claimWebhookEvent($eventId, $eventType, $payload)) {
             return [
                 'processed' => false,
                 'duplicate' => true,
@@ -54,26 +52,40 @@ class PaystackWebhookHandler
             ];
         }
 
-        return DB::connection((string) config('tenancy.database.central_connection'))
-            ->transaction(function () use ($payload, $eventType, $eventId): array {
-                WebhookEvent::query()->create([
-                    'provider' => PaymentProvider::Paystack,
-                    'event_id' => $eventId,
-                    'event_type' => $eventType,
-                    'payload' => $payload,
-                    'processed_at' => now(),
-                ]);
+        if ($eventType === 'charge.success') {
+            $this->handleChargeSuccess($payload);
+        }
 
-                if ($eventType === 'charge.success') {
-                    $this->handleChargeSuccess($payload);
-                }
+        return [
+            'processed' => true,
+            'duplicate' => false,
+            'event_type' => $eventType,
+        ];
+    }
 
-                return [
-                    'processed' => true,
-                    'duplicate' => false,
-                    'event_type' => $eventType,
-                ];
-            });
+    /**
+     * Claim a webhook event id before side effects. Returns false when already claimed.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    protected function claimWebhookEvent(string $eventId, ?string $eventType, array $payload): bool
+    {
+        try {
+            DB::connection((string) config('tenancy.database.central_connection'))
+                ->transaction(function () use ($eventId, $eventType, $payload): void {
+                    WebhookEvent::query()->create([
+                        'provider' => PaymentProvider::Paystack,
+                        'event_id' => $eventId,
+                        'event_type' => $eventType,
+                        'payload' => $payload,
+                        'processed_at' => now(),
+                    ]);
+                });
+
+            return true;
+        } catch (UniqueConstraintViolationException) {
+            return false;
+        }
     }
 
     /**

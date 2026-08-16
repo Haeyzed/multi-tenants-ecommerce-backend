@@ -179,6 +179,9 @@ class RoleSeeder extends Seeder
             'store_credit.manage',
             'loyalty.view',
             'loyalty.manage',
+            'integrations.view',
+            'integrations.create',
+            'integrations.delete',
         ]);
 
         $seller = Role::findOrCreate('seller', self::GUARD);

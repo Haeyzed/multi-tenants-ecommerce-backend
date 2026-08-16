@@ -22,16 +22,21 @@ use App\Models\Landlord\Tenant;
 use App\Models\Landlord\TenantProfile;
 use App\Models\Landlord\User;
 use App\Models\Landlord\WebhookEvent;
+use App\Models\Tenant\User as TenantUser;
 use App\Services\Landlord\Domain\DomainService;
 use App\Services\Landlord\Feature\FeatureAccessService;
+use App\Services\Landlord\Feature\FeatureGate;
 use App\Services\Landlord\Subscription\SubscriptionService;
 use App\Services\Payment\Gateways\PaystackGateway;
 use App\Services\Payment\PaymentManager;
+use App\Services\Payment\Webhooks\PaystackWebhookHandler;
+use App\Services\Tenant\Integration\IntegrationTokenService;
 use Database\Seeders\Landlord\PermissionSeeder;
 use Database\Seeders\Landlord\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
@@ -585,4 +590,122 @@ test('additional domains require custom-domain feature when subscribed', functio
 
     expect($domain->domain)->toBe('custom-'.$tenant->slug.'.test')
         ->and($tenant->fresh()->domains()->count())->toBe(2);
+});
+
+test('api-access feature gates integration token minting without blocking spa tokens', function (): void {
+    $tenant = makeTenantRecord();
+    $plan = makePlan(['slug' => 'api-starter-'.uniqid(), 'price' => '0.00']);
+    $feature = makeFeature(['slug' => 'api-access', 'name' => 'API Access']);
+    $plan->features()->sync([
+        $feature->id => ['is_enabled' => false, 'limit' => null],
+    ]);
+    app(SubscriptionService::class)->subscribe($tenant, $plan);
+
+    tenancy()->tenant = $tenant->fresh();
+    tenancy()->initialized = true;
+
+    if (! Schema::hasTable('personal_access_tokens')) {
+        $this->artisan('migrate', [
+            '--path' => database_path('migrations/tenant/2026_08_15_001043_create_tenant_personal_access_tokens_table.php'),
+            '--realpath' => true,
+            '--force' => true,
+        ]);
+    }
+
+    $user = TenantUser::query()->create([
+        'first_name' => 'Api',
+        'last_name' => 'Owner',
+        'email' => 'api-owner-'.uniqid().'@example.com',
+        'password' => 'password',
+    ]);
+
+    expect(fn () => app(IntegrationTokenService::class)->create($user, [
+        'name' => 'ERP Sync',
+    ]))->toThrow(ValidationException::class);
+
+    // SPA-style tokens remain available regardless of api-access.
+    expect($user->createToken('api')->plainTextToken)->not->toBeEmpty();
+
+    $plan->features()->sync([
+        $feature->id => ['is_enabled' => true, 'limit' => null],
+    ]);
+
+    $created = app(IntegrationTokenService::class)->create($user, [
+        'name' => 'ERP Sync',
+    ]);
+
+    expect($created['plain_text_token'])->not->toBeEmpty()
+        ->and($created['token']->name)->toBe('integration:ERP Sync')
+        ->and(app(FeatureGate::class)->allows('api-access', $tenant->fresh()))->toBeTrue();
+
+    tenancy()->tenant = null;
+    tenancy()->initialized = false;
+});
+
+test('landlord paystack webhook claim race returns duplicate without five hundred', function (): void {
+    Http::fake([
+        'https://api.paystack.co/transaction/verify/*' => Http::response([
+            'status' => true,
+            'message' => 'Verification successful',
+            'data' => [
+                'id' => 555,
+                'status' => 'success',
+                'reference' => 'wh_claim_1',
+                'amount' => 500000,
+                'currency' => 'NGN',
+                'paid_at' => now()->toIso8601String(),
+            ],
+        ], 200),
+    ]);
+
+    $tenant = makeTenantRecord();
+    $plan = makePlan(['slug' => 'wh-claim-'.uniqid(), 'price' => '5000.00']);
+    $subscription = Subscription::query()->create([
+        'tenant_id' => $tenant->getTenantKey(),
+        'plan_id' => $plan->id,
+        'provider' => PaymentProvider::Paystack,
+        'status' => SubscriptionStatus::Pending,
+    ]);
+
+    PaymentTransaction::query()->create([
+        'tenant_id' => $tenant->getTenantKey(),
+        'subscription_id' => $subscription->id,
+        'provider' => PaymentProvider::Paystack,
+        'reference' => 'wh_claim_1',
+        'amount' => '5000.00',
+        'currency' => 'NGN',
+        'status' => PaymentTransactionStatus::Pending,
+    ]);
+
+    $payload = json_encode([
+        'event' => 'charge.success',
+        'data' => [
+            'id' => 999001,
+            'reference' => 'wh_claim_1',
+            'amount' => 500000,
+            'currency' => 'NGN',
+            'status' => 'success',
+            'paid_at' => now()->toIso8601String(),
+        ],
+    ], JSON_THROW_ON_ERROR);
+
+    $secret = config('payment.drivers.paystack.webhook_secret');
+    $signature = hash_hmac('sha512', $payload, $secret);
+
+    $request = Request::create('/api/webhooks/paystack', 'POST', [], [], [], [
+        'CONTENT_TYPE' => 'application/json',
+        'HTTP_X-PAYSTACK-SIGNATURE' => $signature,
+    ], $payload);
+    $request->headers->set('Content-Type', 'application/json');
+    $request->headers->set('x-paystack-signature', $signature);
+
+    $handler = app(PaystackWebhookHandler::class);
+
+    $first = $handler->handle($request);
+    $second = $handler->handle($request);
+
+    expect($first['processed'])->toBeTrue()
+        ->and($second['duplicate'])->toBeTrue()
+        ->and(WebhookEvent::query()->count())->toBe(1)
+        ->and($subscription->fresh()->status)->toBe(SubscriptionStatus::Active);
 });
