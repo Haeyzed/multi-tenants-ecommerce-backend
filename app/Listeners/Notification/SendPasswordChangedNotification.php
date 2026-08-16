@@ -6,6 +6,7 @@ namespace App\Listeners\Notification;
 
 use App\Events\PasswordChanged;
 use App\Services\Notification\NotificationService;
+use App\Support\NotifiableDisplayName;
 
 class SendPasswordChangedNotification
 {
@@ -18,7 +19,7 @@ class SendPasswordChangedNotification
             : 'auth.password_changed';
 
         $this->notifications->send($event->user, $key, [
-            'user_name' => trim(($event->user->first_name ?? '').' '.($event->user->last_name ?? '')),
+            'user_name' => NotifiableDisplayName::resolve($event->user),
             'email' => $event->user->email ?? '',
         ]);
     }

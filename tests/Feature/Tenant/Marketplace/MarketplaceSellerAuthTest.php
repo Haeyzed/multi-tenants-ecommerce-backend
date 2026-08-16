@@ -6,17 +6,21 @@ use App\Enums\Tenant\Marketplace\SellerStatus;
 use App\Enums\Tenant\Marketplace\SellerVerificationStatus;
 use App\Events\PasswordChanged;
 use App\Events\PasswordResetRequested;
+use App\Events\SellerRegistered;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\Seller;
+use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use App\Services\Tenant\Marketplace\SellerOfferService;
 use App\Services\Tenant\Seller\SellerAuthService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 
@@ -195,4 +199,80 @@ test('seller isolation prevents managing another sellers offer', function (): vo
     $list = app(SellerOfferService::class)->list([], $sellerB);
 
     expect($list->total())->toBe(0);
+});
+
+test('seller registration fires registered event', function (): void {
+    Event::fake([SellerRegistered::class]);
+
+    app(SellerAuthService::class)->register([
+        'name' => 'Event Vendor',
+        'email' => 'event-vendor@example.com',
+        'password' => 'Password1!',
+    ]);
+
+    Event::assertDispatched(SellerRegistered::class);
+});
+
+test('seller can update profile and change password', function (): void {
+    Event::fake([PasswordChanged::class]);
+
+    $seller = Seller::factory()->sellable()->create([
+        'email' => 'profile-seller@example.com',
+        'password' => 'Password1!',
+    ]);
+
+    $updated = app(SellerAuthService::class)->updateProfile($seller, [
+        'name' => 'Updated Seller Co',
+        'description' => 'Updated bio',
+        'phone' => '+15551212',
+    ]);
+
+    expect($updated->name)->toBe('Updated Seller Co')
+        ->and($updated->description)->toBe('Updated bio')
+        ->and($updated->phone)->toBe('+15551212');
+
+    app(SellerAuthService::class)->changePassword($seller, [
+        'current_password' => 'Password1!',
+        'password' => 'NewPassword1!',
+    ]);
+
+    expect(Hash::check('NewPassword1!', $seller->fresh()->password))->toBeTrue()
+        ->and($seller->tokens()->count())->toBe(0);
+
+    Event::assertDispatched(PasswordChanged::class);
+});
+
+test('seller can replace and remove logo', function (): void {
+    Storage::fake('public');
+
+    $seller = Seller::factory()->sellable()->create();
+    $file = UploadedFile::fake()->image('logo.jpg', 200, 200);
+
+    $media = app(SellerAuthService::class)->replaceLogo($seller, $file);
+
+    expect($media->collection_name)->toBe('logo')
+        ->and($seller->fresh()->logo_url)->not->toBeEmpty();
+
+    app(SellerAuthService::class)->removeLogo($seller);
+
+    expect($seller->fresh()->logo_url)->toBeNull();
+});
+
+test('users table no longer has seller_id', function (): void {
+    expect(Schema::hasColumn('users', 'seller_id'))->toBeFalse()
+        ->and((new User)->getFillable())->not->toContain('seller_id');
+});
+
+test('authenticated seller can list own offers via offer service without seller_id payload', function (): void {
+    $seller = Seller::factory()->sellable()->create();
+    $product = Product::factory()->active()->create();
+    Warehouse::factory()->create(['is_default' => true]);
+
+    $offer = app(SellerOfferService::class)->store([
+        'product_id' => $product->id,
+        'price' => '25.00',
+    ], $seller);
+
+    expect($offer->seller_id)->toBe($seller->id)
+        ->and(app(SellerOfferService::class)->list([], $seller)->total())->toBe(1);
 });

@@ -10,7 +10,6 @@ use App\Http\Requests\Tenant\Seller\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Tenant\Seller\Auth\LoginRequest;
 use App\Http\Requests\Tenant\Seller\Auth\RegisterRequest;
 use App\Http\Requests\Tenant\Seller\Auth\ResetPasswordRequest;
-use App\Http\Requests\Tenant\Seller\Auth\UpdateProfileRequest;
 use App\Http\Resources\Tenant\Marketplace\SellerResource;
 use App\Models\Tenant\Seller;
 use App\Services\Tenant\Seller\SellerAuthService;
@@ -20,7 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Seller authentication and self-service profile endpoints.
+ * Seller authentication endpoints (profile lives on ProfileController).
  */
 class AuthController extends Controller
 {
@@ -110,46 +109,6 @@ class AuthController extends Controller
         $this->authService->resetPassword($request->validated());
 
         return $this->success(null, 'Password reset successfully.');
-    }
-
-    /**
-     * Return the authenticated seller.
-     */
-    #[Response(
-        status: 200,
-        description: 'Authenticated seller profile.',
-        type: 'array{success: true, message: string, data: SellerResource, meta: null, errors: null}',
-    )]
-    public function me(Request $request): JsonResponse
-    {
-        /** @var Seller $seller */
-        $seller = Auth::guard('seller')->user();
-
-        return $this->success(
-            new SellerResource($seller->load('sellerGroup')),
-            'Profile retrieved successfully.',
-        );
-    }
-
-    /**
-     * Update the authenticated seller's profile.
-     */
-    #[Response(
-        status: 200,
-        description: 'Updated seller profile.',
-        type: 'array{success: true, message: string, data: SellerResource, meta: null, errors: null}',
-    )]
-    public function updateProfile(UpdateProfileRequest $request): JsonResponse
-    {
-        /** @var Seller $seller */
-        $seller = Auth::guard('seller')->user();
-
-        $seller = $this->authService->updateProfile($seller, $request->validated());
-
-        return $this->updated(
-            new SellerResource($seller->load('sellerGroup')),
-            'Profile updated successfully.',
-        );
     }
 
     /**

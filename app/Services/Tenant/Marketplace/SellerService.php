@@ -7,6 +7,7 @@ namespace App\Services\Tenant\Marketplace;
 use App\Enums\Tenant\Marketplace\SellerStatus;
 use App\Enums\Tenant\Marketplace\SellerVerificationStatus;
 use App\Events\SellerApproved;
+use App\Events\SellerRejected;
 use App\Events\SellerSuspended;
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Seller;
@@ -138,6 +139,8 @@ class SellerService
         $seller->save();
 
         $seller->tokens()->delete();
+
+        event(new SellerRejected($seller));
 
         return $seller->fresh() ?? $seller;
     }

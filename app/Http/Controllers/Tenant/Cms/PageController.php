@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant\Cms;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\Cms\StoreFeaturedImageRequest;
 use App\Http\Requests\Tenant\Cms\StorePageRequest;
 use App\Http\Requests\Tenant\Cms\UpdatePageRequest;
 use App\Http\Resources\Tenant\Cms\PageResource;
@@ -73,5 +74,27 @@ class PageController extends Controller
         $this->pageService->destroy($page);
 
         return $this->deleted('Page deleted successfully.');
+    }
+
+    #[Response(status: 200, description: 'Page with featured image.', type: 'array{success: true, message: string, data: PageResource, meta: null, errors: null}')]
+    public function storeFeaturedImage(StoreFeaturedImageRequest $request, Page $page): JsonResponse
+    {
+        $this->authorize('update', $page);
+
+        return $this->updated(
+            new PageResource($this->pageService->storeFeaturedImage($page, $request->file('featured_image'))),
+            'Featured image uploaded successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Page with featured image removed.', type: 'array{success: true, message: string, data: PageResource, meta: null, errors: null}')]
+    public function destroyFeaturedImage(Page $page): JsonResponse
+    {
+        $this->authorize('update', $page);
+
+        return $this->updated(
+            new PageResource($this->pageService->destroyFeaturedImage($page)),
+            'Featured image deleted successfully.',
+        );
     }
 }

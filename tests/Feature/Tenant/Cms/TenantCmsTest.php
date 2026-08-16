@@ -15,8 +15,10 @@ use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -158,6 +160,27 @@ test('tenant cms permissions isolate customer role', function (): void {
         ->and($admin->can('cms.publish'))->toBeTrue()
         ->and($customer->can('viewAny', BlogPost::class))->toBeFalse()
         ->and($customer->can('cms.manage'))->toBeFalse();
+});
+
+test('tenant cms featured image can be attached and removed', function (): void {
+    Storage::fake('public');
+
+    $page = app(PageService::class)->store([
+        'title' => 'Media Page',
+        'content' => 'Body',
+        'status' => CmsContentStatus::Draft->value,
+    ]);
+
+    $updated = app(PageService::class)->storeFeaturedImage(
+        $page,
+        UploadedFile::fake()->image('hero.jpg', 640, 480),
+    );
+
+    expect($updated->getMedia('featured_image'))->toHaveCount(1);
+
+    $cleared = app(PageService::class)->destroyFeaturedImage($updated);
+
+    expect($cleared->getMedia('featured_image'))->toHaveCount(0);
 });
 
 /*

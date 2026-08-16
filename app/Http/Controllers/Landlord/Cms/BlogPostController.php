@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Landlord\Cms;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Landlord\Cms\StoreBlogPostRequest;
+use App\Http\Requests\Landlord\Cms\StoreFeaturedImageRequest;
 use App\Http\Requests\Landlord\Cms\UpdateBlogPostRequest;
 use App\Http\Resources\Landlord\Cms\BlogPostResource;
 use App\Models\Landlord\Cms\BlogPost;
@@ -64,5 +65,23 @@ class BlogPostController extends Controller
         $this->blogPostService->destroy($blog_post);
 
         return $this->deleted('Blog post deleted successfully.');
+    }
+
+    #[Response(status: 200, description: 'Blog post with featured image.', type: 'array{success: true, message: string, data: BlogPostResource, meta: null, errors: null}')]
+    public function storeFeaturedImage(StoreFeaturedImageRequest $request, BlogPost $blog_post): JsonResponse
+    {
+        return $this->updated(
+            new BlogPostResource($this->blogPostService->storeFeaturedImage($blog_post, $request->file('featured_image'))),
+            'Featured image uploaded successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Blog post with featured image removed.', type: 'array{success: true, message: string, data: BlogPostResource, meta: null, errors: null}')]
+    public function destroyFeaturedImage(BlogPost $blog_post): JsonResponse
+    {
+        return $this->updated(
+            new BlogPostResource($this->blogPostService->destroyFeaturedImage($blog_post)),
+            'Featured image deleted successfully.',
+        );
     }
 }

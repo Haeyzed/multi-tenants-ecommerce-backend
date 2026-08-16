@@ -5,15 +5,20 @@ declare(strict_types=1);
 namespace App\Services\Landlord\Cms;
 
 use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Media\MediaCollection;
 use App\Models\Landlord\Cms\Page;
+use App\Services\Media\MediaService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\UploadedFile;
 
 /**
  * Landlord CMS page CRUD and public show.
  */
 class PageService
 {
+    public function __construct(private readonly MediaService $mediaService) {}
+
     /**
      * @param  array{search?: string|null, status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Page>
@@ -93,6 +98,26 @@ class PageService
     {
         $page->seo()?->delete();
         $page->delete();
+    }
+
+    /**
+     * Replace the featured image for a landlord page.
+     */
+    public function storeFeaturedImage(Page $page, UploadedFile $image): Page
+    {
+        $this->mediaService->replace($page, $image, MediaCollection::FeaturedImage);
+
+        return $page->fresh(['seo', 'media']) ?? $page->load(['seo', 'media']);
+    }
+
+    /**
+     * Remove the featured image for a landlord page.
+     */
+    public function destroyFeaturedImage(Page $page): Page
+    {
+        $this->mediaService->removeCollection($page, MediaCollection::FeaturedImage);
+
+        return $page->fresh(['seo', 'media']) ?? $page->load(['seo', 'media']);
     }
 
     /**

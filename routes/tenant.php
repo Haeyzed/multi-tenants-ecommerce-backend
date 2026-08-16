@@ -87,6 +87,7 @@ use App\Http\Controllers\Tenant\Product\ProductVariantController;
 use App\Http\Controllers\Tenant\RBAC\PermissionController;
 use App\Http\Controllers\Tenant\RBAC\RoleController;
 use App\Http\Controllers\Tenant\Seller\AuthController as SellerAuthController;
+use App\Http\Controllers\Tenant\Seller\ProfileController as SellerProfileController;
 use App\Http\Controllers\Tenant\Settings\SettingsController;
 use App\Http\Controllers\Tenant\Shipping\CarrierWebhookController;
 use App\Http\Controllers\Tenant\Shipping\ShipmentController;
@@ -223,9 +224,30 @@ Route::middleware([
 
             Route::middleware('auth:sanctum')->group(function (): void {
                 Route::post('logout', [SellerAuthController::class, 'logout'])->name('logout');
-                Route::get('me', [SellerAuthController::class, 'me'])->name('me');
-                Route::match(['put', 'patch'], 'profile', [SellerAuthController::class, 'updateProfile'])->name('profile');
                 Route::post('change-password', [SellerAuthController::class, 'changePassword'])->name('change-password');
+
+                Route::get('me', [SellerProfileController::class, 'me'])->name('me');
+                Route::match(['put', 'patch'], 'profile', [SellerProfileController::class, 'update'])->name('profile');
+                Route::post('logo', [SellerProfileController::class, 'storeLogo'])->name('logo.store');
+                Route::delete('logo', [SellerProfileController::class, 'destroyLogo'])->name('logo.destroy');
+
+                // Self-scoped marketplace APIs (authorization via Seller policies, not Spatie tenant admin perms).
+                Route::get('offers', [SellerOfferController::class, 'index'])->name('offers.index');
+                Route::post('offers', [SellerOfferController::class, 'store'])->name('offers.store');
+                Route::get('offers/{seller_offer}', [SellerOfferController::class, 'show'])->whereNumber('seller_offer')->name('offers.show');
+                Route::match(['put', 'patch'], 'offers/{seller_offer}', [SellerOfferController::class, 'update'])->whereNumber('seller_offer')->name('offers.update');
+                Route::delete('offers/{seller_offer}', [SellerOfferController::class, 'destroy'])->whereNumber('seller_offer')->name('offers.destroy');
+
+                Route::get('orders', [SellerOrderController::class, 'index'])->name('orders.index');
+                Route::get('orders/{seller_order}', [SellerOrderController::class, 'show'])->whereNumber('seller_order')->name('orders.show');
+                Route::patch('orders/{seller_order}/status', [SellerOrderController::class, 'updateStatus'])->whereNumber('seller_order')->name('orders.status');
+
+                Route::get('commissions', [SellerCommissionController::class, 'index'])->name('commissions.index');
+                Route::get('commissions/{commission}', [SellerCommissionController::class, 'show'])->whereNumber('commission')->name('commissions.show');
+
+                Route::get('payouts', [SellerPayoutController::class, 'index'])->name('payouts.index');
+                Route::post('payouts', [SellerPayoutController::class, 'store'])->name('payouts.store');
+                Route::get('payouts/{payout}', [SellerPayoutController::class, 'show'])->whereNumber('payout')->name('payouts.show');
             });
         });
 
@@ -635,12 +657,16 @@ Route::middleware([
                 Route::get('blog-posts/{blog_post}', [BlogPostController::class, 'show'])->middleware('permission:cms.view|cms.manage')->whereNumber('blog_post')->name('tenant.blog-posts.show');
                 Route::match(['put', 'patch'], 'blog-posts/{blog_post}', [BlogPostController::class, 'update'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('tenant.blog-posts.update');
                 Route::delete('blog-posts/{blog_post}', [BlogPostController::class, 'destroy'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('tenant.blog-posts.destroy');
+                Route::post('blog-posts/{blog_post}/featured-image', [BlogPostController::class, 'storeFeaturedImage'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('tenant.blog-posts.featured-image.store');
+                Route::delete('blog-posts/{blog_post}/featured-image', [BlogPostController::class, 'destroyFeaturedImage'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('tenant.blog-posts.featured-image.destroy');
 
                 Route::get('pages', [CmsPageController::class, 'index'])->middleware('permission:cms.view|cms.manage')->name('tenant.pages.index');
                 Route::post('pages', [CmsPageController::class, 'store'])->middleware('permission:cms.manage')->name('tenant.pages.store');
                 Route::get('pages/{page}', [CmsPageController::class, 'show'])->middleware('permission:cms.view|cms.manage')->whereNumber('page')->name('tenant.pages.show');
                 Route::match(['put', 'patch'], 'pages/{page}', [CmsPageController::class, 'update'])->middleware('permission:cms.manage')->whereNumber('page')->name('tenant.pages.update');
                 Route::delete('pages/{page}', [CmsPageController::class, 'destroy'])->middleware('permission:cms.manage')->whereNumber('page')->name('tenant.pages.destroy');
+                Route::post('pages/{page}/featured-image', [CmsPageController::class, 'storeFeaturedImage'])->middleware('permission:cms.manage')->whereNumber('page')->name('tenant.pages.featured-image.store');
+                Route::delete('pages/{page}/featured-image', [CmsPageController::class, 'destroyFeaturedImage'])->middleware('permission:cms.manage')->whereNumber('page')->name('tenant.pages.featured-image.destroy');
 
                 Route::get('deliveries', [DeliveryController::class, 'index'])->middleware('permission:deliveries.view')->name('tenant.deliveries.index');
                 Route::post('deliveries', [DeliveryController::class, 'store'])->middleware('permission:deliveries.manage')->name('tenant.deliveries.store');

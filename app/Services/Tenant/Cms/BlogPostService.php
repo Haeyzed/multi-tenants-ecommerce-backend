@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Services\Tenant\Cms;
 
 use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Media\MediaCollection;
 use App\Models\Tenant\Cms\BlogPost;
+use App\Services\Media\MediaService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -16,7 +19,10 @@ use Illuminate\Validation\ValidationException;
  */
 class BlogPostService
 {
-    public function __construct(private readonly CommerceSettingService $commerceSettings) {}
+    public function __construct(
+        private readonly CommerceSettingService $commerceSettings,
+        private readonly MediaService $mediaService,
+    ) {}
 
     /**
      * @param  array{search?: string|null, status?: string|null, blog_category_id?: int|null, per_page?: int|null}  $params
@@ -132,6 +138,26 @@ class BlogPostService
     {
         $post->seo()?->delete();
         $post->delete();
+    }
+
+    /**
+     * Replace the featured image for a blog post.
+     */
+    public function storeFeaturedImage(BlogPost $post, UploadedFile $image): BlogPost
+    {
+        $this->mediaService->replace($post, $image, MediaCollection::FeaturedImage);
+
+        return $post->fresh(['category', 'author', 'seo', 'media']) ?? $post->load(['category', 'author', 'seo', 'media']);
+    }
+
+    /**
+     * Remove the featured image for a blog post.
+     */
+    public function destroyFeaturedImage(BlogPost $post): BlogPost
+    {
+        $this->mediaService->removeCollection($post, MediaCollection::FeaturedImage);
+
+        return $post->fresh(['category', 'author', 'seo', 'media']) ?? $post->load(['category', 'author', 'seo', 'media']);
     }
 
     protected function assertBlogEnabled(): void

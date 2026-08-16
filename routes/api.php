@@ -148,12 +148,16 @@ $registerLandlordApi = function (): void {
             Route::get('blog-posts/{blog_post}', [LandlordBlogPostController::class, 'show'])->middleware('permission:cms.view|cms.manage')->whereNumber('blog_post')->name('landlord.blog-posts.show');
             Route::match(['put', 'patch'], 'blog-posts/{blog_post}', [LandlordBlogPostController::class, 'update'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('landlord.blog-posts.update');
             Route::delete('blog-posts/{blog_post}', [LandlordBlogPostController::class, 'destroy'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('landlord.blog-posts.destroy');
+            Route::post('blog-posts/{blog_post}/featured-image', [LandlordBlogPostController::class, 'storeFeaturedImage'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('landlord.blog-posts.featured-image.store');
+            Route::delete('blog-posts/{blog_post}/featured-image', [LandlordBlogPostController::class, 'destroyFeaturedImage'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('landlord.blog-posts.featured-image.destroy');
 
             Route::get('pages', [LandlordPageController::class, 'index'])->middleware('permission:cms.view|cms.manage')->name('landlord.pages.index');
             Route::post('pages', [LandlordPageController::class, 'store'])->middleware('permission:cms.manage')->name('landlord.pages.store');
             Route::get('pages/{page}', [LandlordPageController::class, 'show'])->middleware('permission:cms.view|cms.manage')->whereNumber('page')->name('landlord.pages.show');
             Route::match(['put', 'patch'], 'pages/{page}', [LandlordPageController::class, 'update'])->middleware('permission:cms.manage')->whereNumber('page')->name('landlord.pages.update');
             Route::delete('pages/{page}', [LandlordPageController::class, 'destroy'])->middleware('permission:cms.manage')->whereNumber('page')->name('landlord.pages.destroy');
+            Route::post('pages/{page}/featured-image', [LandlordPageController::class, 'storeFeaturedImage'])->middleware('permission:cms.manage')->whereNumber('page')->name('landlord.pages.featured-image.store');
+            Route::delete('pages/{page}/featured-image', [LandlordPageController::class, 'destroyFeaturedImage'])->middleware('permission:cms.manage')->whereNumber('page')->name('landlord.pages.featured-image.destroy');
 
             Route::get('media/options', [MediaController::class, 'options'])->name('landlord.media.options');
             Route::get('media', [MediaController::class, 'index'])->name('landlord.media.index');

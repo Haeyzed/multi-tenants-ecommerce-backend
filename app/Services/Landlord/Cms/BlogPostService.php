@@ -5,15 +5,20 @@ declare(strict_types=1);
 namespace App\Services\Landlord\Cms;
 
 use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Media\MediaCollection;
 use App\Models\Landlord\Cms\BlogPost;
+use App\Services\Media\MediaService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\UploadedFile;
 
 /**
  * Landlord blog post CRUD and public listing.
  */
 class BlogPostService
 {
+    public function __construct(private readonly MediaService $mediaService) {}
+
     /**
      * @param  array{search?: string|null, status?: string|null, blog_category_id?: int|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, BlogPost>
@@ -125,6 +130,26 @@ class BlogPostService
     {
         $post->seo()?->delete();
         $post->delete();
+    }
+
+    /**
+     * Replace the featured image for a landlord blog post.
+     */
+    public function storeFeaturedImage(BlogPost $post, UploadedFile $image): BlogPost
+    {
+        $this->mediaService->replace($post, $image, MediaCollection::FeaturedImage);
+
+        return $post->fresh(['category', 'author', 'seo', 'media']) ?? $post->load(['category', 'author', 'seo', 'media']);
+    }
+
+    /**
+     * Remove the featured image for a landlord blog post.
+     */
+    public function destroyFeaturedImage(BlogPost $post): BlogPost
+    {
+        $this->mediaService->removeCollection($post, MediaCollection::FeaturedImage);
+
+        return $post->fresh(['category', 'author', 'seo', 'media']) ?? $post->load(['category', 'author', 'seo', 'media']);
     }
 
     /**

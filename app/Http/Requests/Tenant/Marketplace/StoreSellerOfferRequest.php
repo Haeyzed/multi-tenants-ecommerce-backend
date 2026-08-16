@@ -6,6 +6,7 @@ namespace App\Http\Requests\Tenant\Marketplace;
 
 use App\Enums\Tenant\Marketplace\SellerOfferStatus;
 use App\Http\Requests\BaseRequest;
+use App\Models\Tenant\Seller;
 use App\Rules\MoneyAmount;
 use Illuminate\Validation\Rule;
 
@@ -16,8 +17,15 @@ class StoreSellerOfferRequest extends BaseRequest
      */
     public function rules(): array
     {
+        $sellerIsActor = $this->user() instanceof Seller;
+
         return [
-            'seller_id' => ['required', 'integer', 'exists:sellers,id'],
+            'seller_id' => [
+                Rule::requiredIf(! $sellerIsActor),
+                'nullable',
+                'integer',
+                'exists:sellers,id',
+            ],
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'product_variant_id' => ['sometimes', 'nullable', 'integer', 'exists:product_variants,id'],
             'sku' => ['sometimes', 'nullable', 'string', 'max:100'],

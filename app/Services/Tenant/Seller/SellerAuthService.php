@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\Seller;
 
+use App\Enums\Media\MediaCollection;
 use App\Enums\Tenant\Marketplace\SellerStatus;
 use App\Enums\Tenant\Marketplace\SellerVerificationStatus;
 use App\Events\PasswordChanged;
 use App\Events\PasswordResetRequested;
+use App\Events\SellerRegistered;
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Seller;
 use App\Services\Landlord\Feature\UsageLimiter;
+use App\Services\Media\MediaService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * Seller authentication, registration, and password workflows.
@@ -25,6 +30,7 @@ class SellerAuthService
     public function __construct(
         private readonly UsageLimiter $usageLimiter,
         private readonly CommerceSettingService $commerceSettings,
+        private readonly MediaService $mediaService,
     ) {}
 
     /**
@@ -59,6 +65,8 @@ class SellerAuthService
         ]);
 
         $token = $seller->createToken('api')->plainTextToken;
+
+        event(new SellerRegistered($seller));
 
         return [
             'seller' => $seller,
@@ -194,5 +202,21 @@ class SellerAuthService
         $seller->save();
 
         return $seller->fresh() ?? $seller;
+    }
+
+    /**
+     * Replace the seller logo.
+     */
+    public function replaceLogo(Seller $seller, UploadedFile $logo): Media
+    {
+        return $this->mediaService->replace($seller, $logo, MediaCollection::Logo);
+    }
+
+    /**
+     * Remove the seller logo.
+     */
+    public function removeLogo(Seller $seller): void
+    {
+        $this->mediaService->removeCollection($seller, MediaCollection::Logo);
     }
 }

@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Services\Tenant\Cms;
 
 use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Media\MediaCollection;
 use App\Models\Tenant\Cms\Page;
+use App\Services\Media\MediaService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -16,7 +19,10 @@ use Illuminate\Validation\ValidationException;
  */
 class PageService
 {
-    public function __construct(private readonly CommerceSettingService $commerceSettings) {}
+    public function __construct(
+        private readonly CommerceSettingService $commerceSettings,
+        private readonly MediaService $mediaService,
+    ) {}
 
     /**
      * @param  array{search?: string|null, status?: string|null, per_page?: int|null}  $params
@@ -108,6 +114,26 @@ class PageService
     {
         $page->seo()?->delete();
         $page->delete();
+    }
+
+    /**
+     * Replace the featured image for a page.
+     */
+    public function storeFeaturedImage(Page $page, UploadedFile $image): Page
+    {
+        $this->mediaService->replace($page, $image, MediaCollection::FeaturedImage);
+
+        return $page->fresh(['seo', 'media']) ?? $page->load(['seo', 'media']);
+    }
+
+    /**
+     * Remove the featured image for a page.
+     */
+    public function destroyFeaturedImage(Page $page): Page
+    {
+        $this->mediaService->removeCollection($page, MediaCollection::FeaturedImage);
+
+        return $page->fresh(['seo', 'media']) ?? $page->load(['seo', 'media']);
     }
 
     /**

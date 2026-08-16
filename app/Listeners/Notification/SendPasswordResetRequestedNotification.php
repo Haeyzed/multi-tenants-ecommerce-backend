@@ -7,6 +7,7 @@ namespace App\Listeners\Notification;
 use App\Enums\Notification\NotificationChannel;
 use App\Events\PasswordResetRequested;
 use App\Services\Notification\NotificationService;
+use App\Support\NotifiableDisplayName;
 
 class SendPasswordResetRequestedNotification
 {
@@ -18,7 +19,7 @@ class SendPasswordResetRequestedNotification
             $event->user,
             'auth.password_reset',
             [
-                'user_name' => trim(($event->user->first_name ?? '').' '.($event->user->last_name ?? '')),
+                'user_name' => NotifiableDisplayName::resolve($event->user),
                 'email' => $event->user->email ?? '',
                 'token' => $event->token,
             ],
