@@ -22,6 +22,8 @@ class ShippingCarrierManager
 
         return match ($name) {
             'fake' => $this->container->make(FakeCarrier::class),
+            // Credential stubs exist in config/shipping.php; real HTTP clients are not wired yet.
+            'dhl', 'gig', 'fedex', 'ups' => $this->container->make(FakeCarrier::class),
             default => throw new InvalidArgumentException("Unsupported shipping carrier [{$name}]."),
         };
     }

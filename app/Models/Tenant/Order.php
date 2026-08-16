@@ -186,6 +186,14 @@ class Order extends Model
     }
 
     /**
+     * @return HasMany<Delivery, $this>
+     */
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(Delivery::class);
+    }
+
+    /**
      * @return HasMany<CheckoutSession, $this>
      */
     public function checkoutSessions(): HasMany

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -29,7 +30,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-#[Fillable(['first_name', 'last_name', 'email', 'phone', 'password', 'status'])]
+#[Fillable(['first_name', 'last_name', 'email', 'phone', 'password', 'status', 'customer_group_id'])]
 #[Hidden(['password', 'remember_token'])]
 class Customer extends Authenticatable implements HasMedia, MustVerifyEmail
 {
@@ -68,6 +69,16 @@ class Customer extends Authenticatable implements HasMedia, MustVerifyEmail
             'password' => 'hashed',
             'status' => CustomerStatus::class,
         ];
+    }
+
+    /**
+     * Optional customer group classification.
+     *
+     * @return BelongsTo<CustomerGroup, $this>
+     */
+    public function customerGroup(): BelongsTo
+    {
+        return $this->belongsTo(CustomerGroup::class);
     }
 
     /**

@@ -63,12 +63,13 @@ class SellerService
             'commission_type' => $data['commission_type'] ?? null,
             'commission_rate' => $data['commission_rate'] ?? null,
             'commission_fixed_amount' => $data['commission_fixed_amount'] ?? null,
+            'seller_group_id' => $data['seller_group_id'] ?? null,
         ]);
     }
 
     public function show(Seller $seller): Seller
     {
-        return $seller->loadCount('offers');
+        return $seller->load(['sellerGroup'])->loadCount('offers');
     }
 
     /**

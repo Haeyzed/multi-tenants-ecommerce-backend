@@ -39,11 +39,102 @@ class CustomerSegmentationService
     }
 
     /**
-     * Resolve an active segment by slug.
+     * Resolve a segment by slug.
      */
     public function findBySlug(string $slug): ?CustomerSegment
     {
         return CustomerSegment::query()->where('slug', $slug)->first();
+    }
+
+    /**
+     * Create a customer segment.
+     *
+     * @param  array{
+     *     name: string,
+     *     description?: string|null,
+     *     match?: string,
+     *     conditions: list<array{type: string, value?: mixed}>,
+     *     is_active?: bool,
+     *     sort_order?: int
+     * }  $data
+     */
+    public function store(array $data): CustomerSegment
+    {
+        return CustomerSegment::query()->create([
+            'name' => $data['name'],
+            'description' => $data['description'] ?? null,
+            'rules' => [
+                'match' => ($data['match'] ?? 'all') === 'any' ? 'any' : 'all',
+                'conditions' => array_values($data['conditions']),
+            ],
+            'is_active' => $data['is_active'] ?? true,
+            'sort_order' => $data['sort_order'] ?? 0,
+            'customers_count' => 0,
+        ]);
+    }
+
+    /**
+     * Retrieve a segment with a live membership count.
+     */
+    public function show(CustomerSegment $segment): CustomerSegment
+    {
+        $segment->setAttribute('customers_count', $this->count($segment));
+
+        return $segment;
+    }
+
+    /**
+     * Update a customer segment.
+     *
+     * @param  array{
+     *     name?: string,
+     *     description?: string|null,
+     *     match?: string,
+     *     conditions?: list<array{type: string, value?: mixed}>,
+     *     is_active?: bool,
+     *     sort_order?: int
+     * }  $data
+     */
+    public function update(CustomerSegment $segment, array $data): CustomerSegment
+    {
+        if (array_key_exists('name', $data)) {
+            $segment->name = $data['name'];
+        }
+
+        if (array_key_exists('description', $data)) {
+            $segment->description = $data['description'];
+        }
+
+        if (array_key_exists('is_active', $data)) {
+            $segment->is_active = (bool) $data['is_active'];
+        }
+
+        if (array_key_exists('sort_order', $data)) {
+            $segment->sort_order = (int) $data['sort_order'];
+        }
+
+        if (array_key_exists('conditions', $data) || array_key_exists('match', $data)) {
+            $rules = $segment->rules ?? ['match' => 'all', 'conditions' => []];
+            $rules['match'] = ($data['match'] ?? $segment->matchMode()) === 'any' ? 'any' : 'all';
+
+            if (array_key_exists('conditions', $data)) {
+                $rules['conditions'] = array_values($data['conditions']);
+            }
+
+            $segment->rules = $rules;
+        }
+
+        $segment->save();
+
+        return $segment->fresh() ?? $segment;
+    }
+
+    /**
+     * Delete a customer segment.
+     */
+    public function destroy(CustomerSegment $segment): void
+    {
+        $segment->delete();
     }
 
     /**

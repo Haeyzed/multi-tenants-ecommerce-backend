@@ -126,6 +126,9 @@ test('tenant openapi contains tenant endpoints and excludes landlord endpoints',
 
     expect(pathsContain($paths, 'brands'))->toBeTrue()
         ->and(pathsContain($paths, 'categories'))->toBeTrue()
+        ->and(pathsContain($paths, 'customer-groups'))->toBeTrue()
+        ->and(pathsContain($paths, 'flash-sales'))->toBeTrue()
+        ->and(pathsContain($paths, 'drivers'))->toBeTrue()
         ->and(pathsContain($paths, 'tenants'))->toBeFalse()
         ->and(pathsContain($paths, 'plans'))->toBeFalse();
 });

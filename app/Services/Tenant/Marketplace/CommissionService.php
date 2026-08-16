@@ -54,7 +54,7 @@ class CommissionService
                     continue;
                 }
 
-                $sellerOrder->loadMissing('seller');
+                $sellerOrder->loadMissing('seller.sellerGroup');
                 $seller = $sellerOrder->seller;
 
                 if ($seller === null) {
@@ -98,9 +98,15 @@ class CommissionService
      */
     public function calculate(Seller $seller, string $subtotal): array
     {
-        $type = $seller->commission_type ?? CommissionType::from($this->commerceSettings->defaultCommissionType());
-        $rate = $seller->commission_rate ?? $this->commerceSettings->defaultCommissionRate();
-        $fixed = $seller->commission_fixed_amount ?? $this->commerceSettings->defaultCommissionFixedAmount();
+        $type = $seller->commission_type
+            ?? $seller->sellerGroup?->commission_type
+            ?? CommissionType::from($this->commerceSettings->defaultCommissionType());
+        $rate = $seller->commission_rate
+            ?? $seller->sellerGroup?->commission_rate
+            ?? $this->commerceSettings->defaultCommissionRate();
+        $fixed = $seller->commission_fixed_amount
+            ?? $seller->sellerGroup?->commission_fixed_amount
+            ?? $this->commerceSettings->defaultCommissionFixedAmount();
 
         $commissionAmount = match ($type) {
             CommissionType::Percentage => Money::percent($subtotal, $rate),

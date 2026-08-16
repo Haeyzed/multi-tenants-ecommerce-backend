@@ -17,6 +17,7 @@ use App\Http\Controllers\Tenant\Category\CategoryController;
 use App\Http\Controllers\Tenant\Commerce\CartController;
 use App\Http\Controllers\Tenant\Commerce\CheckoutController;
 use App\Http\Controllers\Tenant\Commerce\CouponController;
+use App\Http\Controllers\Tenant\Commerce\CustomerDeliveryController;
 use App\Http\Controllers\Tenant\Commerce\CustomerGiftCardController;
 use App\Http\Controllers\Tenant\Commerce\CustomerInvoiceController;
 use App\Http\Controllers\Tenant\Commerce\CustomerOrderController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Tenant\Commerce\CustomerOrderReturnController;
 use App\Http\Controllers\Tenant\Commerce\CustomerShipmentController;
 use App\Http\Controllers\Tenant\Commerce\CustomerStoreCreditController;
 use App\Http\Controllers\Tenant\Commerce\CustomerWishlistController;
+use App\Http\Controllers\Tenant\Commerce\FlashSaleController;
 use App\Http\Controllers\Tenant\Commerce\GiftCardController;
 use App\Http\Controllers\Tenant\Commerce\InvoiceController;
 use App\Http\Controllers\Tenant\Commerce\OrderController;
@@ -35,9 +37,15 @@ use App\Http\Controllers\Tenant\Commerce\RefundController;
 use App\Http\Controllers\Tenant\Commerce\StoreCreditController;
 use App\Http\Controllers\Tenant\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Tenant\Customer\CustomerController;
+use App\Http\Controllers\Tenant\Customer\CustomerGroupController;
 use App\Http\Controllers\Tenant\Customer\CustomerSegmentController;
 use App\Http\Controllers\Tenant\Customer\ProductReviewController as CustomerProductReviewController;
 use App\Http\Controllers\Tenant\Customer\RecentlyViewedProductController;
+use App\Http\Controllers\Tenant\Delivery\DeliveryController;
+use App\Http\Controllers\Tenant\Driver\AuthController as DriverAuthController;
+use App\Http\Controllers\Tenant\Driver\DriverController;
+use App\Http\Controllers\Tenant\Driver\DriverDeliveryController;
+use App\Http\Controllers\Tenant\Driver\DriverLocationController;
 use App\Http\Controllers\Tenant\HomeController;
 use App\Http\Controllers\Tenant\Integration\IntegrationTokenController;
 use App\Http\Controllers\Tenant\Inventory\InventoryController;
@@ -46,6 +54,7 @@ use App\Http\Controllers\Tenant\Loyalty\LoyaltyAccountController;
 use App\Http\Controllers\Tenant\Loyalty\LoyaltyProgramController;
 use App\Http\Controllers\Tenant\Marketplace\SellerCommissionController;
 use App\Http\Controllers\Tenant\Marketplace\SellerController;
+use App\Http\Controllers\Tenant\Marketplace\SellerGroupController;
 use App\Http\Controllers\Tenant\Marketplace\SellerOfferController;
 use App\Http\Controllers\Tenant\Marketplace\SellerOrderController;
 use App\Http\Controllers\Tenant\Marketplace\SellerPayoutController;
@@ -64,6 +73,7 @@ use App\Http\Controllers\Tenant\Product\ProductSpecificationController;
 use App\Http\Controllers\Tenant\Product\ProductVariantController;
 use App\Http\Controllers\Tenant\RBAC\PermissionController;
 use App\Http\Controllers\Tenant\RBAC\RoleController;
+use App\Http\Controllers\Tenant\Shipping\CarrierWebhookController;
 use App\Http\Controllers\Tenant\Shipping\ShipmentController;
 use App\Http\Controllers\Tenant\Shipping\ShippingMethodController;
 use App\Http\Controllers\Tenant\Storefront\StorefrontBrandController;
@@ -144,12 +154,39 @@ Route::middleware([
                 Route::post('orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->whereNumber('order')->name('orders.cancel');
                 Route::get('orders/{order}/refunds', [CustomerOrderController::class, 'refunds'])->whereNumber('order')->name('orders.refunds');
                 Route::get('orders/{order}/shipments', [CustomerShipmentController::class, 'index'])->whereNumber('order')->name('orders.shipments.index');
+                Route::get('orders/{order}/deliveries', [CustomerDeliveryController::class, 'index'])->whereNumber('order')->name('orders.deliveries.index');
                 Route::get('orders/{order}/invoice', [CustomerInvoiceController::class, 'forOrder'])->whereNumber('order')->name('orders.invoice');
                 Route::post('orders/{order}/returns', [CustomerOrderReturnController::class, 'store'])->whereNumber('order')->name('orders.returns.store');
                 Route::get('returns', [CustomerOrderReturnController::class, 'index'])->name('returns.index');
                 Route::get('returns/{order_return}', [CustomerOrderReturnController::class, 'show'])->whereNumber('order_return')->name('returns.show');
                 Route::get('invoices/{invoice}', [CustomerInvoiceController::class, 'show'])->whereNumber('invoice')->name('invoices.show');
                 Route::get('invoices/{invoice}/download', [CustomerInvoiceController::class, 'download'])->whereNumber('invoice')->name('invoices.download');
+            });
+        });
+
+        Route::prefix('driver')->middleware('driver.guard')->name('driver.')->group(function (): void {
+            Route::middleware('throttle:6,1')->group(function (): void {
+                Route::post('login', [DriverAuthController::class, 'login'])->name('login');
+                Route::post('forgot-password', [DriverAuthController::class, 'forgotPassword'])->name('forgot-password');
+                Route::post('reset-password', [DriverAuthController::class, 'resetPassword'])->name('reset-password');
+            });
+
+            Route::middleware('auth:sanctum')->group(function (): void {
+                Route::post('logout', [DriverAuthController::class, 'logout'])->name('logout');
+                Route::get('me', [DriverAuthController::class, 'me'])->name('me');
+                Route::match(['put', 'patch'], 'profile', [DriverAuthController::class, 'updateProfile'])->name('profile');
+                Route::post('change-password', [DriverAuthController::class, 'changePassword'])->name('change-password');
+
+                Route::get('deliveries', [DriverDeliveryController::class, 'index'])->name('deliveries.index');
+                Route::get('deliveries/{delivery}', [DriverDeliveryController::class, 'show'])->whereNumber('delivery')->name('deliveries.show');
+                Route::post('deliveries/{delivery}/accept', [DriverDeliveryController::class, 'accept'])->whereNumber('delivery')->name('deliveries.accept');
+                Route::post('deliveries/{delivery}/reject', [DriverDeliveryController::class, 'reject'])->whereNumber('delivery')->name('deliveries.reject');
+                Route::post('deliveries/{delivery}/picked-up', [DriverDeliveryController::class, 'markPickedUp'])->whereNumber('delivery')->name('deliveries.picked-up');
+                Route::post('deliveries/{delivery}/out-for-delivery', [DriverDeliveryController::class, 'markOutForDelivery'])->whereNumber('delivery')->name('deliveries.out-for-delivery');
+                Route::post('deliveries/{delivery}/delivered', [DriverDeliveryController::class, 'markDelivered'])->whereNumber('delivery')->name('deliveries.delivered');
+                Route::post('deliveries/{delivery}/failed', [DriverDeliveryController::class, 'markFailed'])->whereNumber('delivery')->name('deliveries.failed');
+
+                Route::post('locations', [DriverLocationController::class, 'store'])->middleware('throttle:60,1')->name('locations.store');
             });
         });
 
@@ -188,6 +225,10 @@ Route::middleware([
         Route::post('payments/webhooks/paystack', [PaymentWebhookController::class, 'paystack'])
             ->middleware('throttle:120,1')
             ->name('tenant.payments.webhooks.paystack');
+
+        Route::post('webhooks/shipping/{carrier}', CarrierWebhookController::class)
+            ->middleware('throttle:120,1')
+            ->name('tenant.webhooks.shipping.carrier');
 
         Route::middleware('tenant.guard')->group(function (): void {
             Route::prefix('auth')->name('tenant.auth.')->group(function (): void {
@@ -248,7 +289,18 @@ Route::middleware([
                 Route::match(['put', 'patch'], 'brands/{brand}/seo', [SeoController::class, 'upsertBrand'])->middleware('permission:brands.update')->whereNumber('brand')->name('tenant.brands.seo.upsert');
 
                 Route::get('segments', [CustomerSegmentController::class, 'index'])->middleware('permission:segments.view')->name('tenant.segments.index');
+                Route::post('segments', [CustomerSegmentController::class, 'store'])->middleware('permission:segments.manage')->name('tenant.segments.store');
+                Route::get('segments/{segment}', [CustomerSegmentController::class, 'show'])->middleware('permission:segments.view')->whereNumber('segment')->name('tenant.segments.show');
+                Route::match(['put', 'patch'], 'segments/{segment}', [CustomerSegmentController::class, 'update'])->middleware('permission:segments.manage')->whereNumber('segment')->name('tenant.segments.update');
+                Route::delete('segments/{segment}', [CustomerSegmentController::class, 'destroy'])->middleware('permission:segments.manage')->whereNumber('segment')->name('tenant.segments.destroy');
                 Route::get('segments/{slug}/customers', [CustomerSegmentController::class, 'customers'])->middleware('permission:segments.view')->name('tenant.segments.customers');
+
+                Route::get('customer-groups/options', [CustomerGroupController::class, 'options'])->middleware('permission:customer_groups.view')->name('tenant.customer-groups.options');
+                Route::get('customer-groups', [CustomerGroupController::class, 'index'])->middleware('permission:customer_groups.view')->name('tenant.customer-groups.index');
+                Route::post('customer-groups', [CustomerGroupController::class, 'store'])->middleware('permission:customer_groups.create')->name('tenant.customer-groups.store');
+                Route::get('customer-groups/{customer_group}', [CustomerGroupController::class, 'show'])->middleware('permission:customer_groups.show')->whereNumber('customer_group')->name('tenant.customer-groups.show');
+                Route::match(['put', 'patch'], 'customer-groups/{customer_group}', [CustomerGroupController::class, 'update'])->middleware('permission:customer_groups.update')->whereNumber('customer_group')->name('tenant.customer-groups.update');
+                Route::delete('customer-groups/{customer_group}', [CustomerGroupController::class, 'destroy'])->middleware('permission:customer_groups.delete')->whereNumber('customer_group')->name('tenant.customer-groups.destroy');
 
                 Route::prefix('analytics')->middleware('feature:advanced-reports')->name('tenant.analytics.')->group(function (): void {
                     Route::get('overview', [AnalyticsController::class, 'overview'])->middleware('permission:analytics.view')->name('overview');
@@ -413,6 +465,15 @@ Route::middleware([
                 Route::match(['put', 'patch'], 'promotions/{promotion}', [PromotionController::class, 'update'])->middleware('permission:promotions.update')->whereNumber('promotion')->name('tenant.promotions.update');
                 Route::delete('promotions/{promotion}', [PromotionController::class, 'destroy'])->middleware('permission:promotions.delete')->whereNumber('promotion')->name('tenant.promotions.destroy');
 
+                Route::get('flash-sales', [FlashSaleController::class, 'index'])->middleware('permission:flash_sales.view')->name('tenant.flash-sales.index');
+                Route::post('flash-sales', [FlashSaleController::class, 'store'])->middleware('permission:flash_sales.create')->name('tenant.flash-sales.store');
+                Route::get('flash-sales/{flashSale}', [FlashSaleController::class, 'show'])->middleware('permission:flash_sales.view')->whereNumber('flashSale')->name('tenant.flash-sales.show');
+                Route::match(['put', 'patch'], 'flash-sales/{flashSale}', [FlashSaleController::class, 'update'])->middleware('permission:flash_sales.update')->whereNumber('flashSale')->name('tenant.flash-sales.update');
+                Route::delete('flash-sales/{flashSale}', [FlashSaleController::class, 'destroy'])->middleware('permission:flash_sales.delete')->whereNumber('flashSale')->name('tenant.flash-sales.destroy');
+                Route::post('flash-sales/{flashSale}/items', [FlashSaleController::class, 'storeItem'])->middleware('permission:flash_sales.update')->whereNumber('flashSale')->name('tenant.flash-sales.items.store');
+                Route::match(['put', 'patch'], 'flash-sales/{flashSale}/items/{flashSaleItem}', [FlashSaleController::class, 'updateItem'])->middleware('permission:flash_sales.update')->whereNumber('flashSale')->whereNumber('flashSaleItem')->name('tenant.flash-sales.items.update');
+                Route::delete('flash-sales/{flashSale}/items/{flashSaleItem}', [FlashSaleController::class, 'destroyItem'])->middleware('permission:flash_sales.update')->whereNumber('flashSale')->whereNumber('flashSaleItem')->name('tenant.flash-sales.items.destroy');
+
                 Route::middleware('feature:loyalty')->group(function (): void {
                     Route::get('loyalty/program', [LoyaltyProgramController::class, 'show'])->middleware('permission:loyalty.view')->name('tenant.loyalty.program.show');
                     Route::match(['put', 'patch'], 'loyalty/program', [LoyaltyProgramController::class, 'update'])->middleware('permission:loyalty.manage')->name('tenant.loyalty.program.update');
@@ -471,9 +532,31 @@ Route::middleware([
                 Route::get('shipments/{shipment}', [ShipmentController::class, 'show'])->middleware('permission:shipments.view')->whereNumber('shipment')->name('tenant.shipments.show');
                 Route::patch('shipments/{shipment}/status', [ShipmentController::class, 'updateStatus'])->middleware('permission:shipments.manage')->whereNumber('shipment')->name('tenant.shipments.status');
 
+                Route::get('drivers', [DriverController::class, 'index'])->middleware('permission:drivers.view')->name('tenant.drivers.index');
+                Route::post('drivers', [DriverController::class, 'store'])->middleware('permission:drivers.create')->name('tenant.drivers.store');
+                Route::get('drivers/{driver}', [DriverController::class, 'show'])->middleware('permission:drivers.show')->whereNumber('driver')->name('tenant.drivers.show');
+                Route::match(['put', 'patch'], 'drivers/{driver}', [DriverController::class, 'update'])->middleware('permission:drivers.update')->whereNumber('driver')->name('tenant.drivers.update');
+                Route::delete('drivers/{driver}', [DriverController::class, 'destroy'])->middleware('permission:drivers.delete')->whereNumber('driver')->name('tenant.drivers.destroy');
+
+                Route::get('deliveries', [DeliveryController::class, 'index'])->middleware('permission:deliveries.view')->name('tenant.deliveries.index');
+                Route::post('deliveries', [DeliveryController::class, 'store'])->middleware('permission:deliveries.manage')->name('tenant.deliveries.store');
+                Route::get('deliveries/{delivery}', [DeliveryController::class, 'show'])->middleware('permission:deliveries.view')->whereNumber('delivery')->name('tenant.deliveries.show');
+                Route::post('deliveries/{delivery}/assign', [DeliveryController::class, 'assign'])->middleware('permission:deliveries.manage')->whereNumber('delivery')->name('tenant.deliveries.assign');
+                Route::post('deliveries/{delivery}/cancel', [DeliveryController::class, 'cancel'])->middleware('permission:deliveries.manage')->whereNumber('delivery')->name('tenant.deliveries.cancel');
+                Route::post('deliveries/{delivery}/fail', [DeliveryController::class, 'fail'])->middleware('permission:deliveries.manage')->whereNumber('delivery')->name('tenant.deliveries.fail');
+
                 Route::middleware('marketplace.enabled')->group(function (): void {
-                    Route::get('seller/profile', [SellerProfileController::class, 'show'])->name('tenant.seller.profile.show');
-                    Route::match(['put', 'patch'], 'seller/profile', [SellerProfileController::class, 'update'])->name('tenant.seller.profile.update');
+                    Route::middleware('seller.user')->group(function (): void {
+                        Route::get('seller/profile', [SellerProfileController::class, 'show'])->name('tenant.seller.profile.show');
+                        Route::match(['put', 'patch'], 'seller/profile', [SellerProfileController::class, 'update'])->name('tenant.seller.profile.update');
+                    });
+
+                    Route::get('seller-groups/options', [SellerGroupController::class, 'options'])->middleware('permission:seller_groups.view')->name('tenant.seller-groups.options');
+                    Route::get('seller-groups', [SellerGroupController::class, 'index'])->middleware('permission:seller_groups.view')->name('tenant.seller-groups.index');
+                    Route::post('seller-groups', [SellerGroupController::class, 'store'])->middleware('permission:seller_groups.create')->name('tenant.seller-groups.store');
+                    Route::get('seller-groups/{seller_group}', [SellerGroupController::class, 'show'])->middleware('permission:seller_groups.show')->whereNumber('seller_group')->name('tenant.seller-groups.show');
+                    Route::match(['put', 'patch'], 'seller-groups/{seller_group}', [SellerGroupController::class, 'update'])->middleware('permission:seller_groups.update')->whereNumber('seller_group')->name('tenant.seller-groups.update');
+                    Route::delete('seller-groups/{seller_group}', [SellerGroupController::class, 'destroy'])->middleware('permission:seller_groups.delete')->whereNumber('seller_group')->name('tenant.seller-groups.destroy');
 
                     Route::get('sellers', [SellerController::class, 'index'])->middleware('permission:sellers.view')->name('tenant.sellers.index');
                     Route::post('sellers', [SellerController::class, 'store'])->middleware('permission:sellers.create')->name('tenant.sellers.store');

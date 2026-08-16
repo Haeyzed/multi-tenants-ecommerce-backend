@@ -31,6 +31,8 @@ class CustomerResource extends JsonResource
             'email' => $customer->email,
             'phone' => $customer->phone,
             'status' => $customer->status?->value,
+            'customer_group_id' => $customer->customer_group_id,
+            'customer_group' => new CustomerGroupResource($this->whenLoaded('customerGroup')),
             'avatar' => $customer->avatar_url,
             'email_verified_at' => $customer->email_verified_at,
             'phone_verified_at' => $customer->phone_verified_at,

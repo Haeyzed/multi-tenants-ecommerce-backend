@@ -85,10 +85,16 @@ class CouponService
     /**
      * Validate a coupon code against the customer's cart.
      *
+     * @param  list<int>  $excludedCartItemIds  Cart item IDs excluded from coupon eligibility (e.g. non-stackable flash lines).
+     *
      * @throws ValidationException
      */
-    public function validateForCart(Customer $customer, Cart $cart, string $code): DiscountResult
-    {
+    public function validateForCart(
+        Customer $customer,
+        Cart $cart,
+        string $code,
+        array $excludedCartItemIds = [],
+    ): DiscountResult {
         if (! Schema::hasTable('coupons')) {
             throw ValidationException::withMessages([
                 'coupon_code' => 'The coupon code is invalid.',
@@ -128,7 +134,7 @@ class CouponService
 
         $this->assertCouponIsRedeemable($coupon, $customer);
 
-        $eligibleItems = $this->eligibleCartItems($coupon, $cart);
+        $eligibleItems = $this->eligibleCartItems($coupon, $cart, $excludedCartItemIds);
 
         if ($eligibleItems->isEmpty()) {
             throw ValidationException::withMessages([
@@ -200,6 +206,16 @@ class CouponService
                 ]);
             }
         }
+
+        if (
+            Schema::hasColumn('coupons', 'customer_group_id')
+            && $coupon->customer_group_id !== null
+            && (int) $customer->customer_group_id !== (int) $coupon->customer_group_id
+        ) {
+            throw ValidationException::withMessages([
+                'coupon_code' => 'This coupon is not available for your customer group.',
+            ]);
+        }
     }
 
     public function calculateDiscountAmount(Coupon $coupon, string $eligibleSubtotal): string
@@ -221,9 +237,10 @@ class CouponService
     }
 
     /**
+     * @param  list<int>  $excludedCartItemIds
      * @return Collection<int, CartItem>
      */
-    public function eligibleCartItems(Coupon $coupon, Cart $cart): Collection
+    public function eligibleCartItems(Coupon $coupon, Cart $cart, array $excludedCartItemIds = []): Collection
     {
         $productIds = $coupon->relationLoaded('products')
             ? $coupon->products->pluck('id')->all()
@@ -236,11 +253,17 @@ class CouponService
                 : $coupon->categories()->pluck('categories.id')->all();
         }
 
+        $excluded = array_map('intval', $excludedCartItemIds);
+
+        $items = $cart->items->filter(
+            fn (CartItem $item): bool => ! in_array((int) $item->id, $excluded, true)
+        )->values();
+
         if ($productIds === [] && $categoryIds === []) {
-            return $cart->items;
+            return $items;
         }
 
-        return $cart->items->filter(function (CartItem $item) use ($productIds, $categoryIds): bool {
+        return $items->filter(function (CartItem $item) use ($productIds, $categoryIds): bool {
             if ($productIds !== [] && in_array((int) $item->product_id, $productIds, true)) {
                 return true;
             }
@@ -325,6 +348,14 @@ class CouponService
             'expires_at' => $data['expires_at'] ?? null,
             'is_active' => $data['is_active'] ?? true,
         ];
+
+        if (Schema::hasColumn('coupons', 'customer_group_id')) {
+            if (array_key_exists('customer_group_id', $data)) {
+                $attributes['customer_group_id'] = $data['customer_group_id'];
+            } elseif ($existing === null) {
+                $attributes['customer_group_id'] = null;
+            }
+        }
 
         if (array_key_exists('code', $data)) {
             $attributes['code'] = Str::upper((string) $data['code']);

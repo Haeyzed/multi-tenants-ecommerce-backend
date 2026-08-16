@@ -48,6 +48,7 @@ class CheckoutService
         private readonly CommissionService $commissions,
         private readonly DiscountService $discountService,
         private readonly FeatureGate $featureGate,
+        private readonly FlashSaleService $flashSaleService,
         private readonly GiftCardService $giftCardService,
         private readonly OrderInventoryService $orderInventory,
         private readonly SellerOrderService $sellerOrders,
@@ -295,12 +296,15 @@ class CheckoutService
 
             $this->applyPrepaidTenders($customer, $order, $prepaid);
 
+            $flashSaleMetadata = $this->flashSaleService->consumeForCheckout($customer, $cart);
+
             foreach ($cart->items as $item) {
                 $this->createOrderItem(
                     $order,
                     $item,
                     $lineTaxMap->get($item->id),
                     (string) ($lineDiscountMap->get($item->id) ?? '0.00'),
+                    $flashSaleMetadata[(int) $item->id] ?? null,
                 );
             }
 
@@ -531,6 +535,8 @@ class CheckoutService
     /**
      * Create an order item snapshot and attach inventory_id when stock can be reserved.
      *
+     * @param  array{flash_sale_item_id: int, flash_sale_id: int, sale_price: string}|null  $flashSaleMeta
+     *
      * @throws ValidationException
      */
     protected function createOrderItem(
@@ -538,6 +544,7 @@ class CheckoutService
         CartItem $item,
         ?array $lineTax = null,
         string $discountAmount = '0.00',
+        ?array $flashSaleMeta = null,
     ): void {
         /** @var Product $product */
         $product = $item->product;
@@ -556,6 +563,12 @@ class CheckoutService
             ? $this->findOfferInventoryForReservation($offer, $item->quantity)
             : $this->findInventoryForReservation($product, $variant, $item->quantity);
 
+        $metadata = is_array($lineTax) ? ['tax_breakdown' => $lineTax['breakdown'] ?? []] : [];
+
+        if ($flashSaleMeta !== null) {
+            $metadata = array_merge($metadata, $flashSaleMeta);
+        }
+
         $order->items()->create([
             'product_id' => $product->id,
             'product_variant_id' => $variant?->id,
@@ -569,7 +582,7 @@ class CheckoutService
             'tax_amount' => $taxAmount,
             'subtotal' => $subtotal,
             'total' => $total,
-            'metadata' => is_array($lineTax) ? ['tax_breakdown' => $lineTax['breakdown'] ?? []] : null,
+            'metadata' => $metadata !== [] ? $metadata : null,
             'inventory_id' => $inventory?->id,
         ]);
     }

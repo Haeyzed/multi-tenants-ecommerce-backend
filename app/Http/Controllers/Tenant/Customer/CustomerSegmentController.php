@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Tenant\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\Customer\IndexCustomerSegmentRequest;
+use App\Http\Requests\Tenant\Customer\StoreCustomerSegmentRequest;
+use App\Http\Requests\Tenant\Customer\UpdateCustomerSegmentRequest;
 use App\Http\Resources\Tenant\Customer\CustomerResource;
 use App\Http\Resources\Tenant\Customer\CustomerSegmentResource;
 use App\Models\Tenant\CustomerSegment;
@@ -45,6 +47,73 @@ class CustomerSegmentController extends Controller
             'Customer segments retrieved successfully.',
             $this->paginationMeta($segments),
         );
+    }
+
+    /**
+     * Create a customer segment.
+     */
+    #[Response(
+        status: 201,
+        description: 'Created customer segment.',
+        type: 'array{success: true, message: string, data: CustomerSegmentResource, meta: null, errors: null}',
+    )]
+    public function store(StoreCustomerSegmentRequest $request): JsonResponse
+    {
+        $segment = $this->segmentation->store($request->validated());
+
+        return $this->created(
+            new CustomerSegmentResource($this->segmentation->show($segment)),
+            'Customer segment created successfully.',
+        );
+    }
+
+    /**
+     * Show a customer segment.
+     */
+    #[Response(
+        status: 200,
+        description: 'A single customer segment.',
+        type: 'array{success: true, message: string, data: CustomerSegmentResource, meta: null, errors: null}',
+    )]
+    public function show(CustomerSegment $segment): JsonResponse
+    {
+        return $this->success(
+            new CustomerSegmentResource($this->segmentation->show($segment)),
+            'Customer segment retrieved successfully.',
+        );
+    }
+
+    /**
+     * Update a customer segment.
+     */
+    #[Response(
+        status: 200,
+        description: 'Updated customer segment.',
+        type: 'array{success: true, message: string, data: CustomerSegmentResource, meta: null, errors: null}',
+    )]
+    public function update(UpdateCustomerSegmentRequest $request, CustomerSegment $segment): JsonResponse
+    {
+        $segment = $this->segmentation->update($segment, $request->validated());
+
+        return $this->updated(
+            new CustomerSegmentResource($this->segmentation->show($segment)),
+            'Customer segment updated successfully.',
+        );
+    }
+
+    /**
+     * Delete a customer segment.
+     */
+    #[Response(
+        status: 200,
+        description: 'Customer segment deleted.',
+        type: 'array{success: true, message: string, data: null, meta: null, errors: null}',
+    )]
+    public function destroy(CustomerSegment $segment): JsonResponse
+    {
+        $this->segmentation->destroy($segment);
+
+        return $this->deleted('Customer segment deleted successfully.');
     }
 
     /**

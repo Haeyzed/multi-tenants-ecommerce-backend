@@ -35,6 +35,7 @@ class CouponResource extends JsonResource
             'starts_at' => $coupon->starts_at,
             'expires_at' => $coupon->expires_at,
             'is_active' => $coupon->is_active,
+            'customer_group_id' => $coupon->customer_group_id,
             'product_ids' => $this->whenLoaded('products', fn () => $coupon->products->pluck('id')->values()),
             'category_ids' => $this->whenLoaded('categories', fn () => $coupon->categories->pluck('id')->values()),
             'created_at' => $coupon->created_at,

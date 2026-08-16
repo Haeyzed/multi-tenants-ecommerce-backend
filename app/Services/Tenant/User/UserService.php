@@ -6,11 +6,13 @@ namespace App\Services\Tenant\User;
 
 use App\Enums\Media\MediaCollection;
 use App\Events\UserCreated;
+use App\Models\Tenant\Seller;
 use App\Models\Tenant\User;
 use App\Services\Media\MediaService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
+use Spatie\Permission\Exceptions\RoleDoesNotExist;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -38,7 +40,7 @@ class UserService
     /**
      * Create a new tenant user.
      *
-     * @param  array{first_name: string, last_name: string, email: string, phone?: string|null, password: string, roles?: list<string>, permissions?: list<string>}  $data
+     * @param  array{first_name: string, last_name: string, email: string, phone?: string|null, password: string, seller_id?: int|null, roles?: list<string>, permissions?: list<string>}  $data
      */
     public function store(array $data, ?UploadedFile $avatar = null): User
     {
@@ -54,6 +56,10 @@ class UserService
 
         if ($permissions !== []) {
             $user->syncPermissions($permissions);
+        }
+
+        if ($user->seller_id !== null) {
+            $this->assignSellerRole($user);
         }
 
         if ($avatar !== null) {
@@ -80,12 +86,13 @@ class UserService
     /**
      * Update a tenant user.
      *
-     * @param  array{first_name?: string, last_name?: string, email?: string, phone?: string|null, password?: string, roles?: list<string>, permissions?: list<string>}  $data
+     * @param  array{first_name?: string, last_name?: string, email?: string, phone?: string|null, password?: string, seller_id?: int|null, roles?: list<string>, permissions?: list<string>}  $data
      */
     public function update(User $user, array $data, ?UploadedFile $avatar = null): User
     {
         $roles = $data['roles'] ?? null;
         $permissions = $data['permissions'] ?? null;
+        $sellerIdTouched = array_key_exists('seller_id', $data);
         unset($data['roles'], $data['permissions']);
 
         if (array_key_exists('password', $data) && ($data['password'] === null || $data['password'] === '')) {
@@ -103,9 +110,30 @@ class UserService
             $user->syncPermissions($permissions);
         }
 
+        if ($user->seller_id !== null) {
+            $this->assignSellerRole($user);
+        } elseif ($sellerIdTouched) {
+            $this->removeSellerRole($user);
+        }
+
         if ($avatar !== null) {
             $this->mediaService->replace($user, $avatar, MediaCollection::Avatar);
         }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        return $user->fresh(['roles', 'permissions']) ?? $user;
+    }
+
+    /**
+     * Link a tenant user to a marketplace seller and assign the seller role.
+     */
+    public function linkToSeller(User $user, Seller $seller): User
+    {
+        $user->seller_id = $seller->id;
+        $user->save();
+
+        $this->assignSellerRole($user);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
@@ -156,6 +184,30 @@ class UserService
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return $user->fresh(['roles', 'permissions']) ?? $user;
+    }
+
+    /**
+     * Assign the seller role when it exists for the tenant guard.
+     */
+    protected function assignSellerRole(User $user): void
+    {
+        try {
+            $user->assignRole('seller');
+        } catch (RoleDoesNotExist) {
+            // Role may not exist yet in a fresh tenant DB without seeding.
+        }
+    }
+
+    /**
+     * Remove the seller role when it exists for the tenant guard.
+     */
+    protected function removeSellerRole(User $user): void
+    {
+        try {
+            $user->removeRole('seller');
+        } catch (RoleDoesNotExist) {
+            // Role may not exist yet in a fresh tenant DB without seeding.
+        }
     }
 
     /**

@@ -33,6 +33,7 @@ class StoreCouponRequest extends BaseRequest
             'product_ids.*' => ['integer', 'exists:products,id'],
             'category_ids' => ['sometimes', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
+            'customer_group_id' => ['sometimes', 'nullable', 'integer', 'exists:customer_groups,id'],
         ];
     }
 }

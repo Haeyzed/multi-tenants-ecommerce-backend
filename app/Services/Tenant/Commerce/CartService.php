@@ -27,6 +27,7 @@ class CartService
 {
     public function __construct(
         private readonly CommerceSettingService $commerceSettings,
+        private readonly FlashSaleService $flashSaleService,
         private readonly ProductAvailabilityService $availability,
     ) {}
 
@@ -100,7 +101,7 @@ class CartService
 
             $this->assertPurchasable($product, $variant, $quantity);
 
-            $unitPrice = $this->resolveUnitPrice($product, $variant, $cart->currency);
+            $unitPrice = $this->resolveUnitPrice($product, $variant, $cart->currency, $customer);
             $existing = $this->findLine($cart, $product->id, $variant?->id, null);
 
             if ($existing !== null) {
@@ -199,7 +200,7 @@ class CartService
             ]);
         }
 
-        return DB::transaction(function () use ($item, $quantity): CartItem {
+        return DB::transaction(function () use ($customer, $item, $quantity): CartItem {
             $item->loadMissing(['product', 'productVariant', 'cart', 'sellerOffer.seller', 'sellerOffer.inventories']);
 
             if ($item->seller_offer_id !== null) {
@@ -231,7 +232,7 @@ class CartService
 
             $this->assertPurchasable($product, $variant, $quantity);
 
-            $unitPrice = $this->resolveUnitPrice($product, $variant, $item->cart->currency);
+            $unitPrice = $this->resolveUnitPrice($product, $variant, $item->cart->currency, $customer);
             $item->quantity = $quantity;
             $item->unit_price = $unitPrice;
             $item->subtotal = Money::mul($unitPrice, (string) $quantity);
@@ -361,7 +362,8 @@ class CartService
 
         $this->assertPurchasable($product, $variant, $item->quantity);
 
-        $unitPrice = $this->resolveUnitPrice($product, $variant, $currency);
+        $item->loadMissing('cart.customer');
+        $unitPrice = $this->resolveUnitPrice($product, $variant, $currency, $item->cart?->customer);
         $item->unit_price = $unitPrice;
         $item->subtotal = Money::mul($unitPrice, (string) $item->quantity);
         $item->save();
@@ -523,8 +525,12 @@ class CartService
      *
      * @throws ValidationException
      */
-    protected function resolveUnitPrice(Product $product, ?ProductVariant $variant, string $currency): string
-    {
+    protected function resolveUnitPrice(
+        Product $product,
+        ?ProductVariant $variant,
+        string $currency,
+        ?Customer $customer = null,
+    ): string {
         $price = null;
 
         if ($variant !== null) {
@@ -539,7 +545,14 @@ class CartService
             ]);
         }
 
-        return (string) $price->amount;
+        $basePrice = (string) $price->amount;
+        $flash = $this->flashSaleService->resolveSalePrice($product, $variant, $customer);
+
+        if ($flash !== null) {
+            return $flash['price'];
+        }
+
+        return $basePrice;
     }
 
     protected function activePriceFor(Product|ProductVariant $priceable, string $currency): ?ProductPrice

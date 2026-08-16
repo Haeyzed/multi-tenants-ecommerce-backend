@@ -27,6 +27,7 @@ class StoreUserRequest extends BaseRequest
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
             'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
             'password' => ['required', 'string', Password::defaults()],
+            'seller_id' => ['sometimes', 'nullable', 'integer', 'exists:sellers,id'],
             'roles' => ['sometimes', 'array'],
             'roles.*' => ['string', Rule::exists('roles', 'name')->where('guard_name', 'tenant')],
             'permissions' => ['sometimes', 'array'],

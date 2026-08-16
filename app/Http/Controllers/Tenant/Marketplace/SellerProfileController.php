@@ -57,7 +57,7 @@ class SellerProfileController extends Controller
         /** @var User $user */
         $user = auth('tenant')->user();
 
-        if ($user->seller_id === null) {
+        if (! $user->isSellerUser()) {
             throw new AccessDeniedHttpException('This account is not linked to a seller.');
         }
 

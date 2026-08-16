@@ -33,6 +33,8 @@ class SellerResource extends JsonResource
             'commission_type' => $seller->commission_type,
             'commission_rate' => $seller->commission_rate,
             'commission_fixed_amount' => $seller->commission_fixed_amount,
+            'seller_group_id' => $seller->seller_group_id,
+            'seller_group' => new SellerGroupResource($this->whenLoaded('sellerGroup')),
             'logo_url' => $seller->logo_url,
             'offers_count' => $seller->offers_count ?? null,
             'can_sell' => $seller->canSell(),

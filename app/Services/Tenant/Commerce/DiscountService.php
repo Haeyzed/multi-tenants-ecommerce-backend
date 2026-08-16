@@ -27,6 +27,7 @@ class DiscountService
     public function __construct(
         private readonly CouponService $couponService,
         private readonly FeatureGate $featureGate,
+        private readonly FlashSaleService $flashSaleService,
         private readonly LoyaltyService $loyaltyService,
         private readonly PromotionService $promotionService,
     ) {}
@@ -88,7 +89,13 @@ class DiscountService
         $couponDiscountTotal = '0.00';
 
         if ($couponCode !== null && trim($couponCode) !== '' && $exclusive === null) {
-            $couponResult = $this->couponService->validateForCart($customer, $cart, $couponCode);
+            $excludedCartItemIds = $this->flashSaleService->nonStackableFlashCartItemIds($cart, $customer);
+            $couponResult = $this->couponService->validateForCart(
+                $customer,
+                $cart,
+                $couponCode,
+                $excludedCartItemIds,
+            );
             $couponDiscountTotal = $couponResult->amount;
             $discountTotal = Money::add($discountTotal, $couponDiscountTotal);
             $lineDiscounts = $this->mergeLineDiscounts($lineDiscounts, $couponResult->lineDiscounts);

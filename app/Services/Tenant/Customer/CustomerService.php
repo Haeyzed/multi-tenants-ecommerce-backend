@@ -53,7 +53,7 @@ class CustomerService
      */
     public function show(Customer $customer): Customer
     {
-        return $customer->load('addresses');
+        return $customer->load(['addresses', 'customerGroup']);
     }
 
     /**
@@ -64,7 +64,8 @@ class CustomerService
      *     last_name?: string,
      *     email?: string,
      *     phone?: string|null,
-     *     status?: CustomerStatus|string
+     *     status?: CustomerStatus|string,
+     *     customer_group_id?: int|null
      * }  $data
      */
     public function update(Customer $customer, array $data): Customer
@@ -72,7 +73,7 @@ class CustomerService
         $customer->fill($data);
         $customer->save();
 
-        return $customer->fresh(['addresses']) ?? $customer->load('addresses');
+        return $customer->fresh(['addresses', 'customerGroup']) ?? $customer->load(['addresses', 'customerGroup']);
     }
 
     /**

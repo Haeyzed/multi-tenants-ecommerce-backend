@@ -37,6 +37,7 @@ class CustomerSegment extends Model
         'rules',
         'is_active',
         'sort_order',
+        'customers_count',
     ];
 
     /**
@@ -56,6 +57,7 @@ class CustomerSegment extends Model
             'rules' => 'array',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
+            'customers_count' => 'integer',
         ];
     }
 

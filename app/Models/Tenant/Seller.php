@@ -12,6 +12,7 @@ use App\Enums\Tenant\Marketplace\SellerVerificationStatus;
 use Database\Factories\Tenant\SellerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Image\Enums\Fit;
@@ -55,6 +56,7 @@ class Seller extends Model implements HasMedia
         'commission_type',
         'commission_rate',
         'commission_fixed_amount',
+        'seller_group_id',
     ];
 
     /**
@@ -113,6 +115,16 @@ class Seller extends Model implements HasMedia
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    /**
+     * Optional seller group classification.
+     *
+     * @return BelongsTo<SellerGroup, $this>
+     */
+    public function sellerGroup(): BelongsTo
+    {
+        return $this->belongsTo(SellerGroup::class);
     }
 
     /**

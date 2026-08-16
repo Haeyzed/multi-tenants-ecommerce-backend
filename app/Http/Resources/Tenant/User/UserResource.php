@@ -31,6 +31,7 @@ class UserResource extends JsonResource
             'last_name' => $user->last_name,
             'email' => $user->email,
             'phone' => $user->phone,
+            'seller_id' => $user->seller_id,
             'avatar' => $user->avatar_url,
             'email_verified_at' => $user->email_verified_at,
             'roles' => $user->getRoleNames()->values()->all(),

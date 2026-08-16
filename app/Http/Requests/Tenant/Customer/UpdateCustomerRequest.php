@@ -40,6 +40,7 @@ class UpdateCustomerRequest extends BaseRequest
                 Rule::unique('customers', 'phone')->ignore($customerId)->withoutTrashed(),
             ],
             'status' => ['sometimes', 'required', 'string', Rule::enum(CustomerStatus::class)],
+            'customer_group_id' => ['sometimes', 'nullable', 'integer', 'exists:customer_groups,id'],
         ];
     }
 }

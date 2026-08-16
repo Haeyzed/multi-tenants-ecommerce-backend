@@ -8,6 +8,7 @@ use App\Enums\Tenant\Commerce\CouponType;
 use Database\Factories\Tenant\CouponFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -68,6 +69,7 @@ class Coupon extends Model
         'starts_at',
         'expires_at',
         'is_active',
+        'customer_group_id',
     ];
 
     /**
@@ -94,6 +96,16 @@ class Coupon extends Model
             'expires_at' => 'datetime',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Optional customer group restriction for redemption.
+     *
+     * @return BelongsTo<CustomerGroup, $this>
+     */
+    public function customerGroup(): BelongsTo
+    {
+        return $this->belongsTo(CustomerGroup::class);
     }
 
     /**

@@ -36,6 +36,7 @@ beforeEach(function (): void {
         '2026_08_15_060001_create_commerce_settings_table.php',
         '2026_08_15_070001_create_sellers_table.php',
         '2026_08_15_070003_create_seller_offers_table.php',
+        '2026_08_16_110001_create_seller_groups_table.php',
     ];
 
     foreach ($migrationFiles as $file) {
@@ -135,5 +136,8 @@ test('seller isolation prevents managing another sellers offer', function (): vo
     $actor->seller_id = $sellerB->id;
 
     expect(fn () => app(SellerOfferService::class)->update($offer, ['price' => '40.00'], $actor))
+        ->toThrow(ValidationException::class);
+
+    expect(fn () => app(SellerOfferService::class)->destroy($offer, $actor))
         ->toThrow(ValidationException::class);
 });

@@ -27,6 +27,7 @@ class UpdateSellerRequest extends BaseRequest
             'commission_type' => ['sometimes', 'nullable', 'string', Rule::enum(CommissionType::class)],
             'commission_rate' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
             'commission_fixed_amount' => ['sometimes', 'nullable', new MoneyAmount(allowZero: true, allowNull: true)],
+            'seller_group_id' => ['sometimes', 'nullable', 'integer', 'exists:seller_groups,id'],
         ];
     }
 }
