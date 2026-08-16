@@ -38,6 +38,7 @@ use App\Http\Controllers\Tenant\Customer\CustomerController;
 use App\Http\Controllers\Tenant\Customer\CustomerSegmentController;
 use App\Http\Controllers\Tenant\Customer\ProductReviewController as CustomerProductReviewController;
 use App\Http\Controllers\Tenant\Customer\RecentlyViewedProductController;
+use App\Http\Controllers\Tenant\HomeController;
 use App\Http\Controllers\Tenant\Inventory\InventoryController;
 use App\Http\Controllers\Tenant\Loyalty\CustomerLoyaltyController;
 use App\Http\Controllers\Tenant\Loyalty\LoyaltyAccountController;
@@ -92,9 +93,7 @@ Route::middleware([
     Middleware\InitializeTenancyByDomain::class,
     Middleware\PreventAccessFromUnwantedDomains::class,
 ])->group(function (): void {
-    Route::get('/', function () {
-        return 'This is your multi-tenant application. The id of the current tenant is '.tenant('id')."\n";
-    })->name('tenant.home');
+    Route::get('/', HomeController::class)->name('tenant.home');
 
     Route::prefix('api')->middleware('api')->group(function (): void {
         Route::prefix('storefront')->name('storefront.')->group(function (): void {
@@ -180,21 +179,23 @@ Route::middleware([
                 Route::get('store-credit/transactions', [CustomerStoreCreditController::class, 'transactions'])->name('customer.store-credit.transactions');
             });
 
-            Route::post('checkout', [CheckoutController::class, 'store'])->name('customer.checkout.store');
-            Route::post('checkout/pay', [PaymentController::class, 'pay'])->name('customer.checkout.pay');
-            Route::post('payments/verify', [PaymentController::class, 'verify'])->name('customer.payments.verify');
+            Route::post('checkout', [CheckoutController::class, 'store'])->middleware('throttle:20,1')->name('customer.checkout.store');
+            Route::post('checkout/pay', [PaymentController::class, 'pay'])->middleware('throttle:20,1')->name('customer.checkout.pay');
+            Route::post('payments/verify', [PaymentController::class, 'verify'])->middleware('throttle:30,1')->name('customer.payments.verify');
         });
 
         Route::post('payments/webhooks/paystack', [PaymentWebhookController::class, 'paystack'])
+            ->middleware('throttle:120,1')
             ->name('tenant.payments.webhooks.paystack');
 
         Route::middleware('tenant.guard')->group(function (): void {
             Route::prefix('auth')->name('tenant.auth.')->group(function (): void {
-                Route::post('register', [AuthController::class, 'register'])->name('register');
-                Route::post('login', [AuthController::class, 'login'])->name('login');
-                Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password');
-                Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('reset-password');
-
+                Route::middleware('throttle:6,1')->group(function (): void {
+                    Route::post('register', [AuthController::class, 'register'])->name('register');
+                    Route::post('login', [AuthController::class, 'login'])->name('login');
+                    Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password');
+                    Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('reset-password');
+                });
                 Route::middleware('auth:sanctum')->group(function (): void {
                     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
                     Route::get('me', [AuthController::class, 'me'])->name('me');

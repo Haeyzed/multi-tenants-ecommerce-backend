@@ -58,6 +58,12 @@ class OrderPaymentService
             ]);
         }
 
+        if (bccomp((string) $order->grand_total, '0', 2) <= 0) {
+            throw ValidationException::withMessages([
+                'order' => 'Order has no remaining balance to charge.',
+            ]);
+        }
+
         $existing = OrderPayment::query()
             ->where('order_id', $order->id)
             ->where('status', OrderPaymentRecordStatus::Pending)
@@ -297,7 +303,15 @@ class OrderPaymentService
      */
     protected function assertVerificationMatchesPayment(OrderPayment $payment, PaymentVerificationResult $result): void
     {
-        if ($result->amount !== null && bccomp((string) $result->amount, (string) $payment->amount, 2) !== 0) {
+        if ($result->amount === null || $result->currency === null) {
+            $this->markFailed($payment);
+
+            throw ValidationException::withMessages([
+                'reference' => ['Payment verification did not return amount and currency.'],
+            ]);
+        }
+
+        if (bccomp((string) $result->amount, (string) $payment->amount, 2) !== 0) {
             $this->markFailed($payment);
 
             throw ValidationException::withMessages([
@@ -305,7 +319,7 @@ class OrderPaymentService
             ]);
         }
 
-        if ($result->currency !== null && strtoupper((string) $result->currency) !== strtoupper((string) $payment->currency)) {
+        if (strtoupper((string) $result->currency) !== strtoupper((string) $payment->currency)) {
             $this->markFailed($payment);
 
             throw ValidationException::withMessages([

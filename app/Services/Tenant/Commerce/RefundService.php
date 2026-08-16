@@ -116,7 +116,11 @@ class RefundService
             }
 
             $result = $gateway instanceof PaystackGateway
-                ? $gateway->refundPaymentDetailed($providerTransactionId, $requestedAmount)
+                ? $gateway->refundPaymentDetailed(
+                    $providerTransactionId,
+                    $requestedAmount,
+                    (string) $payment->currency,
+                )
                 : new PaymentRefundResult(
                     successful: $gateway->refundPayment($providerTransactionId, $requestedAmount),
                 );

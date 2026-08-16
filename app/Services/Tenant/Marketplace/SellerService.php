@@ -23,7 +23,7 @@ class SellerService
      */
     public function list(array $params = []): LengthAwarePaginator
     {
-        $query = Seller::query()->latest('id');
+        $query = Seller::query()->with('media')->latest('id');
 
         if (! empty($params['status'])) {
             $query->where('status', $params['status']);

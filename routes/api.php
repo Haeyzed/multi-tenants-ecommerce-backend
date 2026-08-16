@@ -46,9 +46,11 @@ use Illuminate\Support\Facades\Route;
 $registerLandlordApi = function (): void {
     Route::middleware([SetLandlordGuard::class, 'central'])->group(function (): void {
         Route::prefix('auth')->name('landlord.auth.')->group(function (): void {
-            Route::post('login', [AuthController::class, 'login'])->name('login');
-            Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password');
-            Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('reset-password');
+            Route::middleware('throttle:6,1')->group(function (): void {
+                Route::post('login', [AuthController::class, 'login'])->name('login');
+                Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password');
+                Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('reset-password');
+            });
 
             Route::middleware('auth:sanctum')->group(function (): void {
                 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
@@ -165,7 +167,7 @@ $registerLandlordApi = function (): void {
     });
 
     Route::post('webhooks/{provider}', WebhookController::class)
-        ->middleware('central')
+        ->middleware(['central', 'throttle:120,1'])
         ->name('webhooks.provider');
 
     Route::prefix('world')->middleware('central')->name('landlord.world.')->group(function (): void {

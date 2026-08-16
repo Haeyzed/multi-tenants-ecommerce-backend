@@ -144,22 +144,27 @@ class PaystackGateway implements PaymentGateway
     /**
      * Refund a previously successful Paystack transaction.
      */
-    public function refundPayment(string $providerTransactionId, ?string $amount = null): bool
+    public function refundPayment(string $providerTransactionId, ?string $amount = null, ?string $currency = null): bool
     {
-        return $this->refundPaymentDetailed($providerTransactionId, $amount)->successful;
+        return $this->refundPaymentDetailed($providerTransactionId, $amount, $currency)->successful;
     }
 
     /**
      * Refund with full gateway response details.
+     *
+     * @param  string|null  $currency  ISO currency used for minor-unit conversion (defaults to NGN).
      */
-    public function refundPaymentDetailed(string $providerTransactionId, ?string $amount = null): PaymentRefundResult
-    {
+    public function refundPaymentDetailed(
+        string $providerTransactionId,
+        ?string $amount = null,
+        ?string $currency = null,
+    ): PaymentRefundResult {
         $payload = [
             'transaction' => $providerTransactionId,
         ];
 
         if ($amount !== null) {
-            $payload['amount'] = $this->toMinorUnits($amount, 'NGN');
+            $payload['amount'] = $this->toMinorUnits($amount, $currency ?? 'NGN');
         }
 
         try {

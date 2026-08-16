@@ -9,6 +9,7 @@ use App\Enums\Landlord\PaymentTransactionStatus;
 use App\Models\Landlord\PaymentTransaction;
 use App\Models\Landlord\WebhookEvent;
 use App\Services\Landlord\Subscription\SubscriptionService;
+use App\Services\Payment\PaymentManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -23,7 +24,10 @@ class PaystackWebhookHandler
     /**
      * Create a new Paystack webhook handler.
      */
-    public function __construct(private readonly SubscriptionService $subscriptionService) {}
+    public function __construct(
+        private readonly SubscriptionService $subscriptionService,
+        private readonly PaymentManager $paymentManager,
+    ) {}
 
     /**
      * Handle an inbound Paystack webhook request.
@@ -73,7 +77,7 @@ class PaystackWebhookHandler
     }
 
     /**
-     * Activate the related subscription when a successful charge is reported.
+     * Activate the related subscription after server-side payment verification.
      *
      * @param  array<string, mixed>  $payload
      */
@@ -104,10 +108,49 @@ class PaystackWebhookHandler
             return;
         }
 
+        $result = $this->paymentManager->driver($transaction->provider->value)->verifyPayment($reference);
+
+        if (! $result->successful) {
+            Log::warning('Paystack charge.success webhook failed gateway verification.', [
+                'reference' => $reference,
+                'message' => $result->message,
+            ]);
+
+            return;
+        }
+
+        if ($result->amount === null || $result->currency === null) {
+            Log::warning('Paystack charge.success webhook missing verified amount or currency.', [
+                'reference' => $reference,
+            ]);
+
+            return;
+        }
+
+        if (bccomp($result->amount, (string) $transaction->amount, 2) !== 0) {
+            Log::warning('Paystack charge.success webhook amount mismatch.', [
+                'reference' => $reference,
+                'expected' => $transaction->amount,
+                'verified' => $result->amount,
+            ]);
+
+            return;
+        }
+
+        if (strtoupper($result->currency) !== strtoupper((string) $transaction->currency)) {
+            Log::warning('Paystack charge.success webhook currency mismatch.', [
+                'reference' => $reference,
+                'expected' => $transaction->currency,
+                'verified' => $result->currency,
+            ]);
+
+            return;
+        }
+
         $this->subscriptionService->activateFromVerifiedPayment(
             $transaction,
-            isset($data['id']) ? (string) $data['id'] : null,
-            now(),
+            $result->providerTransactionId ?? (isset($data['id']) ? (string) $data['id'] : null),
+            $result->paidAt ?? now(),
         );
     }
 

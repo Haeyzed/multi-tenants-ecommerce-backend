@@ -9,6 +9,7 @@ use App\Http\Requests\Tenant\Marketplace\StoreSellerRequest;
 use App\Http\Requests\Tenant\Marketplace\UpdateSellerRequest;
 use App\Http\Resources\Tenant\Marketplace\SellerResource;
 use App\Models\Tenant\Seller;
+use App\Models\Tenant\User;
 use App\Services\Tenant\Marketplace\SellerService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Response;
@@ -68,8 +69,18 @@ class SellerController extends Controller
     {
         $this->authorize('update', $seller);
 
+        $data = $request->validated();
+        /** @var User|null $actor */
+        $actor = $request->user();
+
+        if ($actor instanceof User && $actor->isSellerUser()) {
+            $data = collect($data)
+                ->except(['commission_type', 'commission_rate', 'commission_fixed_amount'])
+                ->all();
+        }
+
         return $this->updated(
-            new SellerResource($this->sellerService->update($seller, $request->validated())),
+            new SellerResource($this->sellerService->update($seller, $data)),
             'Seller updated successfully.',
         );
     }

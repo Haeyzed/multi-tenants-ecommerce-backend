@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace App\Services\Tenant\Commerce;
 
 use App\Events\CouponApplied;
+use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Cart;
 use App\Models\Tenant\Coupon;
 use App\Models\Tenant\CouponUsage;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\Promotion;
+use App\Services\Landlord\Feature\FeatureGate;
 use App\Services\Tenant\Loyalty\LoyaltyService;
 use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Applies coupons and promotions to a cart for checkout.
@@ -23,6 +26,7 @@ class DiscountService
 {
     public function __construct(
         private readonly CouponService $couponService,
+        private readonly FeatureGate $featureGate,
         private readonly LoyaltyService $loyaltyService,
         private readonly PromotionService $promotionService,
     ) {}
@@ -122,6 +126,17 @@ class DiscountService
     ): DiscountApplicationResult {
         if ($loyaltyPoints === null || $loyaltyPoints <= 0) {
             return $applied;
+        }
+
+        $tenant = tenant();
+        if (
+            $tenant instanceof Tenant
+            && $tenant->activeSubscription() !== null
+            && ! $this->featureGate->allows('loyalty', $tenant)
+        ) {
+            throw ValidationException::withMessages([
+                'loyalty_points' => 'Your current plan does not include the [loyalty] feature.',
+            ]);
         }
 
         $discountableRemainder = Money::sub($subtotal, $applied->discountTotal);

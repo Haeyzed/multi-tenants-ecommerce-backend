@@ -8,9 +8,11 @@ use App\Enums\Media\MediaCollection;
 use App\Enums\Tenant\Catalog\ProductStatus;
 use App\Enums\Tenant\Catalog\ProductType;
 use App\Enums\Tenant\Catalog\ProductVisibility;
+use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductPrice;
 use App\Models\Tenant\ProductVariant;
+use App\Services\Landlord\Feature\UsageLimiter;
 use App\Services\Media\MediaService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -24,7 +26,10 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class ProductService
 {
-    public function __construct(private readonly MediaService $mediaService) {}
+    public function __construct(
+        private readonly MediaService $mediaService,
+        private readonly UsageLimiter $usageLimiter,
+    ) {}
 
     /**
      * Paginate products with filters, brand, media, and variant counts.
@@ -94,6 +99,11 @@ class ProductService
         array $categoryIds = [],
         ?array $price = null,
     ): Product {
+        $tenant = tenant();
+        if ($tenant instanceof Tenant && $tenant->activeSubscription() !== null) {
+            $this->usageLimiter->assertCanCreate('products', $tenant);
+        }
+
         return DB::transaction(function () use ($data, $image, $images, $categoryIds, $price): Product {
             $sku = $data['sku'] ?? null;
             unset($data['sku'], $data['category_ids'], $data['attribute_value_ids'], $data['price']);

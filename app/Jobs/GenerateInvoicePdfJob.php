@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Enums\Media\MediaCollection;
+use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Invoice;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
@@ -12,7 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Stancl\Tenancy\Contracts\TenantWithDatabase;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Render and attach an invoice PDF to media storage.
@@ -26,34 +27,47 @@ class GenerateInvoicePdfJob implements ShouldQueue
         public ?string $tenantId = null,
     ) {}
 
+    /**
+     * Generate the invoice PDF inside an isolated tenant context when required.
+     */
     public function handle(): void
     {
-        if ($this->tenantId !== null) {
-            /** @var TenantWithDatabase|null $tenant */
-            $tenant = tenancy()->find($this->tenantId);
-            if ($tenant !== null) {
-                tenancy()->initialize($tenant);
+        $callback = function (): void {
+            /** @var Invoice|null $invoice */
+            $invoice = Invoice::query()->with(['items', 'order', 'customer'])->find($this->invoiceId);
+
+            if ($invoice === null) {
+                return;
             }
-        }
 
-        /** @var Invoice|null $invoice */
-        $invoice = Invoice::query()->with(['items', 'order', 'customer'])->find($this->invoiceId);
+            $pdf = Pdf::loadView('invoices.order', [
+                'invoice' => $invoice,
+                'order' => $invoice->order,
+                'customer' => $invoice->customer,
+                'items' => $invoice->items,
+            ]);
 
-        if ($invoice === null) {
+            $filename = $invoice->invoice_number.'.pdf';
+
+            $invoice->addMediaFromString($pdf->output())
+                ->usingFileName($filename)
+                ->toMediaCollection(MediaCollection::Documents->value);
+        };
+
+        if ($this->tenantId === null) {
+            $callback();
+
             return;
         }
 
-        $pdf = Pdf::loadView('invoices.order', [
-            'invoice' => $invoice,
-            'order' => $invoice->order,
-            'customer' => $invoice->customer,
-            'items' => $invoice->items,
-        ]);
+        $tenant = Tenant::query()->find($this->tenantId);
 
-        $filename = $invoice->invoice_number.'.pdf';
+        if ($tenant === null) {
+            Log::warning('GenerateInvoicePdfJob: tenant not found', ['tenant_id' => $this->tenantId]);
 
-        $invoice->addMediaFromString($pdf->output())
-            ->usingFileName($filename)
-            ->toMediaCollection(MediaCollection::Documents->value);
+            return;
+        }
+
+        $tenant->run($callback);
     }
 }

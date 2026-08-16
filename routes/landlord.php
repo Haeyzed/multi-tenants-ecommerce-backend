@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Landlord\HomeController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -21,8 +22,6 @@ foreach (config('tenancy.identification.central_domains') as $domain) {
     Route::domain($domain)
         ->middleware('central')
         ->group(function () {
-            Route::get('/', function () {
-                return view('welcome');
-            })->name('landlord.home');
+            Route::get('/', HomeController::class)->name('landlord.home');
         });
 }

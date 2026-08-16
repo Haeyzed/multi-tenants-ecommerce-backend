@@ -10,6 +10,8 @@ use App\Enums\Tenant\Commerce\FulfillmentStatus;
 use App\Enums\Tenant\Commerce\OrderPaymentStatus;
 use App\Enums\Tenant\Commerce\OrderStatus;
 use App\Events\OrderCreated;
+use App\Events\OrderPaid;
+use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Cart;
 use App\Models\Tenant\CartItem;
 use App\Models\Tenant\CheckoutSession;
@@ -22,6 +24,7 @@ use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductVariant;
 use App\Models\Tenant\SellerOffer;
 use App\Models\Tenant\ShippingMethod;
+use App\Services\Landlord\Feature\FeatureGate;
 use App\Services\Tenant\Marketplace\SellerOrderService;
 use App\Services\Tenant\Tax\TaxService;
 use App\Support\Money;
@@ -38,6 +41,7 @@ class CheckoutService
         private readonly CartService $cartService,
         private readonly CommerceSettingService $commerceSettings,
         private readonly DiscountService $discountService,
+        private readonly FeatureGate $featureGate,
         private readonly GiftCardService $giftCardService,
         private readonly OrderInventoryService $orderInventory,
         private readonly SellerOrderService $sellerOrders,
@@ -207,6 +211,7 @@ class CheckoutService
 
             $prepaid = $this->resolvePrepaidTenders($customer, $cart->currency, $grandTotal, $data);
             $amountDue = $prepaid['amount_due'];
+            $isFullyPrepaid = bccomp($amountDue, '0', 2) <= 0;
 
             $session = CheckoutSession::query()->create([
                 'customer_id' => $customer->id,
@@ -228,8 +233,8 @@ class CheckoutService
                 'order_number' => $this->generateOrderNumber(),
                 'customer_id' => $customer->id,
                 'currency' => $cart->currency,
-                'status' => OrderStatus::Pending,
-                'payment_status' => OrderPaymentStatus::Unpaid,
+                'status' => $isFullyPrepaid ? OrderStatus::Confirmed : OrderStatus::Pending,
+                'payment_status' => $isFullyPrepaid ? OrderPaymentStatus::Paid : OrderPaymentStatus::Unpaid,
                 'fulfillment_status' => FulfillmentStatus::Unfulfilled,
                 'subtotal' => $subtotal,
                 'discount_total' => $discountTotal,
@@ -245,6 +250,7 @@ class CheckoutService
                 'notes' => $data['notes'] ?? null,
                 'idempotency_key' => $idempotencyKey,
                 'placed_at' => now(),
+                'confirmed_at' => $isFullyPrepaid ? now() : null,
             ];
 
             if (Schema::hasColumn('orders', 'coupon_id')) {
@@ -292,6 +298,10 @@ class CheckoutService
 
             $this->orderInventory->reserveForOrder($order->fresh(['items']) ?? $order);
 
+            if ($isFullyPrepaid) {
+                $this->orderInventory->commitSaleForOrder($order->fresh(['items']) ?? $order);
+            }
+
             if ($this->commerceSettings->isMarketplaceEnabled()) {
                 $this->sellerOrders->splitFromOrder($order->fresh(['items.sellerOffer']) ?? $order);
             }
@@ -306,6 +316,10 @@ class CheckoutService
             $order = $order->fresh(['items', 'customer', 'shippingMethod']) ?? $order;
 
             event(new OrderCreated($order));
+
+            if ($isFullyPrepaid) {
+                event(new OrderPaid($order));
+            }
 
             return $order;
         });
@@ -339,6 +353,7 @@ class CheckoutService
             : '';
 
         if ($giftCardCode !== '' && Schema::hasTable('gift_cards')) {
+            $this->assertFeatureEnabled('gift-cards', 'gift_card_code');
             $giftCard = $this->giftCardService->resolveRedeemable($giftCardCode, $currency);
             $giftCardAmount = $this->giftCardService->applicableAmount($giftCard, $amountDue);
             $amountDue = Money::sub($amountDue, $giftCardAmount);
@@ -349,6 +364,7 @@ class CheckoutService
             : '0.00';
 
         if (bccomp($requestedStoreCredit, '0', 2) > 0 && Schema::hasTable('store_credit_accounts')) {
+            $this->assertFeatureEnabled('store-credit', 'store_credit_amount');
             $storeCreditAmount = $this->storeCreditService->applicableAmount($customer, $requestedStoreCredit, $amountDue);
             $amountDue = Money::sub($amountDue, $storeCreditAmount);
         }
@@ -580,5 +596,29 @@ class CheckoutService
         throw ValidationException::withMessages([
             'cart' => 'Insufficient stock to reserve for one or more cart items.',
         ]);
+    }
+
+    /**
+     * Enforce plan feature access when the tenant has an active/trialing subscription.
+     *
+     * @throws ValidationException
+     */
+    protected function assertFeatureEnabled(string $featureSlug, string $field): void
+    {
+        $tenant = tenant();
+
+        if (! $tenant instanceof Tenant) {
+            return;
+        }
+
+        if ($tenant->activeSubscription() === null) {
+            return;
+        }
+
+        if (! $this->featureGate->allows($featureSlug, $tenant)) {
+            throw ValidationException::withMessages([
+                $field => "Your current plan does not include the [{$featureSlug}] feature.",
+            ]);
+        }
     }
 }
