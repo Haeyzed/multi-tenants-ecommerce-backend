@@ -88,6 +88,24 @@ class TenantPaymentGatewayService
         return $this->toPublicArray($record->fresh() ?? $record);
     }
 
+    /**
+     * Raw (decrypted) credentials for a gateway, or empty when unset / table missing.
+     *
+     * @return array<string, mixed>
+     */
+    public function credentialsFor(string $gateway): array
+    {
+        if (! Schema::hasTable('tenant_payment_gateways')) {
+            return [];
+        }
+
+        $record = TenantPaymentGateway::query()
+            ->where('gateway', Str::lower($gateway))
+            ->first();
+
+        return is_array($record?->credentials) ? $record->credentials : [];
+    }
+
     public function enable(string $gateway): array
     {
         return $this->setEnabled($gateway, true);

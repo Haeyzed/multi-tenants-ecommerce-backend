@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Landlord\Domain;
 use App\Models\Landlord\Tenant;
+use App\Tenancy\Bootstrappers\TenantPaymentConfigBootstrapper;
 use Stancl\Tenancy\Bootstrappers;
 use Stancl\Tenancy\Concerns\UsableWithEarlyIdentification;
 use Stancl\Tenancy\Database\Models\ImpersonationToken;
@@ -189,6 +190,7 @@ return [
     'bootstrappers' => [
         // Basic Laravel features
         Bootstrappers\DatabaseTenancyBootstrapper::class,
+        TenantPaymentConfigBootstrapper::class,
         Bootstrappers\CacheTenancyBootstrapper::class,
         // Bootstrappers\CacheTagsBootstrapper::class, // Alternative to CacheTenancyBootstrapper
         // Bootstrappers\DatabaseCacheBootstrapper::class, // Separates cache by DB rather than by prefix, must run after DatabaseTenancyBootstrapper

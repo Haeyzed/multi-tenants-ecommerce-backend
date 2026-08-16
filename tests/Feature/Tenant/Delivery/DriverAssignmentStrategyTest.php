@@ -21,6 +21,7 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     $migrationFiles = [
         '2026_08_15_041024_create_customers_table.php',
+        '2026_08_15_060001_create_commerce_settings_table.php',
         '2026_08_15_060002_create_shipping_methods_table.php',
         '2026_08_15_060005_create_orders_table.php',
         '2026_08_15_060009_create_shipments_table.php',

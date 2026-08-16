@@ -11,6 +11,7 @@ use App\Enums\Tenant\Driver\DriverStatus;
 use App\Models\Tenant\Delivery;
 use App\Models\Tenant\Driver;
 use App\Models\Tenant\DriverLocation;
+use App\Services\Tenant\Commerce\CommerceSettingService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -31,12 +32,14 @@ class AutomaticDriverAssignmentStrategy implements DriverAssignmentStrategyInter
         DeliveryStatus::OutForDelivery,
     ];
 
+    public function __construct(private readonly CommerceSettingService $commerceSettings) {}
+
     public function assign(Delivery $delivery): ?Driver
     {
         $delivery->loadMissing('order');
 
         $coordinates = $this->deliveryCoordinates($delivery);
-        $radiusKm = (float) config('delivery.assignment.radius_km', 0);
+        $radiusKm = $this->commerceSettings->deliveryAssignmentRadiusKm();
 
         $query = Driver::query()
             ->where('status', DriverStatus::Active)

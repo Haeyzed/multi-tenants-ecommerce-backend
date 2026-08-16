@@ -213,6 +213,8 @@ class RoleSeeder extends Seeder
             'pos.cash_out',
             'pos.reports.view',
             'pos.terminals.manage',
+            'settings.view',
+            'settings.update',
         ]);
 
         $seller = Role::findOrCreate('seller', self::GUARD);

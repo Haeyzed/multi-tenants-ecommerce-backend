@@ -34,7 +34,7 @@ Broadcast::channel('order.{id}', function ($user, int $id): bool {
     }
 
     if ($user instanceof User) {
-        return true;
+        return $user->can('orders.view') || $user->can('orders.show');
     }
 
     if ($user instanceof Customer) {
@@ -52,7 +52,7 @@ Broadcast::channel('delivery.{id}', function ($user, int $id): bool {
     }
 
     if ($user instanceof User) {
-        return true;
+        return $user->can('deliveries.view') || $user->can('deliveries.manage');
     }
 
     if ($user instanceof Driver) {
@@ -71,7 +71,11 @@ Broadcast::channel('driver.{id}', function ($user, int $id): bool {
         return (int) $user->id === $id;
     }
 
-    return $user instanceof User;
+    if ($user instanceof User) {
+        return $user->can('drivers.view') || $user->can('drivers.show');
+    }
+
+    return false;
 });
 
 Broadcast::channel('customer.{id}', function ($user, int $id): bool {
@@ -79,5 +83,9 @@ Broadcast::channel('customer.{id}', function ($user, int $id): bool {
         return (int) $user->id === $id;
     }
 
-    return $user instanceof User;
+    if ($user instanceof User) {
+        return $user->can('customers.view') || $user->can('customers.show');
+    }
+
+    return false;
 });

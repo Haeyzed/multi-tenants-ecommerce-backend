@@ -7,6 +7,7 @@ namespace App\Services\Tenant\Delivery;
 use App\Contracts\Delivery\DriverAssignmentStrategyInterface;
 use App\Models\Tenant\Delivery;
 use App\Models\Tenant\Driver;
+use App\Services\Tenant\Commerce\CommerceSettingService;
 use App\Services\Tenant\Delivery\Assignment\AutomaticDriverAssignmentStrategy;
 use App\Services\Tenant\Delivery\Assignment\ManualDriverAssignmentStrategy;
 use Illuminate\Contracts\Container\Container;
@@ -17,11 +18,14 @@ use InvalidArgumentException;
  */
 class DriverAssignmentManager
 {
-    public function __construct(private readonly Container $container) {}
+    public function __construct(
+        private readonly Container $container,
+        private readonly CommerceSettingService $commerceSettings,
+    ) {}
 
     public function strategy(?string $name = null): DriverAssignmentStrategyInterface
     {
-        $name ??= (string) config('delivery.assignment.strategy', 'manual');
+        $name ??= $this->commerceSettings->deliveryAssignmentStrategy();
 
         return match ($name) {
             'manual' => $this->container->make(ManualDriverAssignmentStrategy::class),

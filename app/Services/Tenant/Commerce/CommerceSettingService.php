@@ -6,12 +6,83 @@ namespace App\Services\Tenant\Commerce;
 
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\CommerceSetting;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Key/value commerce settings for the current tenant.
  */
 class CommerceSettingService
 {
+    /**
+     * Domain → key → schema (type + default).
+     *
+     * @var array<string, array<string, array{type: string, default: mixed}>>
+     */
+    public const array DOMAINS = [
+        'checkout' => [
+            'checkout.guest_checkout' => ['type' => 'bool', 'default' => false],
+            'checkout.minimum_order_amount' => ['type' => 'money', 'default' => '0'],
+            'checkout.require_phone' => ['type' => 'bool', 'default' => false],
+            'checkout.allow_order_notes' => ['type' => 'bool', 'default' => true],
+        ],
+        'order' => [
+            'returns.window_days' => ['type' => 'int', 'default' => 14],
+            'order.cancellation_window_hours' => ['type' => 'int', 'default' => 24],
+        ],
+        'inventory' => [
+            'inventory.allow_negative_stock' => ['type' => 'bool', 'default' => false],
+            'inventory.default_low_stock_threshold' => ['type' => 'int', 'default' => 5],
+            'inventory.reserve_on_checkout' => ['type' => 'bool', 'default' => true],
+        ],
+        'payment' => [
+            'payment.default_gateway' => ['type' => 'nullable_string', 'default' => null],
+            'payment.timeout_minutes' => ['type' => 'int', 'default' => 30],
+        ],
+        'pos' => [
+            'pos.default_warehouse_id' => ['type' => 'nullable_int', 'default' => null],
+            'pos.receipt_prefix' => ['type' => 'string', 'default' => 'POS'],
+            'pos.require_customer' => ['type' => 'bool', 'default' => false],
+        ],
+        'delivery' => [
+            'delivery.assignment_strategy' => ['type' => 'string', 'default' => 'manual'],
+            'delivery.assignment_radius_km' => ['type' => 'float', 'default' => 15.0],
+            'delivery.require_proof_of_delivery' => ['type' => 'bool', 'default' => false],
+        ],
+        'store_status' => [
+            'store.status' => ['type' => 'string', 'default' => 'open'],
+            'store.maintenance_message' => ['type' => 'nullable_string', 'default' => null],
+        ],
+        'ecommerce' => [
+            'is_marketplace_enabled' => ['type' => 'bool', 'default' => false],
+            'marketplace.commission_type' => ['type' => 'string', 'default' => 'percentage'],
+            'marketplace.commission_rate' => ['type' => 'money', 'default' => '10'],
+            'marketplace.commission_fixed_amount' => ['type' => 'money', 'default' => '0'],
+            'marketplace.refund_window_days' => ['type' => 'int', 'default' => 0],
+        ],
+        'customer' => [
+            'customer.registration_enabled' => ['type' => 'bool', 'default' => true],
+            'customer.approval_required' => ['type' => 'bool', 'default' => false],
+            'customer.default_group_id' => ['type' => 'nullable_int', 'default' => null],
+        ],
+        'notification' => [
+            'notification.email_enabled' => ['type' => 'bool', 'default' => true],
+            'notification.sms_enabled' => ['type' => 'bool', 'default' => false],
+            'notification.push_enabled' => ['type' => 'bool', 'default' => true],
+        ],
+        'pricing' => [
+            'pricing.tax_inclusive' => ['type' => 'bool', 'default' => false],
+            'pricing.display_includes_tax' => ['type' => 'bool', 'default' => false],
+        ],
+        'tax' => [
+            'tax.enabled' => ['type' => 'bool', 'default' => true],
+        ],
+        'shipping' => [
+            'shipping.enabled' => ['type' => 'bool', 'default' => true],
+            'shipping.free_shipping_minimum' => ['type' => 'money', 'default' => '0'],
+        ],
+    ];
+
     /**
      * Read a commerce setting value.
      */
@@ -31,6 +102,72 @@ class CommerceSettingService
             ['key' => $key],
             ['value' => $value],
         );
+    }
+
+    /**
+     * Known setting keys for a domain, cast with defaults.
+     *
+     * @return array<string, mixed>
+     */
+    public function getDomain(string $domain): array
+    {
+        $schema = $this->domainSchema($domain);
+        $settings = [];
+
+        foreach ($schema as $key => $definition) {
+            $raw = $this->get($key);
+            $settings[$key] = $this->castValue(
+                $raw,
+                $definition['type'],
+                $definition['default'],
+            );
+        }
+
+        if ($domain === 'delivery') {
+            $this->syncDeliveryConfig($settings);
+        }
+
+        return $settings;
+    }
+
+    /**
+     * Validate against the domain allowlist and persist values.
+     *
+     * @param  array<string, mixed>  $values
+     * @return array<string, mixed>
+     */
+    public function updateDomain(string $domain, array $values): array
+    {
+        $schema = $this->domainSchema($domain);
+        $unknown = array_diff(array_keys($values), array_keys($schema));
+
+        if ($unknown !== []) {
+            throw ValidationException::withMessages([
+                'settings' => ['Unknown setting keys for domain ['.$domain.']: '.implode(', ', $unknown).'.'],
+            ]);
+        }
+
+        foreach ($values as $key => $value) {
+            $this->set($key, $this->serializeValue($value, $schema[$key]['type']));
+        }
+
+        return $this->getDomain($domain);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function domains(): array
+    {
+        return array_keys(self::DOMAINS);
+    }
+
+    /**
+     * Whether the given domain is a commerce settings domain.
+     */
+    public function hasDomain(string $domain): bool
+    {
+        return array_key_exists($domain, self::DOMAINS);
     }
 
     /**
@@ -106,6 +243,14 @@ class CommerceSettingService
     }
 
     /**
+     * Hours after placement during which an order may be cancelled.
+     */
+    public function orderCancellationWindowHours(): int
+    {
+        return max(0, (int) ($this->get('order.cancellation_window_hours', '24') ?? '24'));
+    }
+
+    /**
      * Whether a loyalty program should default to active when first created.
      */
     public function loyaltyIsActive(): bool
@@ -154,6 +299,34 @@ class CommerceSettingService
     }
 
     /**
+     * Resolved delivery assignment strategy (setting overrides config).
+     */
+    public function deliveryAssignmentStrategy(): string
+    {
+        $value = $this->get('delivery.assignment_strategy');
+
+        if (is_string($value) && $value !== '') {
+            return $value;
+        }
+
+        return (string) config('delivery.assignment.strategy', 'manual');
+    }
+
+    /**
+     * Resolved delivery assignment radius in km (setting overrides config).
+     */
+    public function deliveryAssignmentRadiusKm(): float
+    {
+        $value = $this->get('delivery.assignment_radius_km');
+
+        if ($value !== null && $value !== '') {
+            return (float) $value;
+        }
+
+        return (float) config('delivery.assignment.radius_km', 15);
+    }
+
+    /**
      * Storefront currency code from tenant profile when tenancy is initialized.
      */
     public function currencyCode(): string
@@ -173,5 +346,71 @@ class CommerceSettingService
         }
 
         return 'NGN';
+    }
+
+    /**
+     * @return array<string, array{type: string, default: mixed}>
+     */
+    protected function domainSchema(string $domain): array
+    {
+        if (! $this->hasDomain($domain)) {
+            throw ValidationException::withMessages([
+                'domain' => ['Unknown settings domain ['.$domain.'].'],
+            ]);
+        }
+
+        return self::DOMAINS[$domain];
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     */
+    protected function syncDeliveryConfig(array $settings): void
+    {
+        if (array_key_exists('delivery.assignment_strategy', $settings)) {
+            Config::set('delivery.assignment.strategy', (string) $settings['delivery.assignment_strategy']);
+        }
+
+        if (array_key_exists('delivery.assignment_radius_km', $settings)) {
+            Config::set('delivery.assignment.radius_km', (float) $settings['delivery.assignment_radius_km']);
+        }
+    }
+
+    protected function castValue(?string $raw, string $type, mixed $default): mixed
+    {
+        if ($raw === null) {
+            return $default;
+        }
+
+        return match ($type) {
+            'bool' => filter_var($raw, FILTER_VALIDATE_BOOLEAN),
+            'int' => (int) $raw,
+            'nullable_int' => $raw === '' ? null : (int) $raw,
+            'float' => (float) $raw,
+            'money', 'string' => $raw,
+            'nullable_string' => $raw === '' ? null : $raw,
+            default => $raw,
+        };
+    }
+
+    protected function serializeValue(mixed $value, string $type): ?string
+    {
+        if ($value === null) {
+            return match ($type) {
+                'nullable_string', 'nullable_int' => null,
+                'bool' => 'false',
+                'int', 'float', 'money' => '0',
+                default => null,
+            };
+        }
+
+        return match ($type) {
+            'bool' => filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false',
+            'int', 'nullable_int' => (string) (int) $value,
+            'float' => (string) (float) $value,
+            'money' => is_numeric($value) ? (string) $value : (string) $value,
+            'string', 'nullable_string' => (string) $value,
+            default => $value === null ? null : (string) $value,
+        };
     }
 }

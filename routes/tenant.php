@@ -80,6 +80,7 @@ use App\Http\Controllers\Tenant\Product\ProductSpecificationController;
 use App\Http\Controllers\Tenant\Product\ProductVariantController;
 use App\Http\Controllers\Tenant\RBAC\PermissionController;
 use App\Http\Controllers\Tenant\RBAC\RoleController;
+use App\Http\Controllers\Tenant\Settings\SettingsController;
 use App\Http\Controllers\Tenant\Shipping\CarrierWebhookController;
 use App\Http\Controllers\Tenant\Shipping\ShipmentController;
 use App\Http\Controllers\Tenant\Shipping\ShippingMethodController;
@@ -262,6 +263,16 @@ Route::middleware([
             });
 
             Route::middleware('auth:sanctum')->group(function (): void {
+                Route::prefix('subscription')->name('tenant.subscription.')->group(function (): void {
+                    Route::get('/', [SubscriptionController::class, 'current'])->name('current');
+                    Route::post('subscribe', [SubscriptionController::class, 'subscribe'])->name('subscribe');
+                    Route::post('verify', [SubscriptionController::class, 'verify'])->name('verify');
+                    Route::post('cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
+                    Route::post('change-plan', [SubscriptionController::class, 'changePlan'])->name('change-plan');
+                });
+            });
+
+            Route::middleware(['auth:sanctum', 'subscription.active'])->group(function (): void {
                 Route::get('users', [UserController::class, 'index'])->middleware('permission:users.view')->name('tenant.users.index');
                 Route::post('users', [UserController::class, 'store'])->middleware('permission:users.create')->name('tenant.users.store');
                 Route::get('users/{user}', [UserController::class, 'show'])->middleware('permission:users.show')->whereNumber('user')->name('tenant.users.show');
@@ -560,9 +571,14 @@ Route::middleware([
 
                 Route::get('drivers', [DriverController::class, 'index'])->middleware('permission:drivers.view')->name('tenant.drivers.index');
                 Route::post('drivers', [DriverController::class, 'store'])->middleware('permission:drivers.create')->name('tenant.drivers.store');
+                Route::get('drivers/{driver}/deliveries', [DriverController::class, 'deliveries'])->middleware('permission:drivers.view')->whereNumber('driver')->name('tenant.drivers.deliveries');
+                Route::get('drivers/{driver}/stats', [DriverController::class, 'stats'])->middleware('permission:drivers.view')->whereNumber('driver')->name('tenant.drivers.stats');
                 Route::get('drivers/{driver}', [DriverController::class, 'show'])->middleware('permission:drivers.show')->whereNumber('driver')->name('tenant.drivers.show');
                 Route::match(['put', 'patch'], 'drivers/{driver}', [DriverController::class, 'update'])->middleware('permission:drivers.update')->whereNumber('driver')->name('tenant.drivers.update');
                 Route::delete('drivers/{driver}', [DriverController::class, 'destroy'])->middleware('permission:drivers.delete')->whereNumber('driver')->name('tenant.drivers.destroy');
+
+                Route::get('settings/{domain}', [SettingsController::class, 'show'])->middleware('permission:settings.view')->name('tenant.settings.show');
+                Route::match(['put', 'patch'], 'settings/{domain}', [SettingsController::class, 'update'])->middleware('permission:settings.update')->name('tenant.settings.update');
 
                 Route::get('deliveries', [DeliveryController::class, 'index'])->middleware('permission:deliveries.view')->name('tenant.deliveries.index');
                 Route::post('deliveries', [DeliveryController::class, 'store'])->middleware('permission:deliveries.manage')->name('tenant.deliveries.store');
@@ -674,14 +690,6 @@ Route::middleware([
                 Route::get('devices', [NotificationDeviceController::class, 'index'])->name('tenant.devices.index');
                 Route::post('devices', [NotificationDeviceController::class, 'store'])->name('tenant.devices.store');
                 Route::delete('devices/{device}', [NotificationDeviceController::class, 'destroy'])->whereNumber('device')->name('tenant.devices.destroy');
-
-                Route::prefix('subscription')->name('tenant.subscription.')->group(function (): void {
-                    Route::get('/', [SubscriptionController::class, 'current'])->name('current');
-                    Route::post('subscribe', [SubscriptionController::class, 'subscribe'])->name('subscribe');
-                    Route::post('verify', [SubscriptionController::class, 'verify'])->name('verify');
-                    Route::post('cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
-                    Route::post('change-plan', [SubscriptionController::class, 'changePlan'])->name('change-plan');
-                });
             });
         });
     });

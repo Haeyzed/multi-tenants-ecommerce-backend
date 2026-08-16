@@ -66,6 +66,22 @@ class FeatureSeeder extends Seeder
             'name' => 'POS Terminals',
             'description' => 'Limit the number of POS terminals per plan.',
         ],
+        'warehouses' => [
+            'name' => 'Warehouses',
+            'description' => 'Manage warehouse locations and stock nodes.',
+        ],
+        'users' => [
+            'name' => 'Staff Users',
+            'description' => 'Limit the number of staff user accounts per plan.',
+        ],
+        'sellers' => [
+            'name' => 'Marketplace Sellers',
+            'description' => 'Limit the number of marketplace seller accounts per plan.',
+        ],
+        'drivers' => [
+            'name' => 'Drivers',
+            'description' => 'Limit the number of delivery drivers per plan.',
+        ],
     ];
 
     /**

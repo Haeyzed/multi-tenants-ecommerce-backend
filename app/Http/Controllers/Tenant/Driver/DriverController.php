@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant\Driver;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\Driver\IndexDriverDeliveriesRequest;
 use App\Http\Requests\Tenant\Driver\IndexDriverRequest;
 use App\Http\Requests\Tenant\Driver\StoreDriverRequest;
 use App\Http\Requests\Tenant\Driver\UpdateDriverRequest;
+use App\Http\Resources\Tenant\Delivery\DeliveryResource;
 use App\Http\Resources\Tenant\Driver\DriverResource;
 use App\Models\Tenant\Driver;
 use App\Services\Tenant\Driver\DriverService;
@@ -116,5 +118,44 @@ class DriverController extends Controller
         $this->driverService->destroy($driver);
 
         return $this->deleted('Driver deleted successfully.');
+    }
+
+    /**
+     * Paginated delivery history for a driver.
+     */
+    #[Response(
+        status: 200,
+        description: 'Paginated deliveries for the driver.',
+        type: 'array{success: true, message: string, data: DeliveryResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}',
+    )]
+    public function deliveries(IndexDriverDeliveriesRequest $request, Driver $driver): JsonResponse
+    {
+        $this->authorize('view', $driver);
+
+        $deliveries = $this->driverService->deliveryHistory($driver, $request->validated());
+
+        return $this->success(
+            DeliveryResource::collection($deliveries->items()),
+            'Driver deliveries retrieved successfully.',
+            $this->paginationMeta($deliveries),
+        );
+    }
+
+    /**
+     * Delivery status counts for a driver.
+     */
+    #[Response(
+        status: 200,
+        description: 'Driver delivery stats.',
+        type: 'array{success: true, message: string, data: array{total: int, by_status: array<string, int>}, meta: null, errors: null}',
+    )]
+    public function stats(Driver $driver): JsonResponse
+    {
+        $this->authorize('view', $driver);
+
+        return $this->success(
+            $this->driverService->stats($driver),
+            'Driver stats retrieved successfully.',
+        );
     }
 }

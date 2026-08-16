@@ -28,6 +28,7 @@ beforeEach(function (): void {
         '2026_08_15_060009_create_shipments_table.php',
         '2026_08_16_120000_create_drivers_table.php',
         '2026_08_16_120002_create_deliveries_table.php',
+        '2026_08_16_120951_add_rejected_and_arrived_timestamps_to_deliveries_table.php',
         '2026_08_16_120003_create_driver_locations_table.php',
     ];
 

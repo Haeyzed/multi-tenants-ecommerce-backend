@@ -8,7 +8,9 @@ use App\Enums\Tenant\Marketplace\SellerStatus;
 use App\Enums\Tenant\Marketplace\SellerVerificationStatus;
 use App\Events\SellerApproved;
 use App\Events\SellerSuspended;
+use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Seller;
+use App\Services\Landlord\Feature\UsageLimiter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
@@ -17,6 +19,8 @@ use Illuminate\Validation\ValidationException;
  */
 class SellerService
 {
+    public function __construct(private readonly UsageLimiter $usageLimiter) {}
+
     /**
      * @param  array{search?: string|null, status?: string|null, verification_status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Seller>
@@ -52,6 +56,11 @@ class SellerService
      */
     public function store(array $data): Seller
     {
+        $tenant = tenant();
+        if ($tenant instanceof Tenant && $tenant->activeSubscription() !== null) {
+            $this->usageLimiter->assertCanCreate('sellers', $tenant);
+        }
+
         return Seller::query()->create([
             'name' => $data['name'],
             'slug' => $data['slug'] ?? null,

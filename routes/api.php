@@ -13,6 +13,7 @@ use App\Http\Controllers\Landlord\Notification\PreferenceController as Notificat
 use App\Http\Controllers\Landlord\Plan\PlanController;
 use App\Http\Controllers\Landlord\RBAC\PermissionController;
 use App\Http\Controllers\Landlord\RBAC\RoleController;
+use App\Http\Controllers\Landlord\Settings\PlatformSettingsController;
 use App\Http\Controllers\Landlord\Subscription\SubscriptionController as LandlordSubscriptionController;
 use App\Http\Controllers\Landlord\Tenant\TenantController;
 use App\Http\Controllers\Landlord\TenantProfile\TenantProfileController;
@@ -127,6 +128,9 @@ $registerLandlordApi = function (): void {
             Route::match(['put', 'patch'], 'plans/{plan}', [PlanController::class, 'update'])->middleware('permission:plans.update')->whereNumber('plan')->name('landlord.plans.update');
             Route::delete('plans/{plan}', [PlanController::class, 'destroy'])->middleware('permission:plans.delete')->whereNumber('plan')->name('landlord.plans.destroy');
             Route::put('plans/{plan}/features', [PlanController::class, 'syncFeatures'])->middleware('permission:plans.update')->whereNumber('plan')->name('landlord.plans.features');
+
+            Route::get('settings/{domain}', [PlatformSettingsController::class, 'show'])->middleware('permission:settings.view')->name('landlord.settings.show');
+            Route::match(['put', 'patch'], 'settings/{domain}', [PlatformSettingsController::class, 'update'])->middleware('permission:settings.update')->name('landlord.settings.update');
 
             Route::get('media/options', [MediaController::class, 'options'])->name('landlord.media.options');
             Route::get('media', [MediaController::class, 'index'])->name('landlord.media.index');

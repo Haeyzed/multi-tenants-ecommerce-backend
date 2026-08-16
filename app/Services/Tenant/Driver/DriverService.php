@@ -4,16 +4,23 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\Driver;
 
+use App\Enums\Tenant\Delivery\DeliveryStatus;
 use App\Enums\Tenant\Driver\DriverAvailability;
 use App\Enums\Tenant\Driver\DriverStatus;
+use App\Models\Landlord\Tenant;
+use App\Models\Tenant\Delivery;
 use App\Models\Tenant\Driver;
+use App\Services\Landlord\Feature\UsageLimiter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Staff and self-service driver management.
  */
 class DriverService
 {
+    public function __construct(private readonly UsageLimiter $usageLimiter) {}
+
     /**
      * Paginate drivers with search, filters, and sorts.
      *
@@ -50,6 +57,11 @@ class DriverService
      */
     public function store(array $data): Driver
     {
+        $tenant = tenant();
+        if ($tenant instanceof Tenant && $tenant->activeSubscription() !== null) {
+            $this->usageLimiter->assertCanCreate('drivers', $tenant);
+        }
+
         return Driver::query()->create([
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
@@ -108,6 +120,58 @@ class DriverService
     {
         $driver->tokens()->delete();
         $driver->delete();
+    }
+
+    /**
+     * Paginate delivery history for a driver.
+     *
+     * @param  array{status?: string|null, per_page?: int|null}  $params
+     * @return LengthAwarePaginator<int, Delivery>
+     */
+    public function deliveryHistory(Driver $driver, array $params = []): LengthAwarePaginator
+    {
+        $query = Delivery::query()
+            ->with(['order', 'shipment'])
+            ->where('driver_id', $driver->id)
+            ->latest('id');
+
+        if (! empty($params['status'])) {
+            $query->where('status', $params['status']);
+        }
+
+        return $query->paginate($this->perPage($params));
+    }
+
+    /**
+     * Aggregate delivery counts by status for a driver.
+     *
+     * @return array{
+     *     total: int,
+     *     by_status: array<string, int>
+     * }
+     */
+    public function stats(Driver $driver): array
+    {
+        $counts = Delivery::query()
+            ->where('driver_id', $driver->id)
+            ->toBase()
+            ->select('status', DB::raw('count(*) as aggregate'))
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $byStatus = [];
+        $total = 0;
+
+        foreach (DeliveryStatus::cases() as $status) {
+            $count = (int) ($counts[$status->value] ?? 0);
+            $byStatus[$status->value] = $count;
+            $total += $count;
+        }
+
+        return [
+            'total' => $total,
+            'by_status' => $byStatus,
+        ];
     }
 
     /**

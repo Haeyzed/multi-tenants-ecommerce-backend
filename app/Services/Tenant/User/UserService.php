@@ -6,8 +6,10 @@ namespace App\Services\Tenant\User;
 
 use App\Enums\Media\MediaCollection;
 use App\Events\UserCreated;
+use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Seller;
 use App\Models\Tenant\User;
+use App\Services\Landlord\Feature\UsageLimiter;
 use App\Services\Media\MediaService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -20,7 +22,10 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class UserService
 {
-    public function __construct(private readonly MediaService $mediaService) {}
+    public function __construct(
+        private readonly MediaService $mediaService,
+        private readonly UsageLimiter $usageLimiter,
+    ) {}
 
     /**
      * Retrieve a paginated list of tenant users.
@@ -44,6 +49,11 @@ class UserService
      */
     public function store(array $data, ?UploadedFile $avatar = null): User
     {
+        $tenant = tenant();
+        if ($tenant instanceof Tenant && $tenant->activeSubscription() !== null) {
+            $this->usageLimiter->assertCanCreate('users', $tenant);
+        }
+
         $roles = $data['roles'] ?? [];
         $permissions = $data['permissions'] ?? [];
         unset($data['roles'], $data['permissions']);

@@ -6,6 +6,7 @@ namespace App\Services\Landlord\Feature;
 
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Customer;
+use App\Models\Tenant\Driver;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\PosTerminal;
 use App\Models\Tenant\Product;
@@ -83,6 +84,7 @@ class UsageLimiter
             'inventory', 'warehouses' => Schema::hasTable('warehouses') ? Warehouse::query()->count() : 0,
             'users' => Schema::hasTable('users') ? User::query()->count() : 0,
             'sellers' => Schema::hasTable('sellers') ? Seller::query()->count() : 0,
+            'drivers' => Schema::hasTable('drivers') ? Driver::query()->count() : 0,
             'pos_terminals' => Schema::hasTable('pos_terminals') ? PosTerminal::query()->count() : 0,
             default => 0,
         };
