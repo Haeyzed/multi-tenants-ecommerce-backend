@@ -47,6 +47,8 @@ class PlanSeeder extends Seeder
                     ['feature' => 'gift-cards', 'enabled' => false],
                     ['feature' => 'store-credit', 'enabled' => false],
                     ['feature' => 'loyalty', 'enabled' => false],
+                    ['feature' => 'pos', 'enabled' => false],
+                    ['feature' => 'pos_terminals', 'enabled' => false],
                 ],
             ],
             [
@@ -71,6 +73,8 @@ class PlanSeeder extends Seeder
                     ['feature' => 'gift-cards', 'enabled' => false],
                     ['feature' => 'store-credit', 'enabled' => false],
                     ['feature' => 'loyalty', 'enabled' => false],
+                    ['feature' => 'pos', 'enabled' => false],
+                    ['feature' => 'pos_terminals', 'enabled' => false],
                 ],
             ],
             [
@@ -95,6 +99,8 @@ class PlanSeeder extends Seeder
                     ['feature' => 'gift-cards', 'enabled' => true],
                     ['feature' => 'store-credit', 'enabled' => true],
                     ['feature' => 'loyalty', 'enabled' => true],
+                    ['feature' => 'pos', 'enabled' => true],
+                    ['feature' => 'pos_terminals', 'enabled' => true, 'limit' => 5],
                 ],
             ],
             [
@@ -119,6 +125,8 @@ class PlanSeeder extends Seeder
                     ['feature' => 'gift-cards', 'enabled' => true],
                     ['feature' => 'store-credit', 'enabled' => true],
                     ['feature' => 'loyalty', 'enabled' => true],
+                    ['feature' => 'pos', 'enabled' => true],
+                    ['feature' => 'pos_terminals', 'enabled' => true, 'limit' => null],
                 ],
             ],
         ];

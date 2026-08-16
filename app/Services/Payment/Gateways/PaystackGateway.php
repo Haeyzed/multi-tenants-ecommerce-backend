@@ -21,6 +21,11 @@ use RuntimeException;
  */
 class PaystackGateway implements PaymentGateway
 {
+    public function name(): string
+    {
+        return 'paystack';
+    }
+
     /**
      * Initialize a Paystack transaction.
      *
@@ -128,17 +133,42 @@ class PaystackGateway implements PaymentGateway
         );
     }
 
+    public function getPaymentStatus(string $reference): PaymentVerificationResult
+    {
+        return $this->verifyPayment($reference);
+    }
+
     /**
      * Whether Paystack supports the given currency.
      */
     public function supportsCurrency(string $currency): bool
     {
+        return in_array(Str::upper($currency), $this->supportedCurrencies(), true);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function supportedCurrencies(): array
+    {
         /** @var list<string> $currencies */
         $currencies = config('payment.drivers.paystack.currencies', ['NGN', 'GHS', 'ZAR', 'USD']);
 
-        $supported = array_map(static fn (string $code): string => Str::upper($code), $currencies);
+        return array_values(array_map(
+            static fn (string $code): string => Str::upper($code),
+            $currencies,
+        ));
+    }
 
-        return in_array(Str::upper($currency), $supported, true);
+    /**
+     * @return list<string>
+     */
+    public function supportedMethods(): array
+    {
+        /** @var list<string> $methods */
+        $methods = config('payment.methods.paystack', ['card', 'bank_transfer', 'ussd', 'qr']);
+
+        return $methods;
     }
 
     /**

@@ -38,6 +38,12 @@ class OrderResource extends JsonResource
             'id' => $order->id,
             'order_number' => $order->order_number,
             'customer_id' => $order->customer_id,
+            'sales_channel' => $order->sales_channel instanceof \BackedEnum
+                ? $order->sales_channel->value
+                : $order->sales_channel,
+            'pos_terminal_id' => $order->pos_terminal_id,
+            'pos_session_id' => $order->pos_session_id,
+            'warehouse_id' => $order->warehouse_id,
             'currency' => $order->currency,
             'status' => $order->status,
             'payment_status' => $order->payment_status,

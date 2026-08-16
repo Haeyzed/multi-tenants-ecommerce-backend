@@ -525,7 +525,10 @@ class CartService
      *
      * @throws ValidationException
      */
-    protected function resolveUnitPrice(
+    /**
+     * Resolve the active unit price for a product/variant in the given currency.
+     */
+    public function resolveUnitPrice(
         Product $product,
         ?ProductVariant $variant,
         string $currency,

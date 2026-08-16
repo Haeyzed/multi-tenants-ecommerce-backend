@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Contracts\Payment\PaymentGateway;
 use App\DTO\Payment\PaymentInitiationRequest;
 use App\DTO\Payment\PaymentInitiationResult;
+use App\DTO\Payment\PaymentRefundResult;
 use App\DTO\Payment\PaymentVerificationResult;
 use App\Enums\Tenant\Marketplace\SellerCommissionStatus;
 use App\Enums\Tenant\Marketplace\SellerOrderStatus;
@@ -94,6 +95,11 @@ function mockMarketplacePaymentGateway(string $amount = '200.00'): PaymentGatewa
     {
         public function __construct(private readonly string $amount) {}
 
+        public function name(): string
+        {
+            return 'paystack';
+        }
+
         public function initializePayment(PaymentInitiationRequest $request): PaymentInitiationResult
         {
             return new PaymentInitiationResult(
@@ -116,14 +122,37 @@ function mockMarketplacePaymentGateway(string $amount = '200.00'): PaymentGatewa
             );
         }
 
+        public function getPaymentStatus(string $reference): PaymentVerificationResult
+        {
+            return $this->verifyPayment($reference);
+        }
+
         public function supportsCurrency(string $currency): bool
         {
             return true;
         }
 
+        public function supportedCurrencies(): array
+        {
+            return ['NGN'];
+        }
+
+        public function supportedMethods(): array
+        {
+            return ['card'];
+        }
+
         public function refundPayment(string $providerTransactionId, ?string $amount = null): bool
         {
             return false;
+        }
+
+        public function refundPaymentDetailed(
+            string $providerTransactionId,
+            ?string $amount = null,
+            ?string $currency = null,
+        ): PaymentRefundResult {
+            return new PaymentRefundResult(successful: false);
         }
     };
 }

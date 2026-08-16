@@ -58,6 +58,14 @@ class FeatureSeeder extends Seeder
             'name' => 'Loyalty & Rewards',
             'description' => 'Award and redeem customer loyalty points.',
         ],
+        'pos' => [
+            'name' => 'Point of Sale',
+            'description' => 'In-store POS terminals, sessions, and sales.',
+        ],
+        'pos_terminals' => [
+            'name' => 'POS Terminals',
+            'description' => 'Limit the number of POS terminals per plan.',
+        ],
     ];
 
     /**

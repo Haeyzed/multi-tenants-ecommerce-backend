@@ -10,4 +10,8 @@ namespace App\Enums\Landlord;
 enum PaymentProvider: string
 {
     case Paystack = 'paystack';
+    case Flutterwave = 'flutterwave';
+    case Monnify = 'monnify';
+    case Moniepoint = 'moniepoint';
+    case Fake = 'fake';
 }

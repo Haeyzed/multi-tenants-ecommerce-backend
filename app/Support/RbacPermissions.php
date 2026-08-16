@@ -138,6 +138,9 @@ final class RbacPermissions
         'payments.view',
         'payments.verify',
         'payments.refund',
+        'payments.manage',
+        'payment_gateways.view',
+        'payment_gateways.manage',
         'shipping.view',
         'shipping.manage',
         'shipments.view',
@@ -240,6 +243,15 @@ final class RbacPermissions
         // Staff delivery management. Driver self-actions (accept/reject/arrived/etc.) are policy-based on the driver guard, not Spatie.
         'deliveries.view',
         'deliveries.manage',
+        'pos.view',
+        'pos.sell',
+        'pos.refund',
+        'pos.session.open',
+        'pos.session.close',
+        'pos.cash_in',
+        'pos.cash_out',
+        'pos.reports.view',
+        'pos.terminals.manage',
     ];
 
     /**

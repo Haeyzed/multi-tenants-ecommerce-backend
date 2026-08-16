@@ -18,7 +18,6 @@ use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderPayment;
 use App\Models\Tenant\Refund;
 use App\Models\Tenant\StoreCreditTransaction;
-use App\Services\Payment\Gateways\PaystackGateway;
 use App\Services\Payment\PaymentManager;
 use App\Services\Tenant\Accounting\AccountingService;
 use App\Support\Money;
@@ -150,15 +149,11 @@ class RefundService
         try {
             $gateway = $this->paymentManager->driver($payment->gateway);
 
-            $result = $gateway instanceof PaystackGateway
-                ? $gateway->refundPaymentDetailed(
-                    $providerTransactionId,
-                    $requestedAmount,
-                    (string) $payment->currency,
-                )
-                : new PaymentRefundResult(
-                    successful: $gateway->refundPayment($providerTransactionId, $requestedAmount),
-                );
+            $result = $gateway->refundPaymentDetailed(
+                $providerTransactionId,
+                $requestedAmount,
+                (string) $payment->currency,
+            );
         } catch (ConnectionException $exception) {
             $this->leaveRefundPendingReconciliation($refund, $order, $payment, [
                 'exception' => $exception->getMessage(),
@@ -236,12 +231,13 @@ class RefundService
 
         $gateway = $this->paymentManager->driver($payment->gateway);
 
-        if (! $gateway instanceof PaystackGateway) {
+        if (! method_exists($gateway, 'listRefundsForTransaction')) {
             throw ValidationException::withMessages([
-                'refund' => 'Automatic refund reconciliation is only supported for Paystack.',
+                'refund' => 'Automatic refund reconciliation is not supported for this payment provider.',
             ]);
         }
 
+        /** @var list<array<string, mixed>> $providerRefunds */
         $providerRefunds = $gateway->listRefundsForTransaction($providerTransactionId);
         $match = $this->matchProviderRefund($refund, $payment, $providerRefunds);
 

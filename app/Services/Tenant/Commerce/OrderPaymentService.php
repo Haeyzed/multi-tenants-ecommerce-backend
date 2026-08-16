@@ -16,14 +16,15 @@ use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderPayment;
 use App\Models\Tenant\PaymentWebhookEvent;
 use App\Services\Payment\PaymentManager;
+use App\Services\Payment\PaymentWebhookManager;
 use App\Services\Tenant\Accounting\AccountingService;
 use App\Services\Tenant\Marketplace\CommissionService;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -266,33 +267,24 @@ class OrderPaymentService
     }
 
     /**
-     * Handle a Paystack webhook payload.
+     * Handle a verified provider webhook payload (signature already checked).
      *
      * Never marks successful without a successful gateway verify + amount/currency match.
      *
      * @param  array<string, mixed>  $payload
      * @return array{processed: bool, duplicate?: bool, payment?: OrderPayment|null}
      */
-    public function handleWebhook(array $payload, ?string $signature, ?string $rawBody = null): array
-    {
-        $this->assertValidPaystackSignature($signature, $rawBody ?? json_encode($payload, JSON_THROW_ON_ERROR));
+    public function handleVerifiedWebhook(
+        string $provider,
+        string $reference,
+        array $payload,
+        ?string $eventId = null,
+        ?string $eventType = null,
+        ?string $rawBody = null,
+    ): array {
+        $resolvedEventId = $eventId ?? $this->resolveWebhookEventId($payload, $rawBody, $reference);
 
-        $eventType = isset($payload['event']) ? (string) $payload['event'] : null;
-
-        if ($eventType !== 'charge.success') {
-            return ['processed' => false];
-        }
-
-        $data = is_array($payload['data'] ?? null) ? $payload['data'] : [];
-        $reference = isset($data['reference']) ? (string) $data['reference'] : '';
-
-        if ($reference === '') {
-            return ['processed' => false];
-        }
-
-        $eventId = $this->resolveWebhookEventId($payload, $rawBody, $reference);
-
-        if (! $this->claimWebhookEvent($eventId, $eventType, $reference, $payload)) {
+        if (! $this->claimWebhookEvent($provider, $resolvedEventId, $eventType, $reference, $payload)) {
             $payment = OrderPayment::query()->where('reference', $reference)->first();
 
             return [
@@ -318,11 +310,32 @@ class OrderPaymentService
     }
 
     /**
+     * @deprecated Prefer PaymentWebhookManager + handleVerifiedWebhook.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{processed: bool, duplicate?: bool, payment?: OrderPayment|null}
+     */
+    public function handleWebhook(array $payload, ?string $signature, ?string $rawBody = null): array
+    {
+        $raw = $rawBody ?? json_encode($payload, JSON_THROW_ON_ERROR);
+        $request = Request::create('/payments/webhooks/paystack', 'POST', $payload, server: [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_PAYSTACK_SIGNATURE' => (string) ($signature ?? ''),
+        ], content: $raw);
+
+        /** @var PaymentWebhookManager $manager */
+        $manager = app(PaymentWebhookManager::class);
+
+        return $manager->handle('paystack', $request);
+    }
+
+    /**
      * Claim a webhook event id before side effects. Returns false when already claimed.
      *
      * @param  array<string, mixed>  $payload
      */
     protected function claimWebhookEvent(
+        string $provider,
         string $eventId,
         ?string $eventType,
         string $reference,
@@ -334,7 +347,7 @@ class OrderPaymentService
 
         try {
             PaymentWebhookEvent::query()->create([
-                'provider' => 'paystack',
+                'provider' => $provider,
                 'event_id' => $eventId,
                 'event_type' => $eventType,
                 'reference' => $reference,
@@ -361,8 +374,16 @@ class OrderPaymentService
             return (string) $data['id'];
         }
 
+        if (isset($payload['eventData']) && is_array($payload['eventData']) && isset($payload['eventData']['transactionReference'])) {
+            return (string) $payload['eventData']['transactionReference'];
+        }
+
         if (isset($payload['event'])) {
             return (string) $payload['event'].':'.$reference;
+        }
+
+        if (isset($payload['eventType'])) {
+            return (string) $payload['eventType'].':'.$reference;
         }
 
         return hash('sha256', $rawBody ?? json_encode($payload, JSON_THROW_ON_ERROR));
@@ -397,24 +418,6 @@ class OrderPaymentService
             throw ValidationException::withMessages([
                 'reference' => ['Verified payment currency does not match the expected currency.'],
             ]);
-        }
-    }
-
-    /**
-     * Validate Paystack HMAC signature (same pattern as landlord webhook handler).
-     */
-    protected function assertValidPaystackSignature(?string $signature, string $rawBody): void
-    {
-        $secret = (string) config('payment.drivers.paystack.webhook_secret');
-
-        if ($secret === '') {
-            throw new RuntimeException('Paystack webhook secret is not configured.');
-        }
-
-        $computed = hash_hmac('sha512', $rawBody, $secret);
-
-        if ($signature === null || $signature === '' || ! hash_equals($computed, $signature)) {
-            throw new AccessDeniedHttpException('Invalid Paystack webhook signature.');
         }
     }
 }

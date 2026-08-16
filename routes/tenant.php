@@ -63,6 +63,13 @@ use App\Http\Controllers\Tenant\Media\MediaController;
 use App\Http\Controllers\Tenant\Notification\DeviceController as NotificationDeviceController;
 use App\Http\Controllers\Tenant\Notification\InboxController as NotificationInboxController;
 use App\Http\Controllers\Tenant\Notification\PreferenceController as NotificationPreferenceController;
+use App\Http\Controllers\Tenant\Payment\PaymentGatewayController;
+use App\Http\Controllers\Tenant\Pos\PosCashDrawerController;
+use App\Http\Controllers\Tenant\Pos\PosCatalogController;
+use App\Http\Controllers\Tenant\Pos\PosReportController;
+use App\Http\Controllers\Tenant\Pos\PosSaleController;
+use App\Http\Controllers\Tenant\Pos\PosSessionController;
+use App\Http\Controllers\Tenant\Pos\PosTerminalController;
 use App\Http\Controllers\Tenant\Procurement\PurchaseOrderController;
 use App\Http\Controllers\Tenant\Procurement\SupplierController;
 use App\Http\Controllers\Tenant\Product\ProductBundleController;
@@ -226,6 +233,11 @@ Route::middleware([
         Route::post('payments/webhooks/paystack', [PaymentWebhookController::class, 'paystack'])
             ->middleware('throttle:120,1')
             ->name('tenant.payments.webhooks.paystack');
+
+        Route::post('payments/webhooks/{provider}', PaymentWebhookController::class)
+            ->middleware('throttle:120,1')
+            ->where('provider', 'paystack|flutterwave|monnify|moniepoint|fake')
+            ->name('tenant.payments.webhooks.provider');
 
         Route::post('webhooks/shipping/{carrier}', CarrierWebhookController::class)
             ->middleware('throttle:120,1')
@@ -508,6 +520,19 @@ Route::middleware([
                 Route::post('orders/{order}/refunds', [RefundController::class, 'store'])->middleware('permission:refunds.create')->whereNumber('order')->name('tenant.orders.refunds.store');
                 Route::get('refunds/{refund}', [RefundController::class, 'show'])->middleware('permission:refunds.view')->whereNumber('refund')->name('tenant.refunds.show');
 
+                Route::get('payment-gateways', [PaymentGatewayController::class, 'index'])
+                    ->middleware('permission:payments.manage|payment_gateways.view|payment_gateways.manage')
+                    ->name('tenant.payment-gateways.index');
+                Route::put('payment-gateways', [PaymentGatewayController::class, 'upsert'])
+                    ->middleware('permission:payments.manage|payment_gateways.manage')
+                    ->name('tenant.payment-gateways.upsert');
+                Route::post('payment-gateways/{gateway}/enable', [PaymentGatewayController::class, 'enable'])
+                    ->middleware('permission:payments.manage|payment_gateways.manage')
+                    ->name('tenant.payment-gateways.enable');
+                Route::post('payment-gateways/{gateway}/disable', [PaymentGatewayController::class, 'disable'])
+                    ->middleware('permission:payments.manage|payment_gateways.manage')
+                    ->name('tenant.payment-gateways.disable');
+
                 Route::get('taxes', [TaxController::class, 'index'])->middleware('permission:taxes.view')->name('tenant.taxes.index');
                 Route::post('taxes', [TaxController::class, 'store'])->middleware('permission:taxes.create')->name('tenant.taxes.store');
                 Route::get('taxes/{tax}', [TaxController::class, 'show'])->middleware('permission:taxes.view')->whereNumber('tax')->name('tenant.taxes.show');
@@ -546,6 +571,34 @@ Route::middleware([
                 Route::post('deliveries/{delivery}/assign-automatic', [DeliveryController::class, 'assignAutomatic'])->middleware('permission:deliveries.manage')->whereNumber('delivery')->name('tenant.deliveries.assign-automatic');
                 Route::post('deliveries/{delivery}/cancel', [DeliveryController::class, 'cancel'])->middleware('permission:deliveries.manage')->whereNumber('delivery')->name('tenant.deliveries.cancel');
                 Route::post('deliveries/{delivery}/fail', [DeliveryController::class, 'fail'])->middleware('permission:deliveries.manage')->whereNumber('delivery')->name('tenant.deliveries.fail');
+
+                Route::middleware('feature:pos')->prefix('pos')->group(function (): void {
+                    Route::get('terminals/options', [PosTerminalController::class, 'options'])->middleware('permission:pos.view')->name('tenant.pos.terminals.options');
+                    Route::get('terminals', [PosTerminalController::class, 'index'])->middleware('permission:pos.view')->name('tenant.pos.terminals.index');
+                    Route::post('terminals', [PosTerminalController::class, 'store'])->middleware('permission:pos.terminals.manage')->name('tenant.pos.terminals.store');
+                    Route::get('terminals/{pos_terminal}', [PosTerminalController::class, 'show'])->middleware('permission:pos.view')->whereNumber('pos_terminal')->name('tenant.pos.terminals.show');
+                    Route::match(['put', 'patch'], 'terminals/{pos_terminal}', [PosTerminalController::class, 'update'])->middleware('permission:pos.terminals.manage')->whereNumber('pos_terminal')->name('tenant.pos.terminals.update');
+                    Route::delete('terminals/{pos_terminal}', [PosTerminalController::class, 'destroy'])->middleware('permission:pos.terminals.manage')->whereNumber('pos_terminal')->name('tenant.pos.terminals.destroy');
+
+                    Route::get('sessions', [PosSessionController::class, 'index'])->middleware('permission:pos.view')->name('tenant.pos.sessions.index');
+                    Route::post('sessions/open', [PosSessionController::class, 'open'])->middleware('permission:pos.session.open')->name('tenant.pos.sessions.open');
+                    Route::get('sessions/{pos_session}', [PosSessionController::class, 'show'])->middleware('permission:pos.view')->whereNumber('pos_session')->name('tenant.pos.sessions.show');
+                    Route::post('sessions/{pos_session}/close', [PosSessionController::class, 'close'])->middleware('permission:pos.session.close')->whereNumber('pos_session')->name('tenant.pos.sessions.close');
+
+                    Route::post('sessions/{pos_session}/cash-in', [PosCashDrawerController::class, 'cashIn'])->middleware('permission:pos.cash_in')->whereNumber('pos_session')->name('tenant.pos.sessions.cash-in');
+                    Route::post('sessions/{pos_session}/cash-out', [PosCashDrawerController::class, 'cashOut'])->middleware('permission:pos.cash_out')->whereNumber('pos_session')->name('tenant.pos.sessions.cash-out');
+
+                    Route::post('sessions/{pos_session}/sales', [PosSaleController::class, 'store'])->middleware('permission:pos.sell')->whereNumber('pos_session')->name('tenant.pos.sales.store');
+                    Route::post('orders/{order}/pos-refund', [PosSaleController::class, 'refund'])->middleware('permission:pos.refund')->whereNumber('order')->name('tenant.pos.sales.refund');
+
+                    Route::get('catalog/search', [PosCatalogController::class, 'search'])->middleware('permission:pos.view')->name('tenant.pos.catalog.search');
+                    Route::get('catalog/barcode', [PosCatalogController::class, 'barcode'])->middleware('permission:pos.view')->name('tenant.pos.catalog.barcode');
+
+                    Route::get('reports/sessions/{pos_session}', [PosReportController::class, 'sessionSummary'])->middleware('permission:pos.reports.view')->whereNumber('pos_session')->name('tenant.pos.reports.session');
+                    Route::get('reports/sales-by-terminal', [PosReportController::class, 'salesByTerminal'])->middleware('permission:pos.reports.view')->name('tenant.pos.reports.sales-by-terminal');
+                    Route::get('reports/sales-by-cashier', [PosReportController::class, 'salesByCashier'])->middleware('permission:pos.reports.view')->name('tenant.pos.reports.sales-by-cashier');
+                    Route::get('reports/payment-methods', [PosReportController::class, 'paymentMethodTotals'])->middleware('permission:pos.reports.view')->name('tenant.pos.reports.payment-methods');
+                });
 
                 Route::middleware('marketplace.enabled')->group(function (): void {
                     Route::middleware('seller.user')->group(function (): void {

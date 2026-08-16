@@ -7,6 +7,7 @@ namespace App\Models\Tenant;
 use App\Enums\Tenant\Commerce\FulfillmentStatus;
 use App\Enums\Tenant\Commerce\OrderPaymentStatus;
 use App\Enums\Tenant\Commerce\OrderStatus;
+use App\Enums\Tenant\Pos\SalesChannel;
 use Database\Factories\Tenant\OrderFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Customer sales order.
@@ -21,6 +23,10 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $order_number
  * @property int $customer_id
+ * @property SalesChannel|string|null $sales_channel
+ * @property int|null $pos_terminal_id
+ * @property int|null $pos_session_id
+ * @property int|null $warehouse_id
  * @property string $currency
  * @property OrderStatus $status
  * @property OrderPaymentStatus $payment_status
@@ -59,6 +65,10 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'customer_id',
+        'sales_channel',
+        'pos_terminal_id',
+        'pos_session_id',
+        'warehouse_id',
         'currency',
         'status',
         'payment_status',
@@ -92,7 +102,7 @@ class Order extends Model
      */
     protected function casts(): array
     {
-        return [
+        $casts = [
             'customer_id' => 'integer',
             'status' => OrderStatus::class,
             'payment_status' => OrderPaymentStatus::class,
@@ -117,6 +127,15 @@ class Order extends Model
             'confirmed_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
+
+        if (Schema::hasColumn($this->getTable(), 'sales_channel')) {
+            $casts['sales_channel'] = SalesChannel::class;
+            $casts['pos_terminal_id'] = 'integer';
+            $casts['pos_session_id'] = 'integer';
+            $casts['warehouse_id'] = 'integer';
+        }
+
+        return $casts;
     }
 
     /**
@@ -143,6 +162,30 @@ class Order extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * @return BelongsTo<PosTerminal, $this>
+     */
+    public function posTerminal(): BelongsTo
+    {
+        return $this->belongsTo(PosTerminal::class);
+    }
+
+    /**
+     * @return BelongsTo<PosSession, $this>
+     */
+    public function posSession(): BelongsTo
+    {
+        return $this->belongsTo(PosSession::class);
+    }
+
+    /**
+     * @return BelongsTo<Warehouse, $this>
+     */
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
     }
 
     /**

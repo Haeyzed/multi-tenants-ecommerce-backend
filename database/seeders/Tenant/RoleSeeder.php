@@ -204,6 +204,15 @@ class RoleSeeder extends Seeder
             'drivers.delete',
             'deliveries.view',
             'deliveries.manage',
+            'pos.view',
+            'pos.sell',
+            'pos.refund',
+            'pos.session.open',
+            'pos.session.close',
+            'pos.cash_in',
+            'pos.cash_out',
+            'pos.reports.view',
+            'pos.terminals.manage',
         ]);
 
         $seller = Role::findOrCreate('seller', self::GUARD);

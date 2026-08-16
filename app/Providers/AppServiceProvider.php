@@ -28,6 +28,8 @@ use App\Models\Tenant\LoyaltyAccount;
 use App\Models\Tenant\LoyaltyProgram;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderReturn;
+use App\Models\Tenant\PosSession;
+use App\Models\Tenant\PosTerminal;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductAttribute;
 use App\Models\Tenant\ProductBadge;
@@ -71,6 +73,8 @@ use App\Policies\Tenant\LoyaltyAccountPolicy;
 use App\Policies\Tenant\LoyaltyProgramPolicy;
 use App\Policies\Tenant\OrderPolicy;
 use App\Policies\Tenant\OrderReturnPolicy;
+use App\Policies\Tenant\PosSessionPolicy;
+use App\Policies\Tenant\PosTerminalPolicy;
 use App\Policies\Tenant\ProductBadgePolicy;
 use App\Policies\Tenant\ProductCollectionPolicy;
 use App\Policies\Tenant\ProductOptionPolicy;
@@ -105,6 +109,7 @@ use App\Services\Notification\NotificationPreferenceService;
 use App\Services\Notification\Push\FcmPushProvider;
 use App\Services\Notification\Sms\SmsManager;
 use App\Services\Payment\PaymentManager;
+use App\Services\Payment\PaymentWebhookManager;
 use App\Services\Shipping\CarrierWebhookManager;
 use App\Services\Shipping\Http\LaravelCarrierHttpClient;
 use App\Services\Shipping\ShippingCarrierManager;
@@ -126,6 +131,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PaymentManager::class);
+        $this->app->singleton(PaymentWebhookManager::class);
         $this->app->singleton(ShippingCarrierManager::class);
         $this->app->singleton(CarrierWebhookManager::class);
         $this->app->singleton(DriverAssignmentManager::class);
@@ -181,6 +187,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(CustomerSegment::class, CustomerSegmentPolicy::class);
         Gate::policy(Driver::class, DriverPolicy::class);
         Gate::policy(Delivery::class, DeliveryPolicy::class);
+        Gate::policy(PosTerminal::class, PosTerminalPolicy::class);
+        Gate::policy(PosSession::class, PosSessionPolicy::class);
         Gate::policy(FlashSale::class, FlashSalePolicy::class);
         Gate::policy(Unit::class, UnitPolicy::class);
         Gate::policy(Warehouse::class, WarehousePolicy::class);
