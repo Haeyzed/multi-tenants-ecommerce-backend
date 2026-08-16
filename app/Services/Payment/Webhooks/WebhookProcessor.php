@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Services\Payment\Webhooks;
 
 use App\Enums\Landlord\PaymentProvider;
+use App\Services\Payment\PaymentWebhookManager;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
 /**
- * Dispatches provider webhook payloads to the correct handler.
+ * Dispatches central (landlord) SaaS payment webhooks.
+ *
+ * Only subscription billing providers are registered here. Tenant order payment
+ * webhooks are handled on tenant domains via {@see PaymentWebhookManager}.
  */
 class WebhookProcessor
 {

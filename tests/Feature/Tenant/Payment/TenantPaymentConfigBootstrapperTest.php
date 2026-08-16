@@ -66,6 +66,7 @@ test('payment bootstrapper merges tenant credentials without wiping unrelated dr
 
     expect(config('payment.drivers.paystack.secret_key'))->toBe('sk_tenant_secret')
         ->and(config('payment.drivers.paystack.public_key'))->toBe('pk_tenant_public')
+        ->and(config('payment.drivers.paystack.webhook_secret'))->toBe('sk_tenant_secret')
         ->and(config('payment.drivers.paystack.base_url'))->toBe('https://api.paystack.co')
         ->and((int) config('payment.drivers.paystack.timeout'))->toBe(15)
         ->and(config('payment.default'))->toBe('paystack');

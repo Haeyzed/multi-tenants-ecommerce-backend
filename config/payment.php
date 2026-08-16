@@ -55,6 +55,16 @@ return [
     |--------------------------------------------------------------------------
     | Payment Drivers
     |--------------------------------------------------------------------------
+    |
+    | Landlord (central): POST /api/webhooks/{provider}
+    |   → SaaS subscription payments (PaystackWebhookHandler)
+    |
+    | Tenant domain: POST /api/payments/webhooks/{provider}
+    |   → Store order payments (PaymentWebhookManager + *PaymentWebhookHandler)
+    |
+    | Paths stay separate (different DB + side effects). Moniepoint is scaffold-only
+    | until official API/webhook documentation is provided (decision required).
+    |
     */
 
     'drivers' => [

@@ -8,6 +8,7 @@ use App\Contracts\Payment\PaymentWebhookHandlerInterface;
 use App\Models\Tenant\OrderPayment;
 use App\Services\Payment\Webhooks\FakePaymentWebhookHandler;
 use App\Services\Payment\Webhooks\FlutterwavePaymentWebhookHandler;
+use App\Services\Payment\Webhooks\MoniepointPaymentWebhookHandler;
 use App\Services\Payment\Webhooks\MonnifyPaymentWebhookHandler;
 use App\Services\Payment\Webhooks\PaystackPaymentWebhookHandler;
 use App\Services\Tenant\Commerce\OrderPaymentService;
@@ -67,6 +68,7 @@ class PaymentWebhookManager
             'paystack' => $this->container->make(PaystackPaymentWebhookHandler::class),
             'flutterwave' => $this->container->make(FlutterwavePaymentWebhookHandler::class),
             'monnify' => $this->container->make(MonnifyPaymentWebhookHandler::class),
+            'moniepoint' => $this->container->make(MoniepointPaymentWebhookHandler::class),
             'fake' => $this->container->make(FakePaymentWebhookHandler::class),
             default => throw new InvalidArgumentException("Unsupported payment webhook provider [{$provider}]."),
         };

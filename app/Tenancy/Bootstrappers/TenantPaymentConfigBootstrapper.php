@@ -57,6 +57,8 @@ class TenantPaymentConfigBootstrapper implements TenancyBootstrapper
                 $existing = [];
             }
 
+            $tenantProvidedWebhookSecret = false;
+
             foreach ($credentials as $key => $value) {
                 if (! is_string($key) || $key === '') {
                     continue;
@@ -67,6 +69,21 @@ class TenantPaymentConfigBootstrapper implements TenancyBootstrapper
                 }
 
                 $existing[$key] = $value;
+
+                if ($key === 'webhook_secret') {
+                    $tenantProvidedWebhookSecret = true;
+                }
+            }
+
+            // When the tenant stores only secret_key, use it for webhook HMAC too
+            // (overrides env webhook_secret for this tenant context).
+            if (
+                ! $tenantProvidedWebhookSecret
+                && isset($existing['secret_key'])
+                && is_string($existing['secret_key'])
+                && $existing['secret_key'] !== ''
+            ) {
+                $existing['webhook_secret'] = $existing['secret_key'];
             }
 
             $this->config->set($driverKey, $existing);

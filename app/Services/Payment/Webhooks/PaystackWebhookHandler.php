@@ -10,6 +10,7 @@ use App\Models\Landlord\PaymentTransaction;
 use App\Models\Landlord\WebhookEvent;
 use App\Services\Landlord\Subscription\SubscriptionService;
 use App\Services\Payment\PaymentManager;
+use App\Services\Payment\PaymentWebhookManager;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,10 +19,16 @@ use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
- * Validates and processes Paystack webhook events idempotently.
+ * Landlord (central) Paystack webhook processor for SaaS subscription payments.
+ *
+ * Tenant storefront/order Paystack webhooks use {@see PaystackPaymentWebhookHandler}
+ * via {@see PaymentWebhookManager}. Signature verification is shared
+ * through {@see Concerns\VerifiesPaystackWebhookSignature}; business logic stays separate.
  */
 class PaystackWebhookHandler
 {
+    use Concerns\VerifiesPaystackWebhookSignature;
+
     /**
      * Create a new Paystack webhook handler.
      */
@@ -171,16 +178,11 @@ class PaystackWebhookHandler
      */
     protected function assertValidSignature(Request $request): void
     {
-        $secret = (string) config('payment.drivers.paystack.webhook_secret');
-
-        if ($secret === '') {
+        if ($this->paystackWebhookSecret() === '') {
             throw new RuntimeException('Paystack webhook secret is not configured.');
         }
 
-        $signature = (string) $request->header('x-paystack-signature', '');
-        $computed = hash_hmac('sha512', $request->getContent(), $secret);
-
-        if ($signature === '' || ! hash_equals($computed, $signature)) {
+        if (! $this->paystackSignatureIsValid($request)) {
             throw new AccessDeniedHttpException('Invalid Paystack webhook signature.');
         }
     }

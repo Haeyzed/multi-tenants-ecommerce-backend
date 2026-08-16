@@ -5,13 +5,20 @@ declare(strict_types=1);
 namespace App\Services\Payment\Webhooks;
 
 use App\Contracts\Payment\PaymentWebhookHandlerInterface;
+use App\Services\Payment\Webhooks\Concerns\VerifiesPaystackWebhookSignature;
 use Illuminate\Http\Request;
 
 /**
- * Paystack charge webhook signature verification and payload extraction.
+ * Tenant order-payment Paystack webhook verifier (signature + payload helpers).
+ *
+ * Landlord subscription webhooks use {@see PaystackWebhookHandler} on the central domain.
+ * Both share {@see VerifiesPaystackWebhookSignature}; they must not be merged — different
+ * databases, idempotency tables, and business side effects.
  */
 class PaystackPaymentWebhookHandler implements PaymentWebhookHandlerInterface
 {
+    use VerifiesPaystackWebhookSignature;
+
     public function provider(): string
     {
         return 'paystack';
@@ -19,16 +26,7 @@ class PaystackPaymentWebhookHandler implements PaymentWebhookHandlerInterface
 
     public function verifySignature(Request $request): bool
     {
-        $secret = (string) config('payment.drivers.paystack.webhook_secret');
-
-        if ($secret === '') {
-            return false;
-        }
-
-        $signature = (string) $request->header('x-paystack-signature', '');
-        $computed = hash_hmac('sha512', $request->getContent(), $secret);
-
-        return $signature !== '' && hash_equals($computed, $signature);
+        return $this->paystackSignatureIsValid($request);
     }
 
     public function eventId(Request $request): ?string
