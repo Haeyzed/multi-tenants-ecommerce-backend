@@ -219,6 +219,95 @@ class RefundService
         });
     }
 
+    /**
+     * Refund an order funded only by gift card / store credit (no gateway payment).
+     *
+     * @param  array{amount?: string|null, reason?: string|null}  $data
+     */
+    public function createPrepaid(Order $order, array $data = []): Refund
+    {
+        return DB::transaction(function () use ($order, $data): Refund {
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            $hasSuccessfulPayment = OrderPayment::query()
+                ->where('order_id', $lockedOrder->id)
+                ->where('status', OrderPaymentRecordStatus::Successful)
+                ->lockForUpdate()
+                ->exists();
+
+            if ($hasSuccessfulPayment) {
+                throw ValidationException::withMessages([
+                    'payment' => 'Orders with a successful gateway payment must be refunded through that payment.',
+                ]);
+            }
+
+            $prepaidTotal = $this->prepaidTotal($lockedOrder);
+
+            if (bccomp($prepaidTotal, '0', 2) <= 0) {
+                throw ValidationException::withMessages([
+                    'order' => 'Order has no prepaid gift card or store credit balance to restore.',
+                ]);
+            }
+
+            $requestedAmount = isset($data['amount']) ? (string) $data['amount'] : $prepaidTotal;
+
+            if (bccomp($requestedAmount, '0', 2) <= 0) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Refund amount must be greater than zero.',
+                ]);
+            }
+
+            if (bccomp($requestedAmount, $prepaidTotal, 2) > 0) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Refund amount exceeds the prepaid balance on this order.',
+                ]);
+            }
+
+            if ($this->prepaidFundingAlreadyRestored($lockedOrder)) {
+                throw ValidationException::withMessages([
+                    'order' => 'Prepaid funding for this order has already been restored.',
+                ]);
+            }
+
+            $isFullRefund = bccomp($requestedAmount, $prepaidTotal, 2) === 0;
+            $reference = 'REF-PREPAID-'.$lockedOrder->order_number.'-'.uniqid();
+
+            $refund = Refund::query()->create([
+                'order_id' => $lockedOrder->id,
+                'order_payment_id' => null,
+                'amount' => $requestedAmount,
+                'currency' => $lockedOrder->currency,
+                'reference' => $reference,
+                'status' => RefundStatus::Completed,
+                'reason' => $data['reason'] ?? null,
+                'processed_at' => now(),
+                'metadata' => [
+                    'type' => 'prepaid_restore',
+                    'full' => $isFullRefund,
+                ],
+            ]);
+
+            event(new RefundInitiated($refund));
+
+            $this->restoreAlternativeFunding($lockedOrder, $requestedAmount);
+
+            if ($isFullRefund) {
+                $lockedOrder->payment_status = OrderPaymentStatus::Refunded;
+                $this->accounting->postRefund($lockedOrder);
+            } else {
+                $lockedOrder->payment_status = OrderPaymentStatus::PartiallyRefunded;
+                $this->accounting->postPartialRefund($lockedOrder, $requestedAmount);
+            }
+            $lockedOrder->save();
+
+            $refund = $refund->fresh(['order', 'payment']) ?? $refund;
+            event(new RefundCompleted($refund));
+
+            return $refund;
+        });
+    }
+
     public function show(Refund $refund): Refund
     {
         return $refund->load(['order', 'payment']);
@@ -243,25 +332,36 @@ class RefundService
      *
      * @return array{gift_card: string, store_credit: string}
      */
-    public function restoreAlternativeFunding(Order $order): array
+    public function restoreAlternativeFunding(Order $order, ?string $maxAmount = null): array
     {
         $restored = ['gift_card' => '0.00', 'store_credit' => '0.00'];
+        $remaining = $maxAmount !== null ? Money::add($maxAmount, '0') : null;
 
         if (Schema::hasColumn('orders', 'gift_card_amount')) {
             $giftCardAmount = Money::add((string) ($order->gift_card_amount ?? '0.00'), '0');
 
             if ($order->gift_card_id !== null && bccomp($giftCardAmount, '0', 2) > 0 && ! $this->giftCardAlreadyRestored($order)) {
-                $giftCard = GiftCard::query()->find($order->gift_card_id);
+                $restoreAmount = $remaining !== null
+                    ? (bccomp($giftCardAmount, $remaining, 2) > 0 ? $remaining : $giftCardAmount)
+                    : $giftCardAmount;
 
-                if ($giftCard !== null) {
-                    $this->giftCards->restoreFromRefund(
-                        $giftCard,
-                        $giftCardAmount,
-                        $order,
-                        'Refund restored for order '.$order->order_number,
-                    );
+                if (bccomp($restoreAmount, '0', 2) > 0) {
+                    $giftCard = GiftCard::query()->find($order->gift_card_id);
 
-                    $restored['gift_card'] = $giftCardAmount;
+                    if ($giftCard !== null) {
+                        $this->giftCards->restoreFromRefund(
+                            $giftCard,
+                            $restoreAmount,
+                            $order,
+                            'Refund restored for order '.$order->order_number,
+                        );
+
+                        $restored['gift_card'] = $restoreAmount;
+
+                        if ($remaining !== null) {
+                            $remaining = Money::sub($remaining, $restoreAmount);
+                        }
+                    }
                 }
             }
         }
@@ -270,8 +370,14 @@ class RefundService
             $storeCreditAmount = Money::add((string) ($order->store_credit_amount ?? '0.00'), '0');
 
             if (bccomp($storeCreditAmount, '0', 2) > 0 && ! $this->storeCreditAlreadyRestored($order)) {
-                $this->storeCredit->restoreForOrder($order, $storeCreditAmount);
-                $restored['store_credit'] = $storeCreditAmount;
+                $restoreAmount = $remaining !== null
+                    ? (bccomp($storeCreditAmount, $remaining, 2) > 0 ? $remaining : $storeCreditAmount)
+                    : $storeCreditAmount;
+
+                if (bccomp($restoreAmount, '0', 2) > 0) {
+                    $this->storeCredit->restoreForOrder($order, $restoreAmount);
+                    $restored['store_credit'] = $restoreAmount;
+                }
             }
         }
 
@@ -286,6 +392,35 @@ class RefundService
         $refund->status = RefundStatus::Failed;
         $refund->metadata = $metadata;
         $refund->save();
+    }
+
+    protected function prepaidTotal(Order $order): string
+    {
+        $giftCardAmount = Schema::hasColumn('orders', 'gift_card_amount')
+            ? Money::add((string) ($order->gift_card_amount ?? '0.00'), '0')
+            : '0.00';
+
+        $storeCreditAmount = Schema::hasColumn('orders', 'store_credit_amount')
+            ? Money::add((string) ($order->store_credit_amount ?? '0.00'), '0')
+            : '0.00';
+
+        return Money::add($giftCardAmount, $storeCreditAmount);
+    }
+
+    protected function prepaidFundingAlreadyRestored(Order $order): bool
+    {
+        $giftCardAmount = Schema::hasColumn('orders', 'gift_card_amount')
+            ? Money::add((string) ($order->gift_card_amount ?? '0.00'), '0')
+            : '0.00';
+
+        $storeCreditAmount = Schema::hasColumn('orders', 'store_credit_amount')
+            ? Money::add((string) ($order->store_credit_amount ?? '0.00'), '0')
+            : '0.00';
+
+        $giftDone = bccomp($giftCardAmount, '0', 2) <= 0 || $this->giftCardAlreadyRestored($order);
+        $creditDone = bccomp($storeCreditAmount, '0', 2) <= 0 || $this->storeCreditAlreadyRestored($order);
+
+        return $giftDone && $creditDone;
     }
 
     protected function giftCardAlreadyRestored(Order $order): bool

@@ -12,6 +12,7 @@ use App\Models\Tenant\SellerCommission;
 use App\Models\Tenant\SellerPayout;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use App\Support\Money;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
@@ -32,6 +33,10 @@ class AccountingService
     {
         $order->loadMissing('items');
 
+        if (bccomp($this->recognizedOrderTotal($order), '0', 2) <= 0) {
+            return null;
+        }
+
         if ($order->items->contains(fn ($item): bool => $item->seller_id !== null)) {
             return $this->postMarketplaceSale($order);
         }
@@ -41,15 +46,15 @@ class AccountingService
             $salesId = $this->accountId('accounting.sales');
             $taxId = $this->accountId('accounting.tax_payable');
 
-            $grandTotal = Money::add((string) $order->grand_total, '0');
+            $recognizedTotal = $this->recognizedOrderTotal($order);
             $taxTotal = Money::add((string) $order->tax_total, '0');
             $shippingTotal = Money::add((string) $order->shipping_total, '0');
-            $salesAmount = Money::sub(Money::sub($grandTotal, $taxTotal), $shippingTotal);
+            $salesAmount = Money::sub(Money::sub($recognizedTotal, $taxTotal), $shippingTotal);
 
             $lines = [
                 [
                     'account_id' => $cashId,
-                    'debit' => $grandTotal,
+                    'debit' => $recognizedTotal,
                     'credit' => '0.00',
                     'description' => 'Cash received for order '.$order->order_number,
                 ],
@@ -114,30 +119,30 @@ class AccountingService
                 $commissionTotal = Money::add($commissionTotal, (string) $commission->commission_amount);
             }
 
-            $grandTotal = Money::add((string) $order->grand_total, '0');
+            $grandTotal = $this->recognizedOrderTotal($order);
             $taxTotal = Money::add((string) $order->tax_total, '0');
             $shippingTotal = Money::add((string) $order->shipping_total, '0');
 
-            $lines = [
+            $lines = array_values(array_filter([
                 [
                     'account_id' => $cashId,
                     'debit' => $grandTotal,
                     'credit' => '0.00',
                     'description' => 'Cash received for marketplace order '.$order->order_number,
                 ],
-                [
+                bccomp($sellerPayableTotal, '0', 2) > 0 ? [
                     'account_id' => $sellerPayableId,
                     'debit' => '0.00',
                     'credit' => $sellerPayableTotal,
                     'description' => 'Seller payable for order '.$order->order_number,
-                ],
-                [
+                ] : null,
+                bccomp($commissionTotal, '0', 2) > 0 ? [
                     'account_id' => $commissionRevenueId,
                     'debit' => '0.00',
                     'credit' => $commissionTotal,
                     'description' => 'Commission revenue for order '.$order->order_number,
-                ],
-            ];
+                ] : null,
+            ]));
 
             if (bccomp($shippingTotal, '0', 2) > 0) {
                 $lines[] = [
@@ -271,12 +276,22 @@ class AccountingService
         return $this->journals->postUnique($order, 'refund', function (JournalEntryService $journals) use ($sale, $order): JournalEntry {
             $sale->loadMissing('lines');
 
-            $lines = $sale->lines->map(fn ($line): array => [
-                'account_id' => $line->account_id,
-                'debit' => (string) $line->credit,
-                'credit' => (string) $line->debit,
-                'description' => $line->description,
-            ])->all();
+            $lines = $sale->lines
+                ->map(fn ($line): array => [
+                    'account_id' => $line->account_id,
+                    'debit' => (string) $line->credit,
+                    'credit' => (string) $line->debit,
+                    'description' => $line->description,
+                ])
+                ->filter(fn (array $line): bool => bccomp($line['debit'], '0', 2) > 0 || bccomp($line['credit'], '0', 2) > 0)
+                ->values()
+                ->all();
+
+            if ($lines === []) {
+                throw ValidationException::withMessages([
+                    'order' => 'Sale journal has no reversible amounts.',
+                ]);
+            }
 
             return $journals->createDraft(
                 reference: 'JE-REFUND-'.$order->order_number,
@@ -301,9 +316,15 @@ class AccountingService
             $salesId = $this->accountId('accounting.sales');
             $taxId = $this->accountId('accounting.tax_payable');
 
-            $grandTotal = Money::add((string) $order->grand_total, '0');
+            $grandTotal = $this->recognizedOrderTotal($order);
             $taxTotal = Money::add((string) $order->tax_total, '0');
             $salesAmount = Money::sub(Money::sub($grandTotal, $taxTotal), Money::add((string) $order->shipping_total, '0'));
+
+            if (bccomp($grandTotal, '0', 2) <= 0) {
+                throw ValidationException::withMessages([
+                    'order' => 'Order has no recognized total for a partial refund journal.',
+                ]);
+            }
 
             $refundSales = Money::percent($salesAmount, bcdiv(bcmul($amount, '100', 4), $grandTotal, 4));
             $refundTax = Money::percent($taxTotal, bcdiv(bcmul($amount, '100', 4), $grandTotal, 4));
@@ -370,5 +391,23 @@ class AccountingService
         }
 
         return (int) $account->id;
+    }
+
+    /**
+     * Economic total for journals: gateway amount due plus prepaid gift card / store credit.
+     */
+    protected function recognizedOrderTotal(Order $order): string
+    {
+        $total = Money::add((string) $order->grand_total, '0');
+
+        if (Schema::hasColumn('orders', 'gift_card_amount')) {
+            $total = Money::add($total, (string) ($order->gift_card_amount ?? '0.00'));
+        }
+
+        if (Schema::hasColumn('orders', 'store_credit_amount')) {
+            $total = Money::add($total, (string) ($order->store_credit_amount ?? '0.00'));
+        }
+
+        return $total;
     }
 }

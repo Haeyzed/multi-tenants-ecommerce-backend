@@ -19,6 +19,7 @@ return new class extends Migration
                 ->constrained('orders')
                 ->restrictOnDelete();
             $table->foreignId('order_payment_id')
+                ->nullable()
                 ->constrained('order_payments')
                 ->restrictOnDelete();
             $table->decimal('amount', 14, 2);

@@ -207,12 +207,31 @@ class DiscountService
 
     /**
      * Record coupon usage after order creation.
+     *
+     * Re-checks usage limits under a row lock so concurrent checkouts cannot exceed caps.
      */
     public function recordCouponUsage(Order $order, DiscountApplicationResult $discount): void
     {
         if ($discount->couponId === null || bccomp($discount->couponDiscountTotal, '0', 2) <= 0) {
             return;
         }
+
+        $coupon = Coupon::query()
+            ->whereKey($discount->couponId)
+            ->lockForUpdate()
+            ->first();
+
+        if ($coupon === null) {
+            return;
+        }
+
+        $customer = $order->customer ?? Customer::query()->find($order->customer_id);
+
+        if ($customer === null) {
+            return;
+        }
+
+        $this->couponService->assertCouponIsRedeemable($coupon, $customer);
 
         CouponUsage::query()->create([
             'coupon_id' => $discount->couponId,
@@ -221,12 +240,7 @@ class DiscountService
             'discount_amount' => $discount->couponDiscountTotal,
         ]);
 
-        $coupon = Coupon::query()->find($discount->couponId);
-        $customer = $order->customer ?? Customer::query()->find($order->customer_id);
-
-        if ($coupon !== null && $customer !== null) {
-            event(new CouponApplied($order, $customer, $coupon, $discount->couponDiscountTotal));
-        }
+        event(new CouponApplied($order, $customer, $coupon, $discount->couponDiscountTotal));
     }
 
     /**

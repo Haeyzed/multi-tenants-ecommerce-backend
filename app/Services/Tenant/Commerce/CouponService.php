@@ -27,7 +27,12 @@ class CouponService
      */
     public function list(array $params = []): LengthAwarePaginator
     {
-        $query = Coupon::query()->with(['products', 'categories'])->latest('id');
+        $with = ['products'];
+        if (Schema::hasTable('categories') && Schema::hasTable('coupon_category')) {
+            $with[] = 'categories';
+        }
+
+        $query = Coupon::query()->with($with)->latest('id');
 
         if (array_key_exists('is_active', $params) && $params['is_active'] !== null) {
             $query->where('is_active', (bool) $params['is_active']);
@@ -52,12 +57,12 @@ class CouponService
         $coupon = Coupon::query()->create($this->attributesFromData($data));
         $this->syncRestrictions($coupon, $data);
 
-        return $coupon->fresh(['products', 'categories']) ?? $coupon;
+        return $this->freshWithRelations($coupon);
     }
 
     public function show(Coupon $coupon): Coupon
     {
-        return $coupon->load(['products', 'categories']);
+        return $this->freshWithRelations($coupon);
     }
 
     /**
@@ -69,7 +74,7 @@ class CouponService
         $coupon->save();
         $this->syncRestrictions($coupon, $data);
 
-        return $coupon->fresh(['products', 'categories']) ?? $coupon;
+        return $this->freshWithRelations($coupon);
     }
 
     public function destroy(Coupon $coupon): void
@@ -113,6 +118,13 @@ class CouponService
                 'coupon_code' => 'The coupon code is invalid.',
             ]);
         }
+
+        // Serialize usage-limit checks with redeem recording inside checkout transactions.
+        $coupon = Coupon::query()
+            ->with($with)
+            ->whereKey($coupon->getKey())
+            ->lockForUpdate()
+            ->first() ?? $coupon;
 
         $this->assertCouponIsRedeemable($coupon, $customer);
 
@@ -213,8 +225,16 @@ class CouponService
      */
     public function eligibleCartItems(Coupon $coupon, Cart $cart): Collection
     {
-        $productIds = $coupon->products->pluck('id')->all();
-        $categoryIds = $coupon->categories->pluck('id')->all();
+        $productIds = $coupon->relationLoaded('products')
+            ? $coupon->products->pluck('id')->all()
+            : $coupon->products()->pluck('products.id')->all();
+
+        $categoryIds = [];
+        if (Schema::hasTable('categories') && Schema::hasTable('coupon_category')) {
+            $categoryIds = $coupon->relationLoaded('categories')
+                ? $coupon->categories->pluck('id')->all()
+                : $coupon->categories()->pluck('categories.id')->all();
+        }
 
         if ($productIds === [] && $categoryIds === []) {
             return $cart->items;
@@ -324,7 +344,7 @@ class CouponService
             $coupon->products()->sync($data['product_ids'] ?? []);
         }
 
-        if (array_key_exists('category_ids', $data)) {
+        if (array_key_exists('category_ids', $data) && Schema::hasTable('categories') && Schema::hasTable('coupon_category')) {
             $coupon->categories()->sync($data['category_ids'] ?? []);
         }
     }
@@ -335,5 +355,16 @@ class CouponService
     protected function perPage(array $params): int
     {
         return max(1, min((int) ($params['per_page'] ?? 15), 100));
+    }
+
+    protected function freshWithRelations(Coupon $coupon): Coupon
+    {
+        $with = ['products'];
+
+        if (Schema::hasTable('categories') && Schema::hasTable('coupon_category')) {
+            $with[] = 'categories';
+        }
+
+        return $coupon->fresh($with) ?? $coupon->load($with);
     }
 }

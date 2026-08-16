@@ -31,6 +31,7 @@ use App\Services\Tenant\Marketplace\CommissionService;
 use App\Services\Tenant\Marketplace\SellerOrderService;
 use App\Services\Tenant\Tax\TaxService;
 use App\Support\Money;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -241,7 +242,6 @@ class CheckoutService
             ]);
 
             $orderAttributes = [
-                'order_number' => $this->generateOrderNumber(),
                 'customer_id' => $customer->id,
                 'currency' => $cart->currency,
                 'status' => $isFullyPrepaid ? OrderStatus::Confirmed : OrderStatus::Pending,
@@ -291,7 +291,7 @@ class CheckoutService
                     : null;
             }
 
-            $order = Order::query()->create($orderAttributes);
+            $order = $this->createOrderWithUniqueNumber($orderAttributes);
 
             $this->applyPrepaidTenders($customer, $order, $prepaid);
 
@@ -482,6 +482,33 @@ class CheckoutService
         ];
     }
 
+    /**
+     * Persist an order, regenerating the order number when a unique collision occurs.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function createOrderWithUniqueNumber(array $attributes): Order
+    {
+        $attempts = 0;
+
+        while ($attempts < 8) {
+            $attempts++;
+            $attributes['order_number'] = $this->generateOrderNumber();
+
+            try {
+                return Order::query()->create($attributes);
+            } catch (UniqueConstraintViolationException $exception) {
+                if ($attempts >= 8) {
+                    throw $exception;
+                }
+            }
+        }
+
+        throw ValidationException::withMessages([
+            'order' => 'Unable to allocate a unique order number. Please try again.',
+        ]);
+    }
+
     protected function generateOrderNumber(): string
     {
         $prefix = 'ORD-'.now()->format('Ymd').'-';
@@ -489,6 +516,7 @@ class CheckoutService
         $latest = Order::query()
             ->where('order_number', 'like', $prefix.'%')
             ->orderByDesc('order_number')
+            ->lockForUpdate()
             ->value('order_number');
 
         $sequence = 1;

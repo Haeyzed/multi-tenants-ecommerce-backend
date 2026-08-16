@@ -377,16 +377,21 @@ class OrderReturnService
             ->latest('id')
             ->first();
 
-        if ($payment === null || $return->order === null) {
+        if ($return->order === null) {
             throw ValidationException::withMessages([
-                'payment' => 'No successful payment found for refund.',
+                'order' => 'Return order is missing.',
             ]);
         }
 
-        $refund = $this->refunds->create($return->order, $payment, [
-            'amount' => $amount,
-            'reason' => 'Return '.$return->return_number,
-        ]);
+        $refund = $payment === null
+            ? $this->refunds->createPrepaid($return->order, [
+                'amount' => $amount,
+                'reason' => 'Return '.$return->return_number,
+            ])
+            : $this->refunds->create($return->order, $payment, [
+                'amount' => $amount,
+                'reason' => 'Return '.$return->return_number,
+            ]);
 
         $return->refund_id = $refund->id;
         $return->save();
