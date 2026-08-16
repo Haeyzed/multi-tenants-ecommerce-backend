@@ -19,5 +19,6 @@ readonly class PaymentRefundResult
         public ?string $currency = null,
         public array $raw = [],
         public ?string $message = null,
+        public bool $ambiguous = false,
     ) {}
 }

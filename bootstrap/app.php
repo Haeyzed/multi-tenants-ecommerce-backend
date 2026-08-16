@@ -7,6 +7,7 @@ use App\Http\Middleware\SetCustomerGuard;
 use App\Http\Middleware\SetLandlordGuard;
 use App\Http\Middleware\SetTenantGuard;
 use App\Jobs\MarkAbandonedCartsJob;
+use App\Jobs\ReconcileProcessingRefundsJob;
 use App\Models\Landlord\Tenant;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -30,6 +31,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 MarkAbandonedCartsJob::dispatch($tenant->getTenantKey());
             });
         })->hourly()->name('mark-abandoned-carts')->withoutOverlapping();
+
+        $schedule->call(function (): void {
+            Tenant::query()->cursor()->each(function (Tenant $tenant): void {
+                ReconcileProcessingRefundsJob::dispatch($tenant->getTenantKey());
+            });
+        })->everyFifteenMinutes()->name('reconcile-processing-refunds')->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

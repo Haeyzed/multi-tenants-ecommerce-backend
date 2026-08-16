@@ -202,6 +202,68 @@ test('ambiguous gateway connection failures leave refund processing and block re
     ]))->toThrow(ValidationException::class);
 });
 
+test('ambiguous gateway http 5xx leaves refund processing', function (): void {
+    $fixture = paidOrderFixture();
+    $order = $fixture['payment']->order;
+    $payment = $fixture['payment'];
+
+    $mock = Mockery::mock(PaystackGateway::class);
+    $mock->shouldReceive('refundPaymentDetailed')
+        ->once()
+        ->andReturn(new PaymentRefundResult(
+            successful: false,
+            message: 'Upstream timeout',
+            ambiguous: true,
+        ));
+    app()->instance(PaystackGateway::class, $mock);
+
+    expect(fn () => app(RefundService::class)->create($order, $payment))
+        ->toThrow(ValidationException::class);
+
+    $refund = Refund::query()->where('order_id', $order->id)->latest('id')->first();
+
+    expect($refund->status)->toBe(RefundStatus::Processing)
+        ->and(data_get($refund->metadata, 'pending_reconciliation'))->toBeTrue();
+});
+
+test('reconcile completes a processing refund from provider lookup', function (): void {
+    $fixture = paidOrderFixture();
+    $order = $fixture['payment']->order;
+    $payment = $fixture['payment'];
+
+    $refund = Refund::query()->create([
+        'order_id' => $order->id,
+        'order_payment_id' => $payment->id,
+        'amount' => $payment->amount,
+        'currency' => $payment->currency,
+        'reference' => 'REF-RECONCILE-1',
+        'status' => RefundStatus::Processing,
+        'metadata' => [
+            'restore_prepaid' => true,
+            'is_full_refund' => true,
+            'pending_reconciliation' => true,
+        ],
+    ]);
+
+    $mock = Mockery::mock(PaystackGateway::class);
+    $mock->shouldReceive('listRefundsForTransaction')
+        ->once()
+        ->with('1234567890')
+        ->andReturn([[
+            'id' => 777,
+            'amount' => (int) bcmul((string) $payment->amount, '100', 0),
+            'currency' => 'NGN',
+            'status' => 'processed',
+        ]]);
+    app()->instance(PaystackGateway::class, $mock);
+
+    $result = app(RefundService::class)->reconcile($refund);
+
+    expect($result->status)->toBe(RefundStatus::Completed)
+        ->and($result->provider_refund_id)->toBe('777')
+        ->and($order->fresh()->payment_status)->toBe(OrderPaymentStatus::Refunded);
+});
+
 test('paystack gateway refund verifies response payload', function (): void {
     Http::fake([
         'api.paystack.co/refund' => Http::response([

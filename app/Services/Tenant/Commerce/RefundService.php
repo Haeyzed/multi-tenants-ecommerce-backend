@@ -27,6 +27,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -128,6 +129,10 @@ class RefundService
                 'reference' => $reference,
                 'status' => RefundStatus::Processing,
                 'reason' => $data['reason'] ?? null,
+                'metadata' => [
+                    'restore_prepaid' => (bool) ($data['restore_prepaid'] ?? true),
+                    'is_full_refund' => $isFullRefund,
+                ],
             ]);
 
             event(new RefundInitiated($refund));
@@ -155,16 +160,7 @@ class RefundService
                     successful: $gateway->refundPayment($providerTransactionId, $requestedAmount),
                 );
         } catch (ConnectionException $exception) {
-            // Ambiguous: provider may have accepted the refund. Keep Processing so
-            // refundableAmount() blocks a blind retry that could double-refund.
-            $this->markRefundPendingReconciliation($refund, [
-                'exception' => $exception->getMessage(),
-            ]);
-
-            Log::warning('Refund left processing after ambiguous gateway failure', [
-                'refund_id' => $refund->id,
-                'order_id' => $order->id,
-                'payment_id' => $payment->id,
+            $this->leaveRefundPendingReconciliation($refund, $order, $payment, [
                 'exception' => $exception->getMessage(),
             ]);
 
@@ -179,6 +175,17 @@ class RefundService
             throw $exception;
         }
 
+        if ($result->ambiguous) {
+            $this->leaveRefundPendingReconciliation($refund, $order, $payment, [
+                'gateway' => $result->raw,
+                'message' => $result->message,
+            ]);
+
+            throw ValidationException::withMessages([
+                'refund' => 'Refund is pending reconciliation with the payment provider. Do not retry until status is confirmed.',
+            ]);
+        }
+
         if (! $result->successful) {
             $this->markRefundFailed($refund, [
                 'gateway' => $result->raw,
@@ -190,46 +197,100 @@ class RefundService
             ]);
         }
 
-        return DB::transaction(function () use ($refund, $payment, $order, $requestedAmount, $isFullRefund, $restorePrepaid, $result): Refund {
-            /** @var Refund $lockedRefund */
-            $lockedRefund = Refund::query()->whereKey($refund->getKey())->lockForUpdate()->firstOrFail();
+        return $this->finalizeSuccessfulRefund(
+            $refund,
+            $payment,
+            $order,
+            $requestedAmount,
+            $isFullRefund,
+            $restorePrepaid,
+            $result,
+        );
+    }
 
-            if ($lockedRefund->status === RefundStatus::Completed) {
-                return $lockedRefund->load(['order', 'payment']);
-            }
+    /**
+     * Reconcile a Processing refund against the payment provider.
+     */
+    public function reconcile(Refund $refund): Refund
+    {
+        if ($refund->status !== RefundStatus::Processing) {
+            return $refund->load(['order', 'payment']);
+        }
 
-            /** @var OrderPayment $lockedPayment */
-            $lockedPayment = OrderPayment::query()
-                ->whereKey($payment->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
+        $payment = $refund->payment ?? OrderPayment::query()->find($refund->order_payment_id);
+        $order = $refund->order ?? Order::query()->findOrFail($refund->order_id);
 
-            /** @var Order $lockedOrder */
-            $lockedOrder = Order::query()
-                ->whereKey($order->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
+        if ($payment === null) {
+            throw ValidationException::withMessages([
+                'refund' => 'Processing refund has no linked payment to reconcile.',
+            ]);
+        }
 
-            $lockedRefund->status = RefundStatus::Completed;
-            $lockedRefund->provider_refund_id = $result->providerRefundId;
-            $lockedRefund->processed_at = now();
-            $lockedRefund->metadata = ['gateway' => $result->raw];
-            $lockedRefund->save();
+        $providerTransactionId = $payment->provider_transaction_id;
 
-            if ($isFullRefund && $restorePrepaid) {
-                $this->accounting->postRefund($lockedOrder);
-                $this->restoreAlternativeFunding($lockedOrder);
-            } else {
-                $this->accounting->postPartialRefund($lockedOrder, $requestedAmount, $lockedRefund);
-            }
+        if ($providerTransactionId === null || $providerTransactionId === '') {
+            throw ValidationException::withMessages([
+                'payment' => 'Payment has no provider transaction id for reconciliation.',
+            ]);
+        }
 
-            $this->syncOrderPaymentStatus($lockedOrder, $lockedPayment);
+        $gateway = $this->paymentManager->driver($payment->gateway);
 
-            $lockedRefund = $lockedRefund->fresh(['order', 'payment']) ?? $lockedRefund;
-            event(new RefundCompleted($lockedRefund));
+        if (! $gateway instanceof PaystackGateway) {
+            throw ValidationException::withMessages([
+                'refund' => 'Automatic refund reconciliation is only supported for Paystack.',
+            ]);
+        }
 
-            return $lockedRefund;
-        });
+        $providerRefunds = $gateway->listRefundsForTransaction($providerTransactionId);
+        $match = $this->matchProviderRefund($refund, $payment, $providerRefunds);
+
+        if ($match === null) {
+            Log::info('Refund reconciliation found no matching provider refund yet', [
+                'refund_id' => $refund->id,
+                'payment_id' => $payment->id,
+            ]);
+
+            return $refund->fresh(['order', 'payment']) ?? $refund;
+        }
+
+        $status = Str::lower((string) ($match['status'] ?? ''));
+
+        if (in_array($status, ['failed', 'rejected'], true)) {
+            $this->markRefundFailed($refund, [
+                'gateway' => $match,
+                'reconciled' => true,
+            ]);
+
+            return $refund->fresh(['order', 'payment']) ?? $refund;
+        }
+
+        if (! in_array($status, ['processed', 'pending', 'processing', 'success', ''], true) && $status !== '') {
+            return $refund->fresh(['order', 'payment']) ?? $refund;
+        }
+
+        $amount = (string) $refund->amount;
+        $isFullRefund = (bool) data_get($refund->metadata, 'is_full_refund', false);
+        $restorePrepaid = (bool) data_get($refund->metadata, 'restore_prepaid', true);
+
+        $result = new PaymentRefundResult(
+            successful: true,
+            providerRefundId: isset($match['id']) ? (string) $match['id'] : null,
+            amount: $amount,
+            currency: (string) $refund->currency,
+            raw: $match,
+            message: 'Reconciled from provider',
+        );
+
+        return $this->finalizeSuccessfulRefund(
+            $refund,
+            $payment,
+            $order,
+            $amount,
+            $isFullRefund,
+            $restorePrepaid,
+            $result,
+        );
     }
 
     /**
@@ -445,8 +506,29 @@ class RefundService
     protected function markRefundFailed(Refund $refund, array $metadata): void
     {
         $refund->status = RefundStatus::Failed;
-        $refund->metadata = $metadata;
+        $refund->metadata = array_merge($refund->metadata ?? [], $metadata);
         $refund->save();
+    }
+
+    /**
+     * Persist reconciliation metadata while leaving the refund in Processing.
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    protected function leaveRefundPendingReconciliation(
+        Refund $refund,
+        Order $order,
+        OrderPayment $payment,
+        array $metadata,
+    ): void {
+        $this->markRefundPendingReconciliation($refund, $metadata);
+
+        Log::warning('Refund left processing after ambiguous gateway failure', [
+            'refund_id' => $refund->id,
+            'order_id' => $order->id,
+            'payment_id' => $payment->id,
+            'metadata' => $metadata,
+        ]);
     }
 
     /**
@@ -461,6 +543,99 @@ class RefundService
             'at' => now()->toIso8601String(),
         ]);
         $refund->save();
+    }
+
+    protected function finalizeSuccessfulRefund(
+        Refund $refund,
+        OrderPayment $payment,
+        Order $order,
+        string $requestedAmount,
+        bool $isFullRefund,
+        bool $restorePrepaid,
+        PaymentRefundResult $result,
+    ): Refund {
+        return DB::transaction(function () use ($refund, $payment, $order, $requestedAmount, $isFullRefund, $restorePrepaid, $result): Refund {
+            /** @var Refund $lockedRefund */
+            $lockedRefund = Refund::query()->whereKey($refund->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($lockedRefund->status === RefundStatus::Completed) {
+                return $lockedRefund->load(['order', 'payment']);
+            }
+
+            /** @var OrderPayment $lockedPayment */
+            $lockedPayment = OrderPayment::query()
+                ->whereKey($payment->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            /** @var Order $lockedOrder */
+            $lockedOrder = Order::query()
+                ->whereKey($order->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $lockedRefund->status = RefundStatus::Completed;
+            $lockedRefund->provider_refund_id = $result->providerRefundId;
+            $lockedRefund->processed_at = now();
+            $lockedRefund->metadata = array_merge($lockedRefund->metadata ?? [], [
+                'gateway' => $result->raw,
+            ]);
+            $lockedRefund->save();
+
+            if ($isFullRefund && $restorePrepaid) {
+                $this->accounting->postRefund($lockedOrder);
+                $this->restoreAlternativeFunding($lockedOrder);
+            } else {
+                $this->accounting->postPartialRefund($lockedOrder, $requestedAmount, $lockedRefund);
+            }
+
+            $this->syncOrderPaymentStatus($lockedOrder, $lockedPayment);
+
+            $lockedRefund = $lockedRefund->fresh(['order', 'payment']) ?? $lockedRefund;
+            event(new RefundCompleted($lockedRefund));
+
+            return $lockedRefund;
+        });
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $providerRefunds
+     * @return array<string, mixed>|null
+     */
+    protected function matchProviderRefund(Refund $refund, OrderPayment $payment, array $providerRefunds): ?array
+    {
+        $usedIds = Refund::query()
+            ->where('order_payment_id', $payment->id)
+            ->where('status', RefundStatus::Completed)
+            ->whereNotNull('provider_refund_id')
+            ->pluck('provider_refund_id')
+            ->map(fn ($id): string => (string) $id)
+            ->all();
+
+        $targetMinor = (int) bcmul((string) $refund->amount, '100', 0);
+        $currency = Str::upper((string) $refund->currency);
+
+        foreach (array_reverse($providerRefunds) as $providerRefund) {
+            $providerId = isset($providerRefund['id']) ? (string) $providerRefund['id'] : null;
+
+            if ($providerId !== null && in_array($providerId, $usedIds, true)) {
+                continue;
+            }
+
+            $providerCurrency = Str::upper((string) ($providerRefund['currency'] ?? $currency));
+
+            if ($providerCurrency !== $currency) {
+                continue;
+            }
+
+            if (isset($providerRefund['amount']) && (int) $providerRefund['amount'] !== $targetMinor) {
+                continue;
+            }
+
+            return $providerRefund;
+        }
+
+        return null;
     }
 
     protected function prepaidTotal(Order $order): string

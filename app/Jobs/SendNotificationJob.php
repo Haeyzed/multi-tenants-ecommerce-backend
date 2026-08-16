@@ -79,6 +79,18 @@ class SendNotificationJob implements ShouldQueue
             return;
         }
 
+        // Queued workers must not touch the central connection. Synchronous
+        // handle() (tests / same-request) may run on the current connection.
+        if ($this->job !== null) {
+            Log::warning('SendNotificationJob: tenant id is required for queued delivery', [
+                'notification_key' => $this->notificationKey,
+                'notifiable_type' => $this->notifiableType,
+                'notifiable_id' => $this->notifiableId,
+            ]);
+
+            return;
+        }
+
         $callback();
     }
 }

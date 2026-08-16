@@ -173,10 +173,26 @@ class PaystackGateway implements PaymentGateway
                 ->throw()
                 ->json();
         } catch (RequestException $exception) {
+            $status = $exception->response?->status();
+
+            // 5xx / empty response: Paystack may have created the refund. Callers must
+            // leave the local refund in Processing and reconcile later.
+            if ($status === null || $status >= 500) {
+                return new PaymentRefundResult(
+                    successful: false,
+                    message: $exception->response?->json('message', $exception->getMessage()),
+                    raw: [
+                        'exception' => $exception->getMessage(),
+                        'status' => $status,
+                    ],
+                    ambiguous: true,
+                );
+            }
+
             return new PaymentRefundResult(
                 successful: false,
                 message: $exception->response?->json('message', $exception->getMessage()),
-                raw: ['exception' => $exception->getMessage()],
+                raw: ['exception' => $exception->getMessage(), 'status' => $status],
             );
         }
 
@@ -197,6 +213,48 @@ class PaystackGateway implements PaymentGateway
             raw: $response,
             message: isset($response['message']) ? (string) $response['message'] : null,
         );
+    }
+
+    /**
+     * List Paystack refunds for a provider transaction id.
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws RuntimeException
+     */
+    public function listRefundsForTransaction(string $providerTransactionId): array
+    {
+        try {
+            $response = $this->client()
+                ->get('/refund', ['transaction' => $providerTransactionId])
+                ->throw()
+                ->json();
+        } catch (RequestException $exception) {
+            throw new RuntimeException(
+                'Paystack refund lookup failed: '.$exception->response?->json('message', $exception->getMessage()),
+                previous: $exception,
+            );
+        }
+
+        /** @var array{status?: bool, message?: string, data?: list<array<string, mixed>>|array<string, mixed>} $response */
+        if (! ($response['status'] ?? false)) {
+            throw new RuntimeException('Paystack refund lookup failed: '.($response['message'] ?? 'Unknown error.'));
+        }
+
+        $data = $response['data'] ?? [];
+
+        if ($data === []) {
+            return [];
+        }
+
+        // Paystack may return a single object or a list.
+        if (array_is_list($data)) {
+            /** @var list<array<string, mixed>> $data */
+            return $data;
+        }
+
+        /** @var array<string, mixed> $data */
+        return [$data];
     }
 
     /**

@@ -14,6 +14,8 @@ use App\Http\Requests\Tenant\Commerce\StoreGiftCardRequest;
 use App\Http\Resources\Tenant\Commerce\OrderResource;
 use App\Jobs\GenerateInvoicePdfJob;
 use App\Jobs\MarkAbandonedCartsJob;
+use App\Jobs\ReconcileProcessingRefundsJob;
+use App\Jobs\SendNotificationJob;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerAddress;
 use App\Models\Tenant\JournalEntry;
@@ -201,6 +203,16 @@ test('tenant commerce jobs exit safely when tenant id is missing', function (): 
 
     expect(fn () => (new GenerateInvoicePdfJob(1, null))->handle())
         ->not->toThrow(Throwable::class);
+
+    expect(fn () => (new ReconcileProcessingRefundsJob(null))->handle(app(RefundService::class)))
+        ->not->toThrow(Throwable::class);
+
+    expect(fn () => (new SendNotificationJob(
+        notifiableType: Customer::class,
+        notifiableId: 1,
+        notificationKey: 'order.paid',
+        tenantId: null,
+    ))->handle(app(NotificationService::class)))->not->toThrow(Throwable::class);
 });
 
 test('refundAllocated draws gateway balance before prepaid remainder', function (): void {
