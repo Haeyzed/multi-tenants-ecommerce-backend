@@ -60,6 +60,7 @@ function productSearchMigrationFiles(): array
         '2026_08_15_060005_create_orders_table.php',
         '2026_08_15_060006_create_order_items_table.php',
         '2026_08_15_070001_create_sellers_table.php',
+        '2026_08_16_160758_make_sellers_authenticatable_table.php',
         '2026_08_15_070003_create_seller_offers_table.php',
     ];
 }

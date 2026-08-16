@@ -4,36 +4,48 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
+use App\Models\Tenant\Seller;
 use App\Models\Tenant\SellerCommission;
 use App\Models\Tenant\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
  * Authorization for marketplace commissions.
  */
 class SellerCommissionPolicy
 {
-    public function viewAny(User $user): bool
+    public function viewAny(Authenticatable $actor): bool
     {
-        return $user->can('commissions.view');
-    }
-
-    public function view(User $user, SellerCommission $commission): bool
-    {
-        if ($user->isSellerUser()) {
-            return (int) $user->seller_id === (int) $commission->seller_id
-                && $user->can('commissions.view');
+        if ($actor instanceof Seller) {
+            return true;
         }
 
-        return $user->can('commissions.view');
+        return $actor instanceof User && $actor->can('commissions.view');
     }
 
-    public function manage(User $user, SellerCommission $commission): bool
+    public function view(Authenticatable $actor, SellerCommission $commission): bool
     {
-        if ($user->isSellerUser()) {
-            return (int) $user->seller_id === (int) $commission->seller_id
-                && $user->can('commissions.manage');
+        if ($actor instanceof Seller) {
+            return (int) $actor->id === (int) $commission->seller_id;
         }
 
-        return $user->can('commissions.manage');
+        if ($actor instanceof User) {
+            return $actor->can('commissions.view');
+        }
+
+        return false;
+    }
+
+    public function manage(Authenticatable $actor, SellerCommission $commission): bool
+    {
+        if ($actor instanceof Seller) {
+            return (int) $actor->id === (int) $commission->seller_id;
+        }
+
+        if ($actor instanceof User) {
+            return $actor->can('commissions.manage');
+        }
+
+        return false;
     }
 }

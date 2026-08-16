@@ -15,6 +15,10 @@ use App\Http\Controllers\Tenant\Catalog\ProductOptionController;
 use App\Http\Controllers\Tenant\Catalog\ProductTagController;
 use App\Http\Controllers\Tenant\Catalog\SeoController;
 use App\Http\Controllers\Tenant\Category\CategoryController;
+use App\Http\Controllers\Tenant\Cms\BlogCategoryController;
+use App\Http\Controllers\Tenant\Cms\BlogPostController;
+use App\Http\Controllers\Tenant\Cms\PageController as CmsPageController;
+use App\Http\Controllers\Tenant\Cms\PublicCmsController;
 use App\Http\Controllers\Tenant\Commerce\CartController;
 use App\Http\Controllers\Tenant\Commerce\CheckoutController;
 use App\Http\Controllers\Tenant\Commerce\CouponController;
@@ -48,6 +52,8 @@ use App\Http\Controllers\Tenant\Driver\DriverController;
 use App\Http\Controllers\Tenant\Driver\DriverDeliveryController;
 use App\Http\Controllers\Tenant\Driver\DriverLocationController;
 use App\Http\Controllers\Tenant\HomeController;
+use App\Http\Controllers\Tenant\HR\DepartmentController;
+use App\Http\Controllers\Tenant\HR\EmployeeController;
 use App\Http\Controllers\Tenant\Integration\IntegrationTokenController;
 use App\Http\Controllers\Tenant\Inventory\InventoryController;
 use App\Http\Controllers\Tenant\Loyalty\CustomerLoyaltyController;
@@ -59,7 +65,6 @@ use App\Http\Controllers\Tenant\Marketplace\SellerGroupController;
 use App\Http\Controllers\Tenant\Marketplace\SellerOfferController;
 use App\Http\Controllers\Tenant\Marketplace\SellerOrderController;
 use App\Http\Controllers\Tenant\Marketplace\SellerPayoutController;
-use App\Http\Controllers\Tenant\Marketplace\SellerProfileController;
 use App\Http\Controllers\Tenant\Media\MediaController;
 use App\Http\Controllers\Tenant\Notification\DeviceController as NotificationDeviceController;
 use App\Http\Controllers\Tenant\Notification\InboxController as NotificationInboxController;
@@ -81,6 +86,7 @@ use App\Http\Controllers\Tenant\Product\ProductSpecificationController;
 use App\Http\Controllers\Tenant\Product\ProductVariantController;
 use App\Http\Controllers\Tenant\RBAC\PermissionController;
 use App\Http\Controllers\Tenant\RBAC\RoleController;
+use App\Http\Controllers\Tenant\Seller\AuthController as SellerAuthController;
 use App\Http\Controllers\Tenant\Settings\SettingsController;
 use App\Http\Controllers\Tenant\Shipping\CarrierWebhookController;
 use App\Http\Controllers\Tenant\Shipping\ShipmentController;
@@ -128,6 +134,13 @@ Route::middleware([
             Route::get('categories', [StorefrontCategoryController::class, 'index'])->name('categories.index');
             Route::get('categories/tree', [StorefrontCategoryController::class, 'tree'])->name('categories.tree');
             Route::get('categories/{category}', [StorefrontCategoryController::class, 'show'])->name('categories.show');
+        });
+
+        Route::prefix('public')->name('tenant.public.')->group(function (): void {
+            Route::get('pages/{slug}', [PublicCmsController::class, 'showPage'])->name('pages.show');
+            Route::get('blog/posts', [PublicCmsController::class, 'indexPosts'])->name('blog.posts.index');
+            Route::get('blog/posts/{slug}', [PublicCmsController::class, 'showPost'])->name('blog.posts.show');
+            Route::get('blog/categories', [PublicCmsController::class, 'indexCategories'])->name('blog.categories.index');
         });
 
         Route::prefix('customer')->middleware('customer.guard')->name('customer.')->group(function (): void {
@@ -197,6 +210,22 @@ Route::middleware([
                 Route::post('deliveries/{delivery}/failed', [DriverDeliveryController::class, 'markFailed'])->whereNumber('delivery')->name('deliveries.failed');
 
                 Route::post('locations', [DriverLocationController::class, 'store'])->middleware('throttle:60,1')->name('locations.store');
+            });
+        });
+
+        Route::prefix('seller')->middleware(['marketplace.enabled', 'seller.guard'])->name('seller.')->group(function (): void {
+            Route::middleware('throttle:6,1')->group(function (): void {
+                Route::post('register', [SellerAuthController::class, 'register'])->name('register');
+                Route::post('login', [SellerAuthController::class, 'login'])->name('login');
+                Route::post('forgot-password', [SellerAuthController::class, 'forgotPassword'])->name('forgot-password');
+                Route::post('reset-password', [SellerAuthController::class, 'resetPassword'])->name('reset-password');
+            });
+
+            Route::middleware('auth:sanctum')->group(function (): void {
+                Route::post('logout', [SellerAuthController::class, 'logout'])->name('logout');
+                Route::get('me', [SellerAuthController::class, 'me'])->name('me');
+                Route::match(['put', 'patch'], 'profile', [SellerAuthController::class, 'updateProfile'])->name('profile');
+                Route::post('change-password', [SellerAuthController::class, 'changePassword'])->name('change-password');
             });
         });
 
@@ -581,6 +610,38 @@ Route::middleware([
                 Route::get('settings/{domain}', [SettingsController::class, 'show'])->middleware('permission:settings.view')->name('tenant.settings.show');
                 Route::match(['put', 'patch'], 'settings/{domain}', [SettingsController::class, 'update'])->middleware('permission:settings.update')->name('tenant.settings.update');
 
+                Route::get('departments/options', [DepartmentController::class, 'options'])->middleware('permission:hr.view|hr.departments.manage')->name('tenant.departments.options');
+                Route::get('departments', [DepartmentController::class, 'index'])->middleware('permission:hr.view|hr.departments.manage')->name('tenant.departments.index');
+                Route::post('departments', [DepartmentController::class, 'store'])->middleware('permission:hr.departments.manage')->name('tenant.departments.store');
+                Route::get('departments/{department}', [DepartmentController::class, 'show'])->middleware('permission:hr.view|hr.departments.manage')->whereNumber('department')->name('tenant.departments.show');
+                Route::match(['put', 'patch'], 'departments/{department}', [DepartmentController::class, 'update'])->middleware('permission:hr.departments.manage')->whereNumber('department')->name('tenant.departments.update');
+                Route::delete('departments/{department}', [DepartmentController::class, 'destroy'])->middleware('permission:hr.departments.manage')->whereNumber('department')->name('tenant.departments.destroy');
+
+                Route::get('employees', [EmployeeController::class, 'index'])->middleware('permission:hr.employees.view|hr.view')->name('tenant.employees.index');
+                Route::post('employees', [EmployeeController::class, 'store'])->middleware('permission:hr.employees.create')->name('tenant.employees.store');
+                Route::get('employees/{employee}', [EmployeeController::class, 'show'])->middleware('permission:hr.employees.view|hr.view')->whereNumber('employee')->name('tenant.employees.show');
+                Route::match(['put', 'patch'], 'employees/{employee}', [EmployeeController::class, 'update'])->middleware('permission:hr.employees.update')->whereNumber('employee')->name('tenant.employees.update');
+                Route::delete('employees/{employee}', [EmployeeController::class, 'destroy'])->middleware('permission:hr.employees.delete')->whereNumber('employee')->name('tenant.employees.destroy');
+
+                Route::get('blog-categories/options', [BlogCategoryController::class, 'options'])->middleware('permission:cms.view|cms.manage')->name('tenant.blog-categories.options');
+                Route::get('blog-categories', [BlogCategoryController::class, 'index'])->middleware('permission:cms.view|cms.manage')->name('tenant.blog-categories.index');
+                Route::post('blog-categories', [BlogCategoryController::class, 'store'])->middleware('permission:cms.manage')->name('tenant.blog-categories.store');
+                Route::get('blog-categories/{blog_category}', [BlogCategoryController::class, 'show'])->middleware('permission:cms.view|cms.manage')->whereNumber('blog_category')->name('tenant.blog-categories.show');
+                Route::match(['put', 'patch'], 'blog-categories/{blog_category}', [BlogCategoryController::class, 'update'])->middleware('permission:cms.manage')->whereNumber('blog_category')->name('tenant.blog-categories.update');
+                Route::delete('blog-categories/{blog_category}', [BlogCategoryController::class, 'destroy'])->middleware('permission:cms.manage')->whereNumber('blog_category')->name('tenant.blog-categories.destroy');
+
+                Route::get('blog-posts', [BlogPostController::class, 'index'])->middleware('permission:cms.view|cms.manage')->name('tenant.blog-posts.index');
+                Route::post('blog-posts', [BlogPostController::class, 'store'])->middleware('permission:cms.manage')->name('tenant.blog-posts.store');
+                Route::get('blog-posts/{blog_post}', [BlogPostController::class, 'show'])->middleware('permission:cms.view|cms.manage')->whereNumber('blog_post')->name('tenant.blog-posts.show');
+                Route::match(['put', 'patch'], 'blog-posts/{blog_post}', [BlogPostController::class, 'update'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('tenant.blog-posts.update');
+                Route::delete('blog-posts/{blog_post}', [BlogPostController::class, 'destroy'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('tenant.blog-posts.destroy');
+
+                Route::get('pages', [CmsPageController::class, 'index'])->middleware('permission:cms.view|cms.manage')->name('tenant.pages.index');
+                Route::post('pages', [CmsPageController::class, 'store'])->middleware('permission:cms.manage')->name('tenant.pages.store');
+                Route::get('pages/{page}', [CmsPageController::class, 'show'])->middleware('permission:cms.view|cms.manage')->whereNumber('page')->name('tenant.pages.show');
+                Route::match(['put', 'patch'], 'pages/{page}', [CmsPageController::class, 'update'])->middleware('permission:cms.manage')->whereNumber('page')->name('tenant.pages.update');
+                Route::delete('pages/{page}', [CmsPageController::class, 'destroy'])->middleware('permission:cms.manage')->whereNumber('page')->name('tenant.pages.destroy');
+
                 Route::get('deliveries', [DeliveryController::class, 'index'])->middleware('permission:deliveries.view')->name('tenant.deliveries.index');
                 Route::post('deliveries', [DeliveryController::class, 'store'])->middleware('permission:deliveries.manage')->name('tenant.deliveries.store');
                 Route::get('deliveries/{delivery}', [DeliveryController::class, 'show'])->middleware('permission:deliveries.view')->whereNumber('delivery')->name('tenant.deliveries.show');
@@ -618,11 +679,6 @@ Route::middleware([
                 });
 
                 Route::middleware('marketplace.enabled')->group(function (): void {
-                    Route::middleware('seller.user')->group(function (): void {
-                        Route::get('seller/profile', [SellerProfileController::class, 'show'])->name('tenant.seller.profile.show');
-                        Route::match(['put', 'patch'], 'seller/profile', [SellerProfileController::class, 'update'])->name('tenant.seller.profile.update');
-                    });
-
                     Route::get('seller-groups/options', [SellerGroupController::class, 'options'])->middleware('permission:seller_groups.view')->name('tenant.seller-groups.options');
                     Route::get('seller-groups', [SellerGroupController::class, 'index'])->middleware('permission:seller_groups.view')->name('tenant.seller-groups.index');
                     Route::post('seller-groups', [SellerGroupController::class, 'store'])->middleware('permission:seller_groups.create')->name('tenant.seller-groups.store');

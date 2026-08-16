@@ -10,10 +10,10 @@ use App\Enums\Tenant\Marketplace\SellerPayoutStatus;
 use App\Models\Tenant\Seller;
 use App\Models\Tenant\SellerCommission;
 use App\Models\Tenant\SellerPayout;
-use App\Models\Tenant\User;
 use App\Services\Tenant\Accounting\AccountingService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use App\Support\Money;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -39,12 +39,10 @@ class SellerPayoutService
      *
      * @throws ValidationException
      */
-    public function create(array $data, ?User $actor = null): SellerPayout
+    public function create(array $data, ?Authenticatable $actor = null): SellerPayout
     {
-        if ($actor?->isSellerUser() && (int) $actor->seller_id !== (int) $data['seller_id']) {
-            throw ValidationException::withMessages([
-                'seller_id' => 'You may only request payouts for your own seller account.',
-            ]);
+        if ($actor instanceof Seller) {
+            $data['seller_id'] = $actor->id;
         }
 
         $existing = SellerPayout::query()
@@ -155,14 +153,14 @@ class SellerPayoutService
      * }  $params
      * @return LengthAwarePaginator<int, SellerPayout>
      */
-    public function list(array $params = [], ?User $actor = null): LengthAwarePaginator
+    public function list(array $params = [], ?Authenticatable $actor = null): LengthAwarePaginator
     {
         $query = SellerPayout::query()
             ->with(['seller', 'commissions'])
             ->latest('id');
 
-        if ($actor?->isSellerUser()) {
-            $query->where('seller_id', $actor->seller_id);
+        if ($actor instanceof Seller) {
+            $query->where('seller_id', $actor->id);
         } elseif (! empty($params['seller_id'])) {
             $query->where('seller_id', $params['seller_id']);
         }

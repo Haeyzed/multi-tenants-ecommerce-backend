@@ -216,23 +216,15 @@ class RoleSeeder extends Seeder
             'pos.terminals.manage',
             'settings.view',
             'settings.update',
-        ]);
-
-        $seller = Role::findOrCreate('seller', self::GUARD);
-        $seller->syncPermissions([
-            'seller_offers.view',
-            'seller_offers.create',
-            'seller_offers.update',
-            'seller_offers.delete',
-            'seller_orders.view',
-            'seller_orders.manage',
-            'commissions.view',
-            'payouts.view',
-            'orders.view',
-            'orders.show',
-            'shipments.view',
-            'returns.view',
-            'returns.inspect',
+            'hr.view',
+            'hr.departments.manage',
+            'hr.employees.view',
+            'hr.employees.create',
+            'hr.employees.update',
+            'hr.employees.delete',
+            'cms.view',
+            'cms.manage',
+            'cms.publish',
         ]);
 
         Role::findOrCreate('customer', self::GUARD);

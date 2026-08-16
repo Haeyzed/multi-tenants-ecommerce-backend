@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Landlord\User as LandlordUser;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\Driver;
+use App\Models\Tenant\Seller;
 use App\Models\Tenant\User as TenantUser;
 
 return [
@@ -47,6 +48,10 @@ return [
             'driver' => 'session',
             'provider' => 'drivers',
         ],
+        'seller' => [
+            'driver' => 'session',
+            'provider' => 'sellers',
+        ],
     ],
 
     /*
@@ -71,6 +76,10 @@ return [
         'drivers' => [
             'driver' => 'eloquent',
             'model' => Driver::class,
+        ],
+        'sellers' => [
+            'driver' => 'eloquent',
+            'model' => Seller::class,
         ],
     ],
 
@@ -102,6 +111,12 @@ return [
         'drivers' => [
             'provider' => 'drivers',
             'table' => 'driver_password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'sellers' => [
+            'provider' => 'sellers',
+            'table' => 'seller_password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],

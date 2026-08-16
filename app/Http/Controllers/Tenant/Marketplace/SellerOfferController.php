@@ -9,10 +9,10 @@ use App\Http\Requests\Tenant\Marketplace\StoreSellerOfferRequest;
 use App\Http\Requests\Tenant\Marketplace\UpdateSellerOfferRequest;
 use App\Http\Resources\Tenant\Marketplace\SellerOfferResource;
 use App\Models\Tenant\SellerOffer;
-use App\Models\Tenant\User;
 use App\Services\Tenant\Marketplace\SellerOfferService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Response;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -28,12 +28,12 @@ class SellerOfferController extends Controller
     {
         $this->authorize('viewAny', SellerOffer::class);
 
-        /** @var User $user */
-        $user = $request->user();
+        /** @var Authenticatable $actor */
+        $actor = $request->user();
 
         $offers = $this->sellerOfferService->list(
             $request->only(['seller_id', 'product_id', 'status', 'search', 'per_page']),
-            $user,
+            $actor,
         );
 
         return $this->success(
@@ -48,16 +48,11 @@ class SellerOfferController extends Controller
     {
         $this->authorize('create', SellerOffer::class);
 
-        /** @var User $user */
-        $user = $request->user();
-        $data = $request->validated();
-
-        if ($user->isSellerUser()) {
-            $data['seller_id'] = $user->seller_id;
-        }
+        /** @var Authenticatable $actor */
+        $actor = $request->user();
 
         return $this->created(
-            new SellerOfferResource($this->sellerOfferService->store($data, $user)),
+            new SellerOfferResource($this->sellerOfferService->store($request->validated(), $actor)),
             'Seller offer created successfully.',
         );
     }
@@ -78,11 +73,11 @@ class SellerOfferController extends Controller
     {
         $this->authorize('update', $seller_offer);
 
-        /** @var User $user */
-        $user = $request->user();
+        /** @var Authenticatable $actor */
+        $actor = $request->user();
 
         return $this->updated(
-            new SellerOfferResource($this->sellerOfferService->update($seller_offer, $request->validated(), $user)),
+            new SellerOfferResource($this->sellerOfferService->update($seller_offer, $request->validated(), $actor)),
             'Seller offer updated successfully.',
         );
     }
@@ -92,9 +87,9 @@ class SellerOfferController extends Controller
     {
         $this->authorize('delete', $seller_offer);
 
-        /** @var User $user */
-        $user = $request->user();
-        $this->sellerOfferService->destroy($seller_offer, $user);
+        /** @var Authenticatable $actor */
+        $actor = $request->user();
+        $this->sellerOfferService->destroy($seller_offer, $actor);
 
         return $this->deleted('Seller offer deleted successfully.');
     }

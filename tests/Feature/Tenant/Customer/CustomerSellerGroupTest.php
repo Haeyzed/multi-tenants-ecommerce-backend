@@ -26,6 +26,7 @@ beforeEach(function (): void {
     $migrationFiles = [
         '2026_08_15_041024_create_customers_table.php',
         '2026_08_15_070001_create_sellers_table.php',
+        '2026_08_16_160758_make_sellers_authenticatable_table.php',
         '2026_08_15_090101_create_coupons_table.php',
         '2026_08_15_100402_create_customer_segments_table.php',
         '2026_08_16_110000_create_customer_groups_table.php',

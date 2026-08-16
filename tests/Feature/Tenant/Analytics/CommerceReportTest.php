@@ -58,6 +58,7 @@ function commerceReportMigrationFiles(): array
         '2026_08_15_060006_create_order_items_table.php',
         '2026_08_15_060008_create_order_payments_table.php',
         '2026_08_15_070001_create_sellers_table.php',
+        '2026_08_16_160758_make_sellers_authenticatable_table.php',
         '2026_08_15_070005_create_seller_orders_tables.php',
         '2026_08_15_070006_create_seller_commissions_table.php',
         '2026_08_15_080009_create_refunds_table.php',

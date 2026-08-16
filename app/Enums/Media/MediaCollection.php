@@ -13,6 +13,7 @@ enum MediaCollection: string
     case Logo = 'logo';
     case Cover = 'cover';
     case Image = 'image';
+    case FeaturedImage = 'featured_image';
     case OgImage = 'og-image';
     case Library = 'library';
     case Gallery = 'gallery';
@@ -27,6 +28,6 @@ enum MediaCollection: string
      */
     public function isSingleFile(): bool
     {
-        return in_array($this, [self::Avatar, self::Logo, self::Cover, self::Image, self::OgImage], true);
+        return in_array($this, [self::Avatar, self::Logo, self::Cover, self::Image, self::FeaturedImage, self::OgImage], true);
     }
 }

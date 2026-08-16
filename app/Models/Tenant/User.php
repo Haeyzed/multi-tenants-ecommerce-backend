@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -21,7 +21,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['first_name', 'last_name', 'email', 'phone', 'password', 'seller_id'])]
+#[Fillable(['first_name', 'last_name', 'email', 'phone', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements HasMedia
 {
@@ -41,26 +41,17 @@ class User extends Authenticatable implements HasMedia
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'seller_id' => 'integer',
         ];
     }
 
     /**
-     * Marketplace seller this staff user administers (null for tenant admins).
+     * Optional HR employee profile for this staff user.
      *
-     * @return BelongsTo<Seller, $this>
+     * @return HasOne<Employee, $this>
      */
-    public function seller(): BelongsTo
+    public function employee(): HasOne
     {
-        return $this->belongsTo(Seller::class);
-    }
-
-    /**
-     * Whether this user is scoped to a single seller.
-     */
-    public function isSellerUser(): bool
-    {
-        return $this->seller_id !== null;
+        return $this->hasOne(Employee::class);
     }
 
     /**

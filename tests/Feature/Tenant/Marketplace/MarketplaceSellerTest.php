@@ -10,38 +10,45 @@ use App\Events\SellerSuspended;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\Seller;
 use App\Models\Tenant\SellerOffer;
-use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use App\Services\Tenant\Marketplace\SellerOfferService;
 use App\Services\Tenant\Marketplace\SellerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $migrationFiles = [
-        '2026_08_15_031728_create_brands_table.php',
-        '2026_08_15_034243_create_units_table.php',
-        '2026_08_15_034246_create_warehouses_table.php',
-        '2026_08_15_034249_create_warehouse_locations_table.php',
-        '2026_08_15_034302_create_products_table.php',
-        '2026_08_15_034305_create_product_variants_table.php',
-        '2026_08_15_034315_create_product_prices_table.php',
-        '2026_08_15_034318_create_inventories_table.php',
-        '2026_08_15_034321_create_inventory_movements_table.php',
-        '2026_08_15_050001_add_catalogue_control_fields_to_products_and_variants_table.php',
-        '2026_08_15_060001_create_commerce_settings_table.php',
-        '2026_08_15_070001_create_sellers_table.php',
-        '2026_08_15_070003_create_seller_offers_table.php',
-        '2026_08_16_110001_create_seller_groups_table.php',
-    ];
-
-    foreach ($migrationFiles as $file) {
+    if (! Schema::hasTable('sellers')) {
+        foreach ([
+            '2026_08_15_031728_create_brands_table.php',
+            '2026_08_15_034243_create_units_table.php',
+            '2026_08_15_034246_create_warehouses_table.php',
+            '2026_08_15_034249_create_warehouse_locations_table.php',
+            '2026_08_15_034302_create_products_table.php',
+            '2026_08_15_034305_create_product_variants_table.php',
+            '2026_08_15_034315_create_product_prices_table.php',
+            '2026_08_15_034318_create_inventories_table.php',
+            '2026_08_15_034321_create_inventory_movements_table.php',
+            '2026_08_15_050001_add_catalogue_control_fields_to_products_and_variants_table.php',
+            '2026_08_15_060001_create_commerce_settings_table.php',
+            '2026_08_15_070001_create_sellers_table.php',
+            '2026_08_15_070003_create_seller_offers_table.php',
+            '2026_08_16_110001_create_seller_groups_table.php',
+            '2026_08_16_160758_make_sellers_authenticatable_table.php',
+        ] as $file) {
+            $this->artisan('migrate', [
+                '--path' => database_path('migrations/tenant/'.$file),
+                '--realpath' => true,
+                '--force' => true,
+            ]);
+        }
+    } elseif (! Schema::hasColumn('sellers', 'password')) {
         $this->artisan('migrate', [
-            '--path' => database_path('migrations/tenant/'.$file),
+            '--path' => database_path('migrations/tenant/2026_08_16_160758_make_sellers_authenticatable_table.php'),
             '--realpath' => true,
             '--force' => true,
         ]);
@@ -60,7 +67,11 @@ test('seller onboarding approve and suspend flow', function (): void {
     Event::fake([SellerApproved::class, SellerSuspended::class]);
 
     $service = app(SellerService::class);
-    $seller = $service->store(['name' => 'Acme Sellers', 'email' => 'acme@example.com']);
+    $seller = $service->store([
+        'name' => 'Acme Sellers',
+        'email' => 'acme@example.com',
+        'password' => 'Password1!',
+    ]);
 
     expect($seller->verification_status)->toBe(SellerVerificationStatus::Pending)
         ->and($seller->status)->toBe(SellerStatus::Inactive)
@@ -84,7 +95,11 @@ test('seller onboarding approve and suspend flow', function (): void {
 
 test('seller rejection of pending seller', function (): void {
     $service = app(SellerService::class);
-    $seller = $service->store(['name' => 'Reject Me']);
+    $seller = $service->store([
+        'name' => 'Reject Me',
+        'email' => 'reject-me@example.com',
+        'password' => 'Password1!',
+    ]);
 
     $rejected = $service->reject($seller);
 
@@ -132,12 +147,9 @@ test('seller isolation prevents managing another sellers offer', function (): vo
         'price' => '50.00',
     ]);
 
-    $actor = new User;
-    $actor->seller_id = $sellerB->id;
-
-    expect(fn () => app(SellerOfferService::class)->update($offer, ['price' => '40.00'], $actor))
+    expect(fn () => app(SellerOfferService::class)->update($offer, ['price' => '40.00'], $sellerB))
         ->toThrow(ValidationException::class);
 
-    expect(fn () => app(SellerOfferService::class)->destroy($offer, $actor))
+    expect(fn () => app(SellerOfferService::class)->destroy($offer, $sellerB))
         ->toThrow(ValidationException::class);
 });

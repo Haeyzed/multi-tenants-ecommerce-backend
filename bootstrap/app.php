@@ -3,10 +3,10 @@
 use App\Http\Middleware\EnsureActiveSubscription;
 use App\Http\Middleware\EnsureFeature;
 use App\Http\Middleware\EnsureMarketplaceEnabled;
-use App\Http\Middleware\EnsureSellerUser;
 use App\Http\Middleware\SetCustomerGuard;
 use App\Http\Middleware\SetDriverGuard;
 use App\Http\Middleware\SetLandlordGuard;
+use App\Http\Middleware\SetSellerGuard;
 use App\Http\Middleware\SetTenantGuard;
 use App\Jobs\CleanupDriverLocationsJob;
 use App\Jobs\MarkAbandonedCartsJob;
@@ -61,10 +61,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.guard' => SetTenantGuard::class,
             'customer.guard' => SetCustomerGuard::class,
             'driver.guard' => SetDriverGuard::class,
+            'seller.guard' => SetSellerGuard::class,
             'subscription.active' => EnsureActiveSubscription::class,
             'feature' => EnsureFeature::class,
             'marketplace.enabled' => EnsureMarketplaceEnabled::class,
-            'seller.user' => EnsureSellerUser::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,

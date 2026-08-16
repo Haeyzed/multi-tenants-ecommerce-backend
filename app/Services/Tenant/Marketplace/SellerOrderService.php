@@ -7,10 +7,11 @@ namespace App\Services\Tenant\Marketplace;
 use App\Enums\Tenant\Marketplace\SellerOrderStatus;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderItem;
+use App\Models\Tenant\Seller;
 use App\Models\Tenant\SellerOrder;
 use App\Models\Tenant\SellerOrderItem;
-use App\Models\Tenant\User;
 use App\Support\Money;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -94,14 +95,14 @@ class SellerOrderService
      * }  $params
      * @return LengthAwarePaginator<int, SellerOrder>
      */
-    public function list(array $params = [], ?User $actor = null): LengthAwarePaginator
+    public function list(array $params = [], ?Authenticatable $actor = null): LengthAwarePaginator
     {
         $query = SellerOrder::query()
             ->with(['order', 'seller', 'items.orderItem'])
             ->latest('id');
 
-        if ($actor?->isSellerUser()) {
-            $query->where('seller_id', $actor->seller_id);
+        if ($actor instanceof Seller) {
+            $query->where('seller_id', $actor->id);
         } elseif (! empty($params['seller_id'])) {
             $query->where('seller_id', $params['seller_id']);
         }

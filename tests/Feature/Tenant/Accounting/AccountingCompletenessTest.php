@@ -65,6 +65,7 @@ function accountingCompletenessMigrations(): array
         '2026_08_15_060017_create_journal_entries_table.php',
         '2026_08_15_060018_create_journal_entry_lines_table.php',
         '2026_08_15_070001_create_sellers_table.php',
+        '2026_08_16_160758_make_sellers_authenticatable_table.php',
         '2026_08_15_070003_create_seller_offers_table.php',
         '2026_08_15_070004_add_seller_offer_to_cart_and_order_items.php',
         '2026_08_15_070005_create_seller_orders_tables.php',

@@ -5,50 +5,62 @@ declare(strict_types=1);
 namespace App\Policies\Tenant;
 
 use App\Models\Tenant\OrderReturn;
+use App\Models\Tenant\Seller;
 use App\Models\Tenant\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
  * Authorization for order returns (staff / seller).
  */
 class OrderReturnPolicy
 {
-    public function viewAny(User $user): bool
+    public function viewAny(Authenticatable $actor): bool
     {
-        return $user->can('returns.view');
-    }
-
-    public function view(User $user, OrderReturn $return): bool
-    {
-        if ($user->isSellerUser()) {
-            return (int) $user->seller_id === (int) $return->seller_id
-                && $user->can('returns.view');
+        if ($actor instanceof Seller) {
+            return true;
         }
 
-        return $user->can('returns.view');
+        return $actor instanceof User && $actor->can('returns.view');
     }
 
-    public function approve(User $user, OrderReturn $return): bool
+    public function view(Authenticatable $actor, OrderReturn $return): bool
     {
-        return $user->can('returns.approve') && ! $user->isSellerUser();
-    }
-
-    public function reject(User $user, OrderReturn $return): bool
-    {
-        return $user->can('returns.reject') && ! $user->isSellerUser();
-    }
-
-    public function inspect(User $user, OrderReturn $return): bool
-    {
-        if ($user->isSellerUser()) {
-            return (int) $user->seller_id === (int) $return->seller_id
-                && $user->can('returns.inspect');
+        if ($actor instanceof Seller) {
+            return (int) $actor->id === (int) $return->seller_id;
         }
 
-        return $user->can('returns.inspect');
+        if ($actor instanceof User) {
+            return $actor->can('returns.view');
+        }
+
+        return false;
     }
 
-    public function complete(User $user, OrderReturn $return): bool
+    public function approve(Authenticatable $actor, OrderReturn $return): bool
     {
-        return $user->can('returns.complete') && ! $user->isSellerUser();
+        return $actor instanceof User && $actor->can('returns.approve');
+    }
+
+    public function reject(Authenticatable $actor, OrderReturn $return): bool
+    {
+        return $actor instanceof User && $actor->can('returns.reject');
+    }
+
+    public function inspect(Authenticatable $actor, OrderReturn $return): bool
+    {
+        if ($actor instanceof Seller) {
+            return (int) $actor->id === (int) $return->seller_id;
+        }
+
+        if ($actor instanceof User) {
+            return $actor->can('returns.inspect');
+        }
+
+        return false;
+    }
+
+    public function complete(Authenticatable $actor, OrderReturn $return): bool
+    {
+        return $actor instanceof User && $actor->can('returns.complete');
     }
 }

@@ -59,6 +59,7 @@ class CommerceSettingService
             'marketplace.commission_rate' => ['type' => 'money', 'default' => '10'],
             'marketplace.commission_fixed_amount' => ['type' => 'money', 'default' => '0'],
             'marketplace.refund_window_days' => ['type' => 'int', 'default' => 0],
+            'seller.allow_registration' => ['type' => 'bool', 'default' => false],
         ],
         'customer' => [
             'customer.registration_enabled' => ['type' => 'bool', 'default' => true],
@@ -80,6 +81,10 @@ class CommerceSettingService
         'shipping' => [
             'shipping.enabled' => ['type' => 'bool', 'default' => true],
             'shipping.free_shipping_minimum' => ['type' => 'money', 'default' => '0'],
+        ],
+        'cms' => [
+            'cms.blog_enabled' => ['type' => 'bool', 'default' => true],
+            'cms.pages_enabled' => ['type' => 'bool', 'default' => true],
         ],
     ];
 
@@ -184,6 +189,14 @@ class CommerceSettingService
     public function isMarketplaceEnabled(): bool
     {
         return filter_var($this->get('is_marketplace_enabled', 'false'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Whether public seller self-registration is allowed.
+     */
+    public function allowSellerRegistration(): bool
+    {
+        return filter_var($this->get('seller.allow_registration', 'false'), FILTER_VALIDATE_BOOLEAN);
     }
 
     /**

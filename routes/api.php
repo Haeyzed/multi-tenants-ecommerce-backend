@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Landlord\Auth\AuthController;
+use App\Http\Controllers\Landlord\Cms\BlogCategoryController as LandlordBlogCategoryController;
+use App\Http\Controllers\Landlord\Cms\BlogPostController as LandlordBlogPostController;
+use App\Http\Controllers\Landlord\Cms\PageController as LandlordPageController;
 use App\Http\Controllers\Landlord\Domain\DomainController;
 use App\Http\Controllers\Landlord\Feature\FeatureController;
 use App\Http\Controllers\Landlord\Media\MediaController;
@@ -25,6 +28,7 @@ use App\Http\Controllers\Landlord\World\GeolocateController;
 use App\Http\Controllers\Landlord\World\LanguageController;
 use App\Http\Controllers\Landlord\World\StateController;
 use App\Http\Controllers\Landlord\World\TimezoneController;
+use App\Http\Controllers\Public\Cms\PublicCmsController;
 use App\Http\Controllers\Public\Plan\PlanController as PublicPlanController;
 use App\Http\Controllers\Public\TenantProfile\TenantProfileController as PublicTenantProfileController;
 use App\Http\Controllers\Webhook\WebhookController;
@@ -132,6 +136,25 @@ $registerLandlordApi = function (): void {
             Route::get('settings/{domain}', [PlatformSettingsController::class, 'show'])->middleware('permission:settings.view')->name('landlord.settings.show');
             Route::match(['put', 'patch'], 'settings/{domain}', [PlatformSettingsController::class, 'update'])->middleware('permission:settings.update')->name('landlord.settings.update');
 
+            Route::get('blog-categories/options', [LandlordBlogCategoryController::class, 'options'])->middleware('permission:cms.view|cms.manage')->name('landlord.blog-categories.options');
+            Route::get('blog-categories', [LandlordBlogCategoryController::class, 'index'])->middleware('permission:cms.view|cms.manage')->name('landlord.blog-categories.index');
+            Route::post('blog-categories', [LandlordBlogCategoryController::class, 'store'])->middleware('permission:cms.manage')->name('landlord.blog-categories.store');
+            Route::get('blog-categories/{blog_category}', [LandlordBlogCategoryController::class, 'show'])->middleware('permission:cms.view|cms.manage')->whereNumber('blog_category')->name('landlord.blog-categories.show');
+            Route::match(['put', 'patch'], 'blog-categories/{blog_category}', [LandlordBlogCategoryController::class, 'update'])->middleware('permission:cms.manage')->whereNumber('blog_category')->name('landlord.blog-categories.update');
+            Route::delete('blog-categories/{blog_category}', [LandlordBlogCategoryController::class, 'destroy'])->middleware('permission:cms.manage')->whereNumber('blog_category')->name('landlord.blog-categories.destroy');
+
+            Route::get('blog-posts', [LandlordBlogPostController::class, 'index'])->middleware('permission:cms.view|cms.manage')->name('landlord.blog-posts.index');
+            Route::post('blog-posts', [LandlordBlogPostController::class, 'store'])->middleware('permission:cms.manage')->name('landlord.blog-posts.store');
+            Route::get('blog-posts/{blog_post}', [LandlordBlogPostController::class, 'show'])->middleware('permission:cms.view|cms.manage')->whereNumber('blog_post')->name('landlord.blog-posts.show');
+            Route::match(['put', 'patch'], 'blog-posts/{blog_post}', [LandlordBlogPostController::class, 'update'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('landlord.blog-posts.update');
+            Route::delete('blog-posts/{blog_post}', [LandlordBlogPostController::class, 'destroy'])->middleware('permission:cms.manage')->whereNumber('blog_post')->name('landlord.blog-posts.destroy');
+
+            Route::get('pages', [LandlordPageController::class, 'index'])->middleware('permission:cms.view|cms.manage')->name('landlord.pages.index');
+            Route::post('pages', [LandlordPageController::class, 'store'])->middleware('permission:cms.manage')->name('landlord.pages.store');
+            Route::get('pages/{page}', [LandlordPageController::class, 'show'])->middleware('permission:cms.view|cms.manage')->whereNumber('page')->name('landlord.pages.show');
+            Route::match(['put', 'patch'], 'pages/{page}', [LandlordPageController::class, 'update'])->middleware('permission:cms.manage')->whereNumber('page')->name('landlord.pages.update');
+            Route::delete('pages/{page}', [LandlordPageController::class, 'destroy'])->middleware('permission:cms.manage')->whereNumber('page')->name('landlord.pages.destroy');
+
             Route::get('media/options', [MediaController::class, 'options'])->name('landlord.media.options');
             Route::get('media', [MediaController::class, 'index'])->name('landlord.media.index');
             Route::post('media', [MediaController::class, 'store'])->name('landlord.media.store');
@@ -168,6 +191,8 @@ $registerLandlordApi = function (): void {
     Route::prefix('public')->middleware('central')->name('public.')->group(function (): void {
         Route::get('plans', [PublicPlanController::class, 'index'])->name('plans.index');
         Route::get('stores/{slug}', [PublicTenantProfileController::class, 'show'])->name('stores.show');
+        Route::get('pages/{slug}', [PublicCmsController::class, 'showPage'])->name('pages.show');
+        Route::get('blog/posts', [PublicCmsController::class, 'indexPosts'])->name('blog.posts.index');
     });
 
     Route::post('webhooks/{provider}', WebhookController::class)

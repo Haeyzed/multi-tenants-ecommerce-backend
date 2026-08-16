@@ -77,6 +77,7 @@ function loyaltyMigrationFiles(): array
         '2026_08_15_060007_create_checkout_sessions_table.php',
         '2026_08_15_060008_create_order_payments_table.php',
         '2026_08_15_070001_create_sellers_table.php',
+        '2026_08_16_160758_make_sellers_authenticatable_table.php',
         '2026_08_15_070003_create_seller_offers_table.php',
         '2026_08_15_070004_add_seller_offer_to_cart_and_order_items.php',
         '2026_08_15_080001_create_taxes_table.php',

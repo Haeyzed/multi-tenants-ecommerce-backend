@@ -22,9 +22,10 @@ use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderItem;
 use App\Models\Tenant\OrderReturn;
 use App\Models\Tenant\OrderReturnItem;
-use App\Models\Tenant\User;
+use App\Models\Tenant\Seller;
 use App\Services\Tenant\Inventory\InventoryService;
 use App\Support\Money;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -46,14 +47,14 @@ class OrderReturnService
      * @param  array{status?: string|null, order_id?: int|null, seller_id?: int|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, OrderReturn>
      */
-    public function list(array $params = [], ?User $actor = null): LengthAwarePaginator
+    public function list(array $params = [], ?Authenticatable $actor = null): LengthAwarePaginator
     {
         $query = OrderReturn::query()
             ->with(['order', 'customer', 'items.orderItem', 'seller'])
             ->latest('id');
 
-        if ($actor?->isSellerUser()) {
-            $query->where('seller_id', $actor->seller_id);
+        if ($actor instanceof Seller) {
+            $query->where('seller_id', $actor->id);
         } elseif (! empty($params['seller_id'])) {
             $query->where('seller_id', (int) $params['seller_id']);
         }

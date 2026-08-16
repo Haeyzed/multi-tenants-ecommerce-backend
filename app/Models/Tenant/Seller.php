@@ -10,11 +10,14 @@ use App\Enums\Tenant\Marketplace\CommissionType;
 use App\Enums\Tenant\Marketplace\SellerStatus;
 use App\Enums\Tenant\Marketplace\SellerVerificationStatus;
 use Database\Factories\Tenant\SellerFactory;
+use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -29,18 +32,19 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $name
  * @property string $slug
  * @property string|null $description
- * @property string|null $email
+ * @property string $email
  * @property string|null $phone
+ * @property string|null $password
  * @property SellerStatus $status
  * @property SellerVerificationStatus $verification_status
  * @property CommissionType|null $commission_type
  * @property string|null $commission_rate
  * @property string|null $commission_fixed_amount
  */
-class Seller extends Model implements HasMedia
+class Seller extends Authenticatable implements HasMedia
 {
     /** @use HasFactory<SellerFactory> */
-    use HasFactory, HasSlug, InteractsWithMedia, SoftDeletes;
+    use CanResetPassword, HasApiTokens, HasFactory, HasSlug, InteractsWithMedia, Notifiable, SoftDeletes;
 
     /**
      * @var list<string>
@@ -51,12 +55,21 @@ class Seller extends Model implements HasMedia
         'description',
         'email',
         'phone',
+        'password',
         'status',
         'verification_status',
         'commission_type',
         'commission_rate',
         'commission_fixed_amount',
         'seller_group_id',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
 
     /**
@@ -68,11 +81,34 @@ class Seller extends Model implements HasMedia
     ];
 
     /**
+     * Free unique email values on soft delete so they can be re-used.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Seller $seller): void {
+            if ($seller->isForceDeleting()) {
+                return;
+            }
+
+            $seller->email = 'deleted+'.$seller->id.'.'.time().'@deleted.local';
+
+            if ($seller->phone !== null && $seller->phone !== '') {
+                $seller->phone = 'deleted-'.$seller->id.'-'.time();
+            }
+
+            $seller->saveQuietly();
+        });
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
+            'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'password' => 'hashed',
             'status' => SellerStatus::class,
             'verification_status' => SellerVerificationStatus::class,
             'commission_type' => CommissionType::class,
@@ -102,19 +138,20 @@ class Seller extends Model implements HasMedia
     }
 
     /**
+     * Whether the seller is allowed to log in.
+     */
+    public function isLoginAllowed(): bool
+    {
+        return $this->status !== SellerStatus::Suspended
+            && $this->verification_status !== SellerVerificationStatus::Rejected;
+    }
+
+    /**
      * @return HasMany<SellerOffer, $this>
      */
     public function offers(): HasMany
     {
         return $this->hasMany(SellerOffer::class);
-    }
-
-    /**
-     * @return HasMany<User, $this>
-     */
-    public function users(): HasMany
-    {
-        return $this->hasMany(User::class);
     }
 
     /**

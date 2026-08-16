@@ -255,6 +255,15 @@ final class RbacPermissions
         'pos.terminals.manage',
         'settings.view',
         'settings.update',
+        'hr.view',
+        'hr.departments.manage',
+        'hr.employees.view',
+        'hr.employees.create',
+        'hr.employees.update',
+        'hr.employees.delete',
+        'cms.view',
+        'cms.manage',
+        'cms.publish',
     ];
 
     /**

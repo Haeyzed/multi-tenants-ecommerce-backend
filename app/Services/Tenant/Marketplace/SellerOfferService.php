@@ -11,11 +11,11 @@ use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductVariant;
 use App\Models\Tenant\Seller;
 use App\Models\Tenant\SellerOffer;
-use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use App\Services\Tenant\Inventory\InventoryService;
 use App\Support\Money;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
@@ -39,14 +39,14 @@ class SellerOfferService
      * }  $params
      * @return LengthAwarePaginator<int, SellerOffer>
      */
-    public function list(array $params = [], ?User $actor = null): LengthAwarePaginator
+    public function list(array $params = [], ?Authenticatable $actor = null): LengthAwarePaginator
     {
         $query = SellerOffer::query()
             ->with(['seller', 'product', 'productVariant'])
             ->latest('id');
 
-        if ($actor?->isSellerUser()) {
-            $query->where('seller_id', $actor->seller_id);
+        if ($actor instanceof Seller) {
+            $query->where('seller_id', $actor->id);
         } elseif (! empty($params['seller_id'])) {
             $query->where('seller_id', $params['seller_id']);
         }
@@ -74,8 +74,12 @@ class SellerOfferService
      *
      * @throws ValidationException
      */
-    public function store(array $data, ?User $actor = null): SellerOffer
+    public function store(array $data, ?Authenticatable $actor = null): SellerOffer
     {
+        if ($actor instanceof Seller) {
+            $data['seller_id'] = $actor->id;
+        }
+
         $seller = $this->resolveSeller((int) $data['seller_id'], $actor);
         $this->assertSellerCanManageOffers($seller);
 
@@ -122,7 +126,7 @@ class SellerOfferService
      *
      * @throws ValidationException
      */
-    public function update(SellerOffer $offer, array $data, ?User $actor = null): SellerOffer
+    public function update(SellerOffer $offer, array $data, ?Authenticatable $actor = null): SellerOffer
     {
         $this->assertActorOwnsOffer($offer, $actor);
 
@@ -154,7 +158,7 @@ class SellerOfferService
     /**
      * @throws ValidationException
      */
-    public function destroy(SellerOffer $offer, ?User $actor = null): void
+    public function destroy(SellerOffer $offer, ?Authenticatable $actor = null): void
     {
         $this->assertActorOwnsOffer($offer, $actor);
         $offer->delete();
@@ -206,9 +210,9 @@ class SellerOfferService
     /**
      * @throws ValidationException
      */
-    protected function resolveSeller(int $sellerId, ?User $actor): Seller
+    protected function resolveSeller(int $sellerId, ?Authenticatable $actor): Seller
     {
-        if ($actor?->isSellerUser() && (int) $actor->seller_id !== $sellerId) {
+        if ($actor instanceof Seller && (int) $actor->id !== $sellerId) {
             throw ValidationException::withMessages([
                 'seller_id' => 'You may only manage offers for your own seller.',
             ]);
@@ -261,9 +265,9 @@ class SellerOfferService
     /**
      * @throws ValidationException
      */
-    protected function assertActorOwnsOffer(SellerOffer $offer, ?User $actor): void
+    protected function assertActorOwnsOffer(SellerOffer $offer, ?Authenticatable $actor): void
     {
-        if ($actor?->isSellerUser() && (int) $actor->seller_id !== (int) $offer->seller_id) {
+        if ($actor instanceof Seller && (int) $actor->id !== (int) $offer->seller_id) {
             throw ValidationException::withMessages([
                 'offer' => 'You may only manage your own offers.',
             ]);

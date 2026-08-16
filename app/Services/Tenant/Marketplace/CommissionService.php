@@ -11,9 +11,9 @@ use App\Models\Tenant\Order;
 use App\Models\Tenant\Seller;
 use App\Models\Tenant\SellerCommission;
 use App\Models\Tenant\SellerOrder;
-use App\Models\Tenant\User;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use App\Support\Money;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -140,14 +140,14 @@ class CommissionService
      * }  $params
      * @return LengthAwarePaginator<int, SellerCommission>
      */
-    public function list(array $params = [], ?User $actor = null): LengthAwarePaginator
+    public function list(array $params = [], ?Authenticatable $actor = null): LengthAwarePaginator
     {
         $query = SellerCommission::query()
             ->with(['seller', 'order', 'sellerOrder'])
             ->latest('id');
 
-        if ($actor?->isSellerUser()) {
-            $query->where('seller_id', $actor->seller_id);
+        if ($actor instanceof Seller) {
+            $query->where('seller_id', $actor->id);
         } elseif (! empty($params['seller_id'])) {
             $query->where('seller_id', $params['seller_id']);
         }

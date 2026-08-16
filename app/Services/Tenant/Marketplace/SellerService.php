@@ -65,8 +65,9 @@ class SellerService
             'name' => $data['name'],
             'slug' => $data['slug'] ?? null,
             'description' => $data['description'] ?? null,
-            'email' => $data['email'] ?? null,
+            'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
+            'password' => $data['password'],
             'status' => SellerStatus::Inactive,
             'verification_status' => SellerVerificationStatus::Pending,
             'commission_type' => $data['commission_type'] ?? null,
@@ -86,6 +87,10 @@ class SellerService
      */
     public function update(Seller $seller, array $data): Seller
     {
+        if (array_key_exists('password', $data) && ($data['password'] === null || $data['password'] === '')) {
+            unset($data['password']);
+        }
+
         $seller->fill($data);
         $seller->save();
 
@@ -132,6 +137,8 @@ class SellerService
         $seller->status = SellerStatus::Inactive;
         $seller->save();
 
+        $seller->tokens()->delete();
+
         return $seller->fresh() ?? $seller;
     }
 
@@ -142,6 +149,8 @@ class SellerService
     {
         $seller->status = SellerStatus::Suspended;
         $seller->save();
+
+        $seller->tokens()->delete();
 
         event(new SellerSuspended($seller));
 

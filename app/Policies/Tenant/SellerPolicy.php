@@ -6,57 +6,66 @@ namespace App\Policies\Tenant;
 
 use App\Models\Tenant\Seller;
 use App\Models\Tenant\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
  * Authorization for marketplace sellers.
  */
 class SellerPolicy
 {
-    public function viewAny(User $user): bool
+    public function viewAny(Authenticatable $actor): bool
     {
-        return $user->can('sellers.view');
+        return $actor instanceof User && $actor->can('sellers.view');
     }
 
-    public function view(User $user, Seller $seller): bool
+    public function view(Authenticatable $actor, Seller $seller): bool
     {
-        if ($user->isSellerUser()) {
-            return (int) $user->seller_id === (int) $seller->id;
+        if ($actor instanceof Seller) {
+            return (int) $actor->id === (int) $seller->id;
         }
 
-        return $user->can('sellers.view');
-    }
-
-    public function create(User $user): bool
-    {
-        return $user->can('sellers.create') && ! $user->isSellerUser();
-    }
-
-    public function update(User $user, Seller $seller): bool
-    {
-        if ($user->isSellerUser()) {
-            return (int) $user->seller_id === (int) $seller->id;
+        if ($actor instanceof User) {
+            return $actor->can('sellers.view');
         }
 
-        return $user->can('sellers.update');
+        return false;
     }
 
-    public function approve(User $user, Seller $seller): bool
+    public function create(Authenticatable $actor): bool
     {
-        return $user->can('sellers.approve') && ! $user->isSellerUser();
+        return $actor instanceof User && $actor->can('sellers.create');
     }
 
-    public function reject(User $user, Seller $seller): bool
+    public function update(Authenticatable $actor, Seller $seller): bool
     {
-        return $user->can('sellers.reject') && ! $user->isSellerUser();
+        if ($actor instanceof Seller) {
+            return (int) $actor->id === (int) $seller->id;
+        }
+
+        if ($actor instanceof User) {
+            return $actor->can('sellers.update');
+        }
+
+        return false;
     }
 
-    public function suspend(User $user, Seller $seller): bool
+    public function approve(Authenticatable $actor, Seller $seller): bool
     {
-        return $user->can('sellers.suspend') && ! $user->isSellerUser();
+        return $actor instanceof User && $actor->can('sellers.approve');
     }
 
-    public function activate(User $user, Seller $seller): bool
+    public function reject(Authenticatable $actor, Seller $seller): bool
     {
-        return $user->can('sellers.update') && ! $user->isSellerUser();
+        return $actor instanceof User && $actor->can('sellers.reject');
+    }
+
+    public function suspend(Authenticatable $actor, Seller $seller): bool
+    {
+        return $actor instanceof User && $actor->can('sellers.suspend');
+    }
+
+    public function activate(Authenticatable $actor, Seller $seller): bool
+    {
+        return $actor instanceof User && $actor->can('sellers.update');
     }
 }

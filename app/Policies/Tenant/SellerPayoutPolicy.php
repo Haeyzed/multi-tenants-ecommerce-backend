@@ -4,41 +4,57 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
+use App\Models\Tenant\Seller;
 use App\Models\Tenant\SellerPayout;
 use App\Models\Tenant\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
  * Authorization for seller payouts.
  */
 class SellerPayoutPolicy
 {
-    public function viewAny(User $user): bool
+    public function viewAny(Authenticatable $actor): bool
     {
-        return $user->can('payouts.view');
-    }
-
-    public function view(User $user, SellerPayout $payout): bool
-    {
-        if ($user->isSellerUser()) {
-            return (int) $user->seller_id === (int) $payout->seller_id
-                && $user->can('payouts.view');
+        if ($actor instanceof Seller) {
+            return true;
         }
 
-        return $user->can('payouts.view');
+        return $actor instanceof User && $actor->can('payouts.view');
     }
 
-    public function create(User $user): bool
+    public function view(Authenticatable $actor, SellerPayout $payout): bool
     {
-        return $user->can('payouts.manage');
-    }
-
-    public function manage(User $user, SellerPayout $payout): bool
-    {
-        if ($user->isSellerUser()) {
-            return (int) $user->seller_id === (int) $payout->seller_id
-                && $user->can('payouts.manage');
+        if ($actor instanceof Seller) {
+            return (int) $actor->id === (int) $payout->seller_id;
         }
 
-        return $user->can('payouts.manage');
+        if ($actor instanceof User) {
+            return $actor->can('payouts.view');
+        }
+
+        return false;
+    }
+
+    public function create(Authenticatable $actor): bool
+    {
+        if ($actor instanceof Seller) {
+            return true;
+        }
+
+        return $actor instanceof User && $actor->can('payouts.manage');
+    }
+
+    public function manage(Authenticatable $actor, SellerPayout $payout): bool
+    {
+        if ($actor instanceof Seller) {
+            return (int) $actor->id === (int) $payout->seller_id;
+        }
+
+        if ($actor instanceof User) {
+            return $actor->can('payouts.manage');
+        }
+
+        return false;
     }
 }
