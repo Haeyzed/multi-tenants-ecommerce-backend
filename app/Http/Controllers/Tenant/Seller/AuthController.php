@@ -16,7 +16,6 @@ use App\Services\Tenant\Seller\SellerAuthService;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * Seller authentication endpoints (profile lives on ProfileController).
@@ -74,7 +73,9 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         /** @var Seller $seller */
-        $seller = Auth::guard('seller')->user();
+        $seller = $request->user('seller') ?? $request->user('sanctum') ?? $request->user();
+
+        abort_unless($seller instanceof Seller, 401);
 
         $this->authService->logout($seller);
 
@@ -122,7 +123,9 @@ class AuthController extends Controller
     public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
         /** @var Seller $seller */
-        $seller = Auth::guard('seller')->user();
+        $seller = $request->user('seller') ?? $request->user('sanctum') ?? $request->user();
+
+        abort_unless($seller instanceof Seller, 401);
 
         $this->authService->changePassword($seller, $request->validated());
 

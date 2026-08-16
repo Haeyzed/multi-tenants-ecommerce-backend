@@ -63,6 +63,10 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "test:isolation": [
+            "@php artisan config:clear --ansi",
+            "@php artisan test --compact tests/Feature/Tenancy/DualTenantIsolationSmokeTest.php tests/Feature/Tenancy/TenantDatabaseIsolationTest.php"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

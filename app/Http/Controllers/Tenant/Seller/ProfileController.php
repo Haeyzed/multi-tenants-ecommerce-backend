@@ -14,7 +14,6 @@ use App\Services\Tenant\Seller\SellerAuthService;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * Authenticated seller profile and logo endpoints.
@@ -36,7 +35,9 @@ class ProfileController extends Controller
     public function me(Request $request): JsonResponse
     {
         /** @var Seller $seller */
-        $seller = Auth::guard('seller')->user();
+        $seller = $request->user('seller') ?? $request->user('sanctum') ?? $request->user();
+
+        abort_unless($seller instanceof Seller, 401);
 
         return $this->success(
             new SellerResource($seller->load('sellerGroup')),
@@ -55,7 +56,9 @@ class ProfileController extends Controller
     public function update(UpdateProfileRequest $request): JsonResponse
     {
         /** @var Seller $seller */
-        $seller = Auth::guard('seller')->user();
+        $seller = $request->user('seller') ?? $request->user('sanctum') ?? $request->user();
+
+        abort_unless($seller instanceof Seller, 401);
 
         $seller = $this->authService->updateProfile($seller, $request->validated());
 
@@ -76,7 +79,9 @@ class ProfileController extends Controller
     public function storeLogo(StoreLogoRequest $request): JsonResponse
     {
         /** @var Seller $seller */
-        $seller = Auth::guard('seller')->user();
+        $seller = $request->user('seller') ?? $request->user('sanctum') ?? $request->user();
+
+        abort_unless($seller instanceof Seller, 401);
 
         $media = $this->authService->replaceLogo($seller, $request->file('logo'));
 
@@ -94,10 +99,12 @@ class ProfileController extends Controller
         description: 'Logo deleted.',
         type: 'array{success: true, message: string, data: null, meta: null, errors: null}',
     )]
-    public function destroyLogo(): JsonResponse
+    public function destroyLogo(Request $request): JsonResponse
     {
         /** @var Seller $seller */
-        $seller = Auth::guard('seller')->user();
+        $seller = $request->user('seller') ?? $request->user('sanctum') ?? $request->user();
+
+        abort_unless($seller instanceof Seller, 401);
 
         $this->authService->removeLogo($seller);
 

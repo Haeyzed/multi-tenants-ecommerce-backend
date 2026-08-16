@@ -11,6 +11,10 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="Isolation">
+            <file>tests/Feature/Tenancy/DualTenantIsolationSmokeTest.php</file>
+            <file>tests/Feature/Tenancy/TenantDatabaseIsolationTest.php</file>
+        </testsuite>
     </testsuites>
     <source>
         <include>

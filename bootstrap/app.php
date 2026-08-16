@@ -13,6 +13,7 @@ use App\Jobs\MarkAbandonedCartsJob;
 use App\Jobs\ReconcileProcessingRefundsJob;
 use App\Jobs\RefreshCustomerSegmentStatsJob;
 use App\Models\Landlord\Tenant;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -69,6 +70,21 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
+
+        // Guard setters must run before Authenticate/Sanctum so auth:sanctum
+        // resolves tokens against the correct provider (seller/driver/customer/…).
+        foreach ([
+            SetLandlordGuard::class,
+            SetTenantGuard::class,
+            SetCustomerGuard::class,
+            SetDriverGuard::class,
+            SetSellerGuard::class,
+        ] as $guardMiddleware) {
+            $middleware->prependToPriorityList(
+                before: Authenticate::class,
+                prepend: $guardMiddleware,
+            );
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
