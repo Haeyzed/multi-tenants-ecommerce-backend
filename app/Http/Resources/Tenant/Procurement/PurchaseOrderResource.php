@@ -37,7 +37,13 @@ class PurchaseOrderResource extends JsonResource
             'expected_at' => $po->expected_at,
             'notes' => $po->notes,
             'supplier' => $this->whenLoaded('supplier', fn () => new SupplierResource($po->supplier)),
+            'warehouse' => $this->whenLoaded('warehouse', fn () => [
+                'id' => $po->warehouse?->id,
+                'name' => $po->warehouse?->name,
+                'code' => $po->warehouse?->code,
+            ]),
             'items' => PurchaseOrderItemResource::collection($this->whenLoaded('items')),
+            'goods_receipts' => GoodsReceiptResource::collection($this->whenLoaded('goodsReceipts')),
             'created_at' => $po->created_at,
             'updated_at' => $po->updated_at,
         ];

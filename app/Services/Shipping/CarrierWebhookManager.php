@@ -6,21 +6,27 @@ namespace App\Services\Shipping;
 
 use App\Contracts\Shipping\CarrierWebhookProcessorInterface;
 use App\DTO\Shipping\CarrierWebhookNormalizedEvent;
+use App\Exceptions\Shipping\UnsupportedShippingCarrierException;
 use App\Models\Tenant\ShippingCarrierWebhookEvent;
 use App\Services\Shipping\Webhooks\FakeCarrierWebhookProcessor;
+use App\Services\Tenant\Shipping\ShipmentService;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
-use InvalidArgumentException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Resolves carrier webhook processors, verifies, and stores events idempotently.
+ *
+ * Known drivers currently use FakeCarrierWebhookProcessor until live processors exist.
  */
 class CarrierWebhookManager
 {
-    public function __construct(private readonly Container $container) {}
+    public function __construct(
+        private readonly Container $container,
+        private readonly ShipmentService $shipments,
+    ) {}
 
     /**
      * Handle an inbound carrier webhook.
@@ -29,6 +35,8 @@ class CarrierWebhookManager
      *     duplicate: bool,
      *     processed: bool,
      *     stored: bool,
+     *     shipment_updated: bool,
+     *     shipment_id: int|null,
      *     normalized: CarrierWebhookNormalizedEvent|null,
      *     event: ShippingCarrierWebhookEvent|null
      * }
@@ -51,6 +59,8 @@ class CarrierWebhookManager
                 'duplicate' => false,
                 'processed' => true,
                 'stored' => false,
+                'shipment_updated' => false,
+                'shipment_id' => null,
                 'normalized' => $normalized,
                 'event' => null,
             ];
@@ -73,10 +83,17 @@ class CarrierWebhookManager
                 'processed_at' => now(),
             ]);
 
+            $shipment = $this->shipments->applyCarrierStatus(
+                $normalized->trackingNumber,
+                $normalized->status,
+            );
+
             return [
                 'duplicate' => false,
                 'processed' => true,
                 'stored' => true,
+                'shipment_updated' => $shipment !== null,
+                'shipment_id' => $shipment?->id,
                 'normalized' => $normalized,
                 'event' => $event,
             ];
@@ -85,6 +102,8 @@ class CarrierWebhookManager
                 'duplicate' => true,
                 'processed' => false,
                 'stored' => false,
+                'shipment_updated' => false,
+                'shipment_id' => null,
                 'normalized' => $normalized,
                 'event' => ShippingCarrierWebhookEvent::query()
                     ->where('provider', $carrier)
@@ -98,10 +117,15 @@ class CarrierWebhookManager
     {
         $carrier = strtolower(trim($carrier));
 
-        return match ($carrier) {
-            'fake', 'dhl', 'gig', 'fedex', 'ups', 'local' => $this->container->make(FakeCarrierWebhookProcessor::class),
-            default => throw new InvalidArgumentException("Unsupported shipping carrier webhook [{$carrier}]."),
-        };
+        /** @var array<string, mixed> $drivers */
+        $drivers = config('shipping.drivers', []);
+
+        if (! array_key_exists($carrier, $drivers)) {
+            throw new UnsupportedShippingCarrierException($carrier);
+        }
+
+        // Scaffold / known drivers use FakeCarrierWebhookProcessor until live clients exist.
+        return $this->container->make(FakeCarrierWebhookProcessor::class);
     }
 
     /**

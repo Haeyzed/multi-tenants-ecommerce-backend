@@ -15,5 +15,6 @@ enum PurchaseOrderStatus: string
     case Ordered = 'ordered';
     case PartiallyReceived = 'partially_received';
     case Received = 'received';
+    case Closed = 'closed';
     case Cancelled = 'cancelled';
 }

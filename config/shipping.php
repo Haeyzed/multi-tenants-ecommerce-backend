@@ -53,6 +53,7 @@ return [
             'enabled' => true,
             'environment' => env('FAKE_CARRIER_ENVIRONMENT', 'local'),
             'base_url' => env('FAKE_CARRIER_BASE_URL', 'https://example.test'),
+            'webhook_secret' => env('FAKE_CARRIER_WEBHOOK_SECRET'),
             'credentials' => [],
         ],
 

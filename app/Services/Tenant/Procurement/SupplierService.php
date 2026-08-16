@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\Procurement;
 
+use App\Enums\Tenant\Procurement\PurchaseOrderStatus;
 use App\Enums\Tenant\Procurement\SupplierStatus;
 use App\Models\Tenant\Supplier;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 /**
  * CRUD for suppliers (soft deletes).
@@ -93,8 +95,27 @@ class SupplierService
         return $supplier->fresh('contacts') ?? $supplier;
     }
 
+    /**
+     * Soft-delete a supplier when no open purchase orders remain.
+     *
+     * @throws ValidationException
+     */
     public function destroy(Supplier $supplier): void
     {
+        $hasOpenPurchaseOrders = $supplier->purchaseOrders()
+            ->whereNotIn('status', [
+                PurchaseOrderStatus::Cancelled->value,
+                PurchaseOrderStatus::Received->value,
+                PurchaseOrderStatus::Closed->value,
+            ])
+            ->exists();
+
+        if ($hasOpenPurchaseOrders) {
+            throw ValidationException::withMessages([
+                'supplier' => 'Cannot delete a supplier with open purchase orders.',
+            ]);
+        }
+
         $supplier->delete();
     }
 

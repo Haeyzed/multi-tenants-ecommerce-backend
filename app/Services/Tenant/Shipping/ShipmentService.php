@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\Shipping;
 
+use App\DTO\Shipping\ShipmentCancellationResult;
+use App\DTO\Shipping\ShipmentLabelResult;
+use App\DTO\Shipping\ShipmentTrackingResult;
 use App\Enums\Tenant\Commerce\ShipmentStatus;
 use App\Events\ShipmentDelivered;
 use App\Events\ShipmentShipped;
@@ -13,6 +16,7 @@ use App\Models\Tenant\ShippingMethod;
 use App\Services\Shipping\ShippingCarrierManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Create and transition shipments for orders.
@@ -159,6 +163,107 @@ class ShipmentService
             ->with('shippingMethod')
             ->latest('id')
             ->paginate($this->perPage($params));
+    }
+
+    /**
+     * Track a shipment via its configured carrier (or the default driver).
+     */
+    public function trackViaCarrier(Shipment $shipment): ShipmentTrackingResult
+    {
+        $driver = $shipment->carrier !== null && $shipment->carrier !== ''
+            ? $shipment->carrier
+            : null;
+
+        return $this->carriers->driver($driver)->trackShipment((string) $shipment->tracking_number);
+    }
+
+    /**
+     * Cancel a shipment via its carrier, then optionally mark it Cancelled locally.
+     */
+    public function cancelViaCarrier(Shipment $shipment): ShipmentCancellationResult
+    {
+        $driver = $shipment->carrier !== null && $shipment->carrier !== ''
+            ? $shipment->carrier
+            : null;
+
+        $result = $this->carriers->cancelShipment(
+            (string) $shipment->tracking_number,
+            [],
+            $driver,
+        );
+
+        if ($result->successful) {
+            $this->transition($shipment, ShipmentStatus::Cancelled);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Fetch a shipping label via the shipment's carrier (or the default driver).
+     */
+    public function labelViaCarrier(Shipment $shipment): ShipmentLabelResult
+    {
+        $driver = $shipment->carrier !== null && $shipment->carrier !== ''
+            ? $shipment->carrier
+            : null;
+
+        return $this->carriers->getLabel((string) $shipment->tracking_number, [], $driver);
+    }
+
+    /**
+     * Apply a normalized carrier status string to a shipment looked up by tracking number.
+     *
+     * Returns null when no shipment matches or the status cannot be mapped.
+     * Does not throw — callers (e.g. webhooks) treat this as best-effort.
+     */
+    public function applyCarrierStatus(string $trackingNumber, string $status): ?Shipment
+    {
+        if ($trackingNumber === '') {
+            return null;
+        }
+
+        $shipment = Shipment::query()
+            ->where('tracking_number', $trackingNumber)
+            ->first();
+
+        if ($shipment === null) {
+            return null;
+        }
+
+        $mapped = $this->mapCarrierStatus($status);
+
+        if ($mapped === null) {
+            return null;
+        }
+
+        return $this->transition($shipment, $mapped);
+    }
+
+    /**
+     * Map a carrier-normalized status string to {@see ShipmentStatus}.
+     *
+     * Matching is case-insensitive; hyphens and underscores are interchangeable.
+     */
+    protected function mapCarrierStatus(string $status): ?ShipmentStatus
+    {
+        $normalized = Str::of($status)
+            ->trim()
+            ->lower()
+            ->replace(['-', ' '], '_')
+            ->toString();
+
+        return match ($normalized) {
+            'pending' => ShipmentStatus::Pending,
+            'processing' => ShipmentStatus::Processing,
+            'shipped' => ShipmentStatus::Shipped,
+            'in_transit' => ShipmentStatus::InTransit,
+            'out_for_delivery' => ShipmentStatus::OutForDelivery,
+            'delivered' => ShipmentStatus::Delivered,
+            'failed' => ShipmentStatus::Failed,
+            'cancelled', 'canceled' => ShipmentStatus::Cancelled,
+            default => null,
+        };
     }
 
     /**

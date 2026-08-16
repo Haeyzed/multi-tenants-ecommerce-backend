@@ -43,22 +43,30 @@ class GoodsReceiptService
             ]);
         }
 
-        $allowedStatuses = [
-            PurchaseOrderStatus::Ordered,
-            PurchaseOrderStatus::PartiallyReceived,
-            PurchaseOrderStatus::Approved,
-        ];
-
-        if (! in_array($purchaseOrder->status, $allowedStatuses, true)) {
-            throw ValidationException::withMessages([
-                'purchase_order' => 'Purchase order cannot receive goods in its current status.',
-            ]);
-        }
-
         return DB::transaction(function () use ($purchaseOrder, $items, $actor, $notes): GoodsReceipt {
             /** @var PurchaseOrder $po */
             $po = PurchaseOrder::query()->whereKey($purchaseOrder->getKey())->lockForUpdate()->firstOrFail();
             $po->loadMissing(['items', 'warehouse']);
+
+            $allowedStatuses = [
+                PurchaseOrderStatus::Ordered,
+                PurchaseOrderStatus::PartiallyReceived,
+            ];
+
+            if (! in_array($po->status, $allowedStatuses, true)) {
+                $message = match ($po->status) {
+                    PurchaseOrderStatus::Draft => 'Cannot receive goods on a draft purchase order. Approve and mark ordered first.',
+                    PurchaseOrderStatus::Approved => 'Cannot receive goods on an approved purchase order. Mark it ordered first.',
+                    PurchaseOrderStatus::Received => 'Purchase order has already been fully received.',
+                    PurchaseOrderStatus::Closed => 'Cannot receive goods on a closed purchase order.',
+                    PurchaseOrderStatus::Cancelled => 'Cannot receive goods on a cancelled purchase order.',
+                    default => 'Purchase order cannot receive goods in its current status.',
+                };
+
+                throw ValidationException::withMessages([
+                    'purchase_order' => $message,
+                ]);
+            }
 
             /** @var Warehouse $warehouse */
             $warehouse = $po->warehouse;

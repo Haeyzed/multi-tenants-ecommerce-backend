@@ -87,6 +87,41 @@ class PurchaseOrderController extends Controller
         );
     }
 
+    #[Response(status: 200, description: 'Cancelled purchase order.', type: 'array{success: true, message: string, data: PurchaseOrderResource, meta: null, errors: null}')]
+    public function cancel(PurchaseOrder $purchaseOrder): JsonResponse
+    {
+        $this->authorize('cancel', $purchaseOrder);
+
+        return $this->updated(
+            new PurchaseOrderResource($this->purchaseOrderService->cancel($purchaseOrder)),
+            'Purchase order cancelled successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Closed purchase order.', type: 'array{success: true, message: string, data: PurchaseOrderResource, meta: null, errors: null}')]
+    public function close(PurchaseOrder $purchaseOrder): JsonResponse
+    {
+        $this->authorize('close', $purchaseOrder);
+
+        return $this->updated(
+            new PurchaseOrderResource($this->purchaseOrderService->close($purchaseOrder)),
+            'Purchase order closed successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Goods receipts for a purchase order.', type: 'array{success: true, message: string, data: GoodsReceiptResource[], meta: null, errors: null}')]
+    public function receipts(PurchaseOrder $purchaseOrder): JsonResponse
+    {
+        $this->authorize('view', $purchaseOrder);
+
+        $receipts = $purchaseOrder->goodsReceipts()->with('items')->latest('id')->get();
+
+        return $this->success(
+            GoodsReceiptResource::collection($receipts),
+            'Goods receipts retrieved successfully.',
+        );
+    }
+
     #[Response(status: 201, description: 'Goods receipt created.', type: 'array{success: true, message: string, data: GoodsReceiptResource, meta: null, errors: null}')]
     public function receive(ReceiveGoodsRequest $request, PurchaseOrder $purchaseOrder): JsonResponse
     {

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Purchase order draft, approve, and mark ordered lifecycle.
+ * Purchase order draft, approve, order, cancel, and close lifecycle.
  */
 class PurchaseOrderService
 {
@@ -115,7 +115,13 @@ class PurchaseOrderService
 
     public function show(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
-        return $purchaseOrder->load(['items.product', 'items.productVariant', 'supplier', 'warehouse', 'goodsReceipts']);
+        return $purchaseOrder->load([
+            'items.product',
+            'items.productVariant',
+            'supplier',
+            'warehouse',
+            'goodsReceipts.items',
+        ]);
     }
 
     /**
@@ -157,6 +163,74 @@ class PurchaseOrderService
 
             $locked->status = PurchaseOrderStatus::Ordered;
             $locked->ordered_at = now();
+            $locked->save();
+
+            return $locked->fresh(['items', 'supplier', 'warehouse']) ?? $locked;
+        });
+    }
+
+    /**
+     * Cancel a purchase order that has not received any goods.
+     *
+     * @throws ValidationException
+     */
+    public function cancel(PurchaseOrder $purchaseOrder): PurchaseOrder
+    {
+        return DB::transaction(function () use ($purchaseOrder): PurchaseOrder {
+            /** @var PurchaseOrder $locked */
+            $locked = PurchaseOrder::query()->whereKey($purchaseOrder->getKey())->lockForUpdate()->firstOrFail();
+            $locked->loadMissing(['items', 'goodsReceipts']);
+
+            $cancellable = [
+                PurchaseOrderStatus::Draft,
+                PurchaseOrderStatus::PendingApproval,
+                PurchaseOrderStatus::Approved,
+                PurchaseOrderStatus::Ordered,
+            ];
+
+            if (! in_array($locked->status, $cancellable, true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Only draft, pending approval, approved, or ordered purchase orders with no receipts can be cancelled.',
+                ]);
+            }
+
+            if ($locked->goodsReceipts->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'status' => 'Purchase order cannot be cancelled after goods have been received.',
+                ]);
+            }
+
+            if ($locked->items->contains(fn ($item): bool => (int) $item->received_quantity > 0)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Purchase order cannot be cancelled after goods have been received.',
+                ]);
+            }
+
+            $locked->status = PurchaseOrderStatus::Cancelled;
+            $locked->save();
+
+            return $locked->fresh(['items', 'supplier', 'warehouse']) ?? $locked;
+        });
+    }
+
+    /**
+     * Short-close a partially received purchase order (under-delivery).
+     *
+     * @throws ValidationException
+     */
+    public function close(PurchaseOrder $purchaseOrder): PurchaseOrder
+    {
+        return DB::transaction(function () use ($purchaseOrder): PurchaseOrder {
+            /** @var PurchaseOrder $locked */
+            $locked = PurchaseOrder::query()->whereKey($purchaseOrder->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== PurchaseOrderStatus::PartiallyReceived) {
+                throw ValidationException::withMessages([
+                    'status' => 'Only partially received purchase orders can be closed.',
+                ]);
+            }
+
+            $locked->status = PurchaseOrderStatus::Closed;
             $locked->save();
 
             return $locked->fresh(['items', 'supplier', 'warehouse']) ?? $locked;

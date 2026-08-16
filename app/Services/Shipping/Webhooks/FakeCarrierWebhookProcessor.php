@@ -10,7 +10,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 /**
- * Always-accepting fake carrier webhook processor for tests and local use.
+ * Fake carrier webhook processor for tests and local use.
+ *
+ * When `shipping.drivers.fake.webhook_secret` is a non-empty string, requires
+ * header `X-Fake-Signature` = HMAC-SHA256 of the raw body. When the secret is
+ * empty/null, verification always succeeds (backwards compatible).
  */
 class FakeCarrierWebhookProcessor implements CarrierWebhookProcessorInterface
 {
@@ -21,7 +25,21 @@ class FakeCarrierWebhookProcessor implements CarrierWebhookProcessorInterface
 
     public function verify(Request $request): bool
     {
-        return true;
+        $secret = config('shipping.drivers.fake.webhook_secret');
+
+        if (! is_string($secret) || $secret === '') {
+            return true;
+        }
+
+        $signature = $request->header('X-Fake-Signature');
+
+        if (! is_string($signature) || $signature === '') {
+            return false;
+        }
+
+        $expected = hash_hmac('sha256', $request->getContent(), $secret);
+
+        return hash_equals($expected, $signature);
     }
 
     /**

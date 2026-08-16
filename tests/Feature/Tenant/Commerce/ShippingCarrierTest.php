@@ -6,10 +6,13 @@ use App\Enums\Tenant\Catalog\InventoryMovementType;
 use App\Enums\Tenant\Commerce\ShipmentStatus;
 use App\Events\OrderCreated;
 use App\Events\OrderPaid;
+use App\Exceptions\Shipping\UnsupportedShippingCarrierException;
 use App\Models\Tenant\Customer;
 use App\Models\Tenant\CustomerAddress;
+use App\Models\Tenant\Order;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductPrice;
+use App\Models\Tenant\Shipment;
 use App\Models\Tenant\ShippingMethod;
 use App\Models\Tenant\Warehouse;
 use App\Services\Shipping\Carriers\FakeCarrier;
@@ -112,7 +115,17 @@ test('fake carrier cancels shipment and returns label', function (): void {
 
 test('shipping carrier manager resolves fake driver', function (): void {
     $manager = app(ShippingCarrierManager::class);
-    expect($manager->driver('fake'))->toBeInstanceOf(FakeCarrier::class);
+    expect($manager->driver('fake'))->toBeInstanceOf(FakeCarrier::class)
+        ->and($manager->drivers())->toContain('fake')
+        ->and($manager->isScaffoldAlias('dhl'))->toBeTrue()
+        ->and($manager->isScaffoldAlias('fake'))->toBeFalse();
+});
+
+test('shipping carrier manager throws for unsupported driver', function (): void {
+    $manager = app(ShippingCarrierManager::class);
+
+    expect(fn () => $manager->driver('not-a-carrier'))
+        ->toThrow(UnsupportedShippingCarrierException::class);
 });
 
 test('shipment service optionally uses carrier when enabled', function (): void {
@@ -147,4 +160,44 @@ test('shipment service optionally uses carrier when enabled', function (): void 
     expect($shipment->tracking_number)->toStartWith('FAKE-')
         ->and($shipment->carrier)->toBe('fake')
         ->and($shipment->status)->toBe(ShipmentStatus::Pending);
+});
+
+test('shipment service tracks cancels and labels via carrier', function (): void {
+    $order = Order::factory()->create();
+    $shipment = Shipment::query()->create([
+        'order_id' => $order->id,
+        'tracking_number' => 'FAKE-VIA-CARRIER',
+        'carrier' => 'fake',
+        'status' => ShipmentStatus::Pending,
+    ]);
+
+    $service = app(ShipmentService::class);
+
+    $tracking = $service->trackViaCarrier($shipment);
+    expect($tracking->found)->toBeTrue()
+        ->and($tracking->status)->toBe('in_transit');
+
+    $label = $service->labelViaCarrier($shipment);
+    expect($label->successful)->toBeTrue()
+        ->and($label->contentType)->toBe('application/pdf');
+
+    $cancelled = $service->cancelViaCarrier($shipment);
+    expect($cancelled->successful)->toBeTrue()
+        ->and($shipment->fresh()->status)->toBe(ShipmentStatus::Cancelled);
+});
+
+test('shipment service applyCarrierStatus maps delivered', function (): void {
+    $order = Order::factory()->create();
+    $shipment = Shipment::query()->create([
+        'order_id' => $order->id,
+        'tracking_number' => 'FAKE-APPLY-STATUS',
+        'carrier' => 'fake',
+        'status' => ShipmentStatus::Shipped,
+    ]);
+
+    $updated = app(ShipmentService::class)->applyCarrierStatus('FAKE-APPLY-STATUS', 'Delivered');
+
+    expect($updated)->not->toBeNull()
+        ->and($updated->status)->toBe(ShipmentStatus::Delivered)
+        ->and($updated->delivered_at)->not->toBeNull();
 });

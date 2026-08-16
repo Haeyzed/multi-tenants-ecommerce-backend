@@ -32,6 +32,16 @@ class PurchaseOrderPolicy
         return $user->can('procurement.update');
     }
 
+    public function cancel(User $user, PurchaseOrder $purchaseOrder): bool
+    {
+        return $user->can('procurement.update');
+    }
+
+    public function close(User $user, PurchaseOrder $purchaseOrder): bool
+    {
+        return $user->can('procurement.update');
+    }
+
     public function approve(User $user, PurchaseOrder $purchaseOrder): bool
     {
         return $user->can('procurement.approve');

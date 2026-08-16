@@ -669,6 +669,9 @@ Route::middleware([
                 Route::get('purchase-orders/{purchase_order}', [PurchaseOrderController::class, 'show'])->middleware('permission:procurement.view')->whereNumber('purchase_order')->name('tenant.purchase-orders.show');
                 Route::post('purchase-orders/{purchase_order}/approve', [PurchaseOrderController::class, 'approve'])->middleware('permission:procurement.approve')->whereNumber('purchase_order')->name('tenant.purchase-orders.approve');
                 Route::post('purchase-orders/{purchase_order}/mark-ordered', [PurchaseOrderController::class, 'markOrdered'])->middleware('permission:procurement.update')->whereNumber('purchase_order')->name('tenant.purchase-orders.mark-ordered');
+                Route::post('purchase-orders/{purchase_order}/cancel', [PurchaseOrderController::class, 'cancel'])->middleware('permission:procurement.update')->whereNumber('purchase_order')->name('tenant.purchase-orders.cancel');
+                Route::post('purchase-orders/{purchase_order}/close', [PurchaseOrderController::class, 'close'])->middleware('permission:procurement.update')->whereNumber('purchase_order')->name('tenant.purchase-orders.close');
+                Route::get('purchase-orders/{purchase_order}/receipts', [PurchaseOrderController::class, 'receipts'])->middleware('permission:procurement.view')->whereNumber('purchase_order')->name('tenant.purchase-orders.receipts');
                 Route::post('purchase-orders/{purchase_order}/receive', [PurchaseOrderController::class, 'receive'])->middleware('permission:procurement.receive')->whereNumber('purchase_order')->name('tenant.purchase-orders.receive');
 
                 Route::get('accounts', [AccountController::class, 'index'])->middleware('permission:accounting.view')->name('tenant.accounts.index');

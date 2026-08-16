@@ -13,6 +13,10 @@ use App\DTO\Shipping\ShippingRateQuote;
 
 /**
  * Deterministic fake carrier for tests and local development.
+ *
+ * Tracking numbers use a deterministic `FAKE-` prefix derived from the create
+ * payload. Also used as the scaffold implementation for stub carrier aliases
+ * (dhl, gig, fedex, ups, local) until live HTTP clients exist.
  */
 class FakeCarrier implements ShippingCarrierInterface
 {
