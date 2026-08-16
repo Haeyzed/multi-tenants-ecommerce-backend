@@ -31,4 +31,9 @@ class JournalEntryPolicy
     {
         return $user->can('journal_entries.post') || $user->can('accounting.manage');
     }
+
+    public function reverse(User $user, JournalEntry $journalEntry): bool
+    {
+        return $user->can('journal_entries.reverse') || $user->can('accounting.manage');
+    }
 }

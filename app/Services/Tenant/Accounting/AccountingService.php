@@ -19,6 +19,8 @@ use RuntimeException;
 
 /**
  * Domain posting helpers for sales, goods receipts, and refunds.
+ *
+ * COGS posting is deferred: inventory unit cost is not trivially available on order items at sale time.
  */
 class AccountingService
 {
@@ -29,6 +31,11 @@ class AccountingService
 
     /**
      * Post a sale journal for an order (idempotent via entry_type=sale).
+     *
+     * Checkout stores `grand_total` as the gateway/cash portion still owed after prepaid
+     * tenders; `gift_card_amount` / `store_credit_amount` are separate liability drawdowns.
+     * Debits therefore split cash vs liability accounts, while credits use the full
+     * recognized economic total (grand + prepaid).
      */
     public function postSale(Order $order): ?JournalEntry
     {
@@ -43,7 +50,6 @@ class AccountingService
         }
 
         return $this->journals->postUnique($order, 'sale', function (JournalEntryService $journals) use ($order): JournalEntry {
-            $cashId = $this->accountId('accounting.cash');
             $salesId = $this->accountId('accounting.sales');
             $taxId = $this->accountId('accounting.tax_payable');
 
@@ -52,20 +58,16 @@ class AccountingService
             $shippingTotal = Money::add((string) $order->shipping_total, '0');
             $salesAmount = Money::sub(Money::sub($recognizedTotal, $taxTotal), $shippingTotal);
 
-            $lines = [
-                [
-                    'account_id' => $cashId,
-                    'debit' => $recognizedTotal,
-                    'credit' => '0.00',
-                    'description' => 'Cash received for order '.$order->order_number,
-                ],
-                [
+            $lines = $this->tenderDebitLines($order, 'order '.$order->order_number);
+
+            if (bccomp($salesAmount, '0', 2) > 0) {
+                $lines[] = [
                     'account_id' => $salesId,
                     'debit' => '0.00',
                     'credit' => $salesAmount,
                     'description' => 'Sales revenue for order '.$order->order_number,
-                ],
-            ];
+                ];
+            }
 
             if (bccomp($shippingTotal, '0', 2) > 0) {
                 $lines[] = [
@@ -98,11 +100,14 @@ class AccountingService
 
     /**
      * Post a marketplace sale journal splitting seller payable and commission revenue.
+     *
+     * After seller/commission/tax/shipping credit lines are built, any gap versus tender
+     * debits (empty commissions, rounding, platform residual) is balanced on
+     * `accounting.sales` — credit when under-credited, debit when over-credited.
      */
     public function postMarketplaceSale(Order $order): ?JournalEntry
     {
         return $this->journals->postUnique($order, 'sale', function (JournalEntryService $journals) use ($order): JournalEntry {
-            $cashId = $this->accountId('accounting.cash');
             $sellerPayableId = $this->accountId('accounting.seller_payable');
             $commissionRevenueId = $this->accountId('accounting.commission_revenue');
             $salesId = $this->accountId('accounting.sales');
@@ -120,30 +125,28 @@ class AccountingService
                 $commissionTotal = Money::add($commissionTotal, (string) $commission->commission_amount);
             }
 
-            $grandTotal = $this->recognizedOrderTotal($order);
             $taxTotal = Money::add((string) $order->tax_total, '0');
             $shippingTotal = Money::add((string) $order->shipping_total, '0');
 
-            $lines = array_values(array_filter([
-                [
-                    'account_id' => $cashId,
-                    'debit' => $grandTotal,
-                    'credit' => '0.00',
-                    'description' => 'Cash received for marketplace order '.$order->order_number,
-                ],
-                bccomp($sellerPayableTotal, '0', 2) > 0 ? [
+            $lines = $this->tenderDebitLines($order, 'marketplace order '.$order->order_number);
+
+            if (bccomp($sellerPayableTotal, '0', 2) > 0) {
+                $lines[] = [
                     'account_id' => $sellerPayableId,
                     'debit' => '0.00',
                     'credit' => $sellerPayableTotal,
                     'description' => 'Seller payable for order '.$order->order_number,
-                ] : null,
-                bccomp($commissionTotal, '0', 2) > 0 ? [
+                ];
+            }
+
+            if (bccomp($commissionTotal, '0', 2) > 0) {
+                $lines[] = [
                     'account_id' => $commissionRevenueId,
                     'debit' => '0.00',
                     'credit' => $commissionTotal,
                     'description' => 'Commission revenue for order '.$order->order_number,
-                ] : null,
-            ]));
+                ];
+            }
 
             if (bccomp($shippingTotal, '0', 2) > 0) {
                 $lines[] = [
@@ -162,6 +165,8 @@ class AccountingService
                     'description' => 'Tax payable for order '.$order->order_number,
                 ];
             }
+
+            $lines = $this->balanceMarketplaceResidual($lines, $salesId, $order->order_number);
 
             return $journals->createDraft(
                 reference: 'JE-SALE-'.$order->order_number,
@@ -307,6 +312,10 @@ class AccountingService
 
     /**
      * Post a partial refund journal (idempotent per refund id, not per amount).
+     *
+     * Allocates the refund across sales, tax, and shipping by their share of the
+     * recognized order total. Any rounding residual is applied to the sales debit so
+     * debits always equal the cash credit `$amount`.
      */
     public function postPartialRefund(Order $order, string $amount, Refund $refund): ?JournalEntry
     {
@@ -318,18 +327,21 @@ class AccountingService
             $salesId = $this->accountId('accounting.sales');
             $taxId = $this->accountId('accounting.tax_payable');
 
-            $grandTotal = $this->recognizedOrderTotal($order);
+            $recognizedTotal = $this->recognizedOrderTotal($order);
             $taxTotal = Money::add((string) $order->tax_total, '0');
-            $salesAmount = Money::sub(Money::sub($grandTotal, $taxTotal), Money::add((string) $order->shipping_total, '0'));
+            $shippingTotal = Money::add((string) $order->shipping_total, '0');
 
-            if (bccomp($grandTotal, '0', 2) <= 0) {
+            if (bccomp($recognizedTotal, '0', 2) <= 0) {
                 throw ValidationException::withMessages([
                     'order' => 'Order has no recognized total for a partial refund journal.',
                 ]);
             }
 
-            $refundSales = Money::percent($salesAmount, bcdiv(bcmul($amount, '100', 4), $grandTotal, 4));
-            $refundTax = Money::percent($taxTotal, bcdiv(bcmul($amount, '100', 4), $grandTotal, 4));
+            $ratioPercent = bcdiv(bcmul($amount, '100', 4), $recognizedTotal, 4);
+            $refundTax = Money::percent($taxTotal, $ratioPercent);
+            $refundShipping = Money::percent($shippingTotal, $ratioPercent);
+            // Sales absorbs rounding so refundSales + refundTax + refundShipping === $amount.
+            $refundSales = Money::sub(Money::sub($amount, $refundTax), $refundShipping);
 
             $lines = [
                 [
@@ -338,13 +350,16 @@ class AccountingService
                     'credit' => $amount,
                     'description' => 'Partial refund cash for order '.$order->order_number,
                 ],
-                [
+            ];
+
+            if (bccomp($refundSales, '0', 2) > 0) {
+                $lines[] = [
                     'account_id' => $salesId,
                     'debit' => $refundSales,
                     'credit' => '0.00',
                     'description' => 'Partial sales reversal for order '.$order->order_number,
-                ],
-            ];
+                ];
+            }
 
             if (bccomp($refundTax, '0', 2) > 0) {
                 $lines[] = [
@@ -352,6 +367,15 @@ class AccountingService
                     'debit' => $refundTax,
                     'credit' => '0.00',
                     'description' => 'Partial tax reversal for order '.$order->order_number,
+                ];
+            }
+
+            if (bccomp($refundShipping, '0', 2) > 0) {
+                $lines[] = [
+                    'account_id' => $salesId,
+                    'debit' => $refundShipping,
+                    'credit' => '0.00',
+                    'description' => 'Partial shipping reversal for order '.$order->order_number,
                 ];
             }
 
@@ -411,5 +435,88 @@ class AccountingService
         }
 
         return $total;
+    }
+
+    /**
+     * Debit cash for gateway `grand_total` and liability accounts for prepaid tenders.
+     *
+     * @return list<array{account_id: int, debit: string, credit: string, description: string}>
+     */
+    protected function tenderDebitLines(Order $order, string $contextLabel): array
+    {
+        $lines = [];
+        $cashAmount = Money::add((string) $order->grand_total, '0');
+
+        if (bccomp($cashAmount, '0', 2) > 0) {
+            $lines[] = [
+                'account_id' => $this->accountId('accounting.cash'),
+                'debit' => $cashAmount,
+                'credit' => '0.00',
+                'description' => 'Cash received for '.$contextLabel,
+            ];
+        }
+
+        if (Schema::hasColumn('orders', 'gift_card_amount')) {
+            $giftCardAmount = Money::add((string) ($order->gift_card_amount ?? '0.00'), '0');
+            if (bccomp($giftCardAmount, '0', 2) > 0) {
+                $lines[] = [
+                    'account_id' => $this->accountId('accounting.gift_card_liability'),
+                    'debit' => $giftCardAmount,
+                    'credit' => '0.00',
+                    'description' => 'Gift card tender for '.$contextLabel,
+                ];
+            }
+        }
+
+        if (Schema::hasColumn('orders', 'store_credit_amount')) {
+            $storeCreditAmount = Money::add((string) ($order->store_credit_amount ?? '0.00'), '0');
+            if (bccomp($storeCreditAmount, '0', 2) > 0) {
+                $lines[] = [
+                    'account_id' => $this->accountId('accounting.store_credit_liability'),
+                    'debit' => $storeCreditAmount,
+                    'credit' => '0.00',
+                    'description' => 'Store credit tender for '.$contextLabel,
+                ];
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * Balance marketplace sale lines on sales revenue when credits do not match tender debits.
+     *
+     * @param  list<array{account_id: int, debit: string, credit: string, description: string}>  $lines
+     * @return list<array{account_id: int, debit: string, credit: string, description: string}>
+     */
+    protected function balanceMarketplaceResidual(array $lines, int $salesId, string $orderNumber): array
+    {
+        $totalDebit = '0.00';
+        $totalCredit = '0.00';
+
+        foreach ($lines as $line) {
+            $totalDebit = Money::add($totalDebit, $line['debit']);
+            $totalCredit = Money::add($totalCredit, $line['credit']);
+        }
+
+        $gap = Money::sub($totalDebit, $totalCredit);
+
+        if (bccomp($gap, '0', 2) > 0) {
+            $lines[] = [
+                'account_id' => $salesId,
+                'debit' => '0.00',
+                'credit' => $gap,
+                'description' => 'Marketplace residual / platform revenue for order '.$orderNumber,
+            ];
+        } elseif (bccomp($gap, '0', 2) < 0) {
+            $lines[] = [
+                'account_id' => $salesId,
+                'debit' => Money::sub('0.00', $gap),
+                'credit' => '0.00',
+                'description' => 'Marketplace residual balancing debit for order '.$orderNumber,
+            ];
+        }
+
+        return $lines;
     }
 }

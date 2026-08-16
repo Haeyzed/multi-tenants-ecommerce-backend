@@ -28,6 +28,14 @@ class JournalEntryLineResource extends JsonResource
             'credit' => $line->credit,
             'description' => $line->description,
             'account' => $this->whenLoaded('account', fn () => new AccountResource($line->account)),
+            'journal_entry' => $this->whenLoaded('journalEntry', fn () => [
+                'id' => $line->journalEntry->id,
+                'reference' => $line->journalEntry->reference,
+                'description' => $line->journalEntry->description,
+                'entry_date' => $line->journalEntry->entry_date?->toDateString(),
+                'entry_type' => $line->journalEntry->entry_type,
+                'status' => $line->journalEntry->status?->value,
+            ]),
         ];
     }
 }

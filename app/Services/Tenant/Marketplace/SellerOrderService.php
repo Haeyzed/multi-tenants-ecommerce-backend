@@ -20,6 +20,8 @@ class SellerOrderService
 {
     /**
      * Split a customer order into seller sub-orders grouped by seller_id.
+     *
+     * Idempotent: skips sellers that already have a seller_order for this order.
      */
     public function splitFromOrder(Order $order): void
     {
@@ -34,6 +36,12 @@ class SellerOrderService
         }
 
         foreach ($grouped as $sellerId => $items) {
+            $sellerId = (int) $sellerId;
+
+            if (SellerOrder::query()->where('order_id', $order->id)->where('seller_id', $sellerId)->exists()) {
+                continue;
+            }
+
             $subtotal = '0.00';
 
             foreach ($items as $item) {
@@ -43,7 +51,7 @@ class SellerOrderService
             /** @var SellerOrder $sellerOrder */
             $sellerOrder = SellerOrder::query()->create([
                 'order_id' => $order->id,
-                'seller_id' => (int) $sellerId,
+                'seller_id' => $sellerId,
                 'status' => SellerOrderStatus::Pending,
                 'subtotal' => $subtotal,
                 'discount_total' => '0.00',

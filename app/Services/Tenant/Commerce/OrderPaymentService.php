@@ -19,6 +19,7 @@ use App\Services\Payment\PaymentManager;
 use App\Services\Payment\PaymentWebhookManager;
 use App\Services\Tenant\Accounting\AccountingService;
 use App\Services\Tenant\Marketplace\CommissionService;
+use App\Services\Tenant\Marketplace\SellerOrderService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,7 @@ class OrderPaymentService
         private readonly AccountingService $accounting,
         private readonly CommissionService $commissions,
         private readonly CommerceSettingService $commerceSettings,
+        private readonly SellerOrderService $sellerOrders,
     ) {}
 
     /**
@@ -226,10 +228,11 @@ class OrderPaymentService
             $this->orderInventory->commitSaleForOrder($order);
 
             if ($this->commerceSettings->isMarketplaceEnabled()) {
-                $this->commissions->createForOrder($order);
+                $this->sellerOrders->splitFromOrder($order->fresh(['items.sellerOffer']) ?? $order);
+                $this->commissions->createForOrder($order->fresh(['items']) ?? $order);
             }
 
-            $this->accounting->postSale($order);
+            $this->accounting->postSale($order->fresh(['items']) ?? $order);
 
             event(new OrderPaid($order->fresh(['items', 'customer']) ?? $order));
 

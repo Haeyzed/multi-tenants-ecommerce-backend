@@ -159,6 +159,7 @@ final class RbacPermissions
         'accounting.manage',
         'journal_entries.create',
         'journal_entries.post',
+        'journal_entries.reverse',
         'sellers.view',
         'sellers.create',
         'sellers.update',

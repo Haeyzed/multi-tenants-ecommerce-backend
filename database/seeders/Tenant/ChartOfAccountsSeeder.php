@@ -23,6 +23,8 @@ class ChartOfAccountsSeeder extends Seeder
         ['code' => '2000', 'name' => 'Accounts Payable', 'type' => AccountType::Liability, 'setting' => 'accounting.ap'],
         ['code' => '2100', 'name' => 'Tax Payable', 'type' => AccountType::Liability, 'setting' => 'accounting.tax_payable'],
         ['code' => '2200', 'name' => 'Seller Payable', 'type' => AccountType::Liability, 'setting' => 'accounting.seller_payable'],
+        ['code' => '2300', 'name' => 'Gift Card Liability', 'type' => AccountType::Liability, 'setting' => 'accounting.gift_card_liability'],
+        ['code' => '2310', 'name' => 'Store Credit Liability', 'type' => AccountType::Liability, 'setting' => 'accounting.store_credit_liability'],
         ['code' => '4000', 'name' => 'Sales Revenue', 'type' => AccountType::Revenue, 'setting' => 'accounting.sales'],
         ['code' => '4100', 'name' => 'Commission Revenue', 'type' => AccountType::Revenue, 'setting' => 'accounting.commission_revenue'],
         ['code' => '5000', 'name' => 'Cost of Goods Sold', 'type' => AccountType::Expense, 'setting' => 'accounting.cogs'],

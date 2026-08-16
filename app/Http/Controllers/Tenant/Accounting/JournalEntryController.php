@@ -91,4 +91,21 @@ class JournalEntryController extends Controller
             $shouldPost ? 'Journal entry posted successfully.' : 'Journal entry draft created successfully.',
         );
     }
+
+    #[Response(
+        status: 200,
+        description: 'Reversing journal entry.',
+        type: 'array{success: true, message: string, data: JournalEntryResource, meta: null, errors: null}',
+    )]
+    public function reverse(JournalEntry $journalEntry): JsonResponse
+    {
+        $this->authorize('reverse', $journalEntry);
+
+        $reversal = $this->journalEntryService->reverse($journalEntry);
+
+        return $this->success(
+            new JournalEntryResource($reversal->load('lines.account')),
+            'Journal entry reversed successfully.',
+        );
+    }
 }

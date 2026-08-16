@@ -313,6 +313,10 @@ class CheckoutService
 
             $this->orderInventory->reserveForOrder($order->fresh(['items']) ?? $order);
 
+            if ($this->commerceSettings->isMarketplaceEnabled()) {
+                $this->sellerOrders->splitFromOrder($order->fresh(['items.sellerOffer']) ?? $order);
+            }
+
             if ($isFullyPrepaid) {
                 $this->orderInventory->commitSaleForOrder($order->fresh(['items']) ?? $order);
 
@@ -321,10 +325,6 @@ class CheckoutService
                 }
 
                 $this->accounting->postSale($order->fresh(['items']) ?? $order);
-            }
-
-            if ($this->commerceSettings->isMarketplaceEnabled()) {
-                $this->sellerOrders->splitFromOrder($order->fresh(['items.sellerOffer']) ?? $order);
             }
 
             $cart->status = CartStatus::Converted;
