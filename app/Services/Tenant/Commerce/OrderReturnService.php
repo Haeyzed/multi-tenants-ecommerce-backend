@@ -112,6 +112,8 @@ class OrderReturnService
         }
 
         return DB::transaction(function () use ($customer, $order, $data, $items): OrderReturn {
+            Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
             $sellerIds = [];
             $prepared = [];
 
@@ -119,6 +121,7 @@ class OrderReturnService
                 $orderItem = OrderItem::query()
                     ->whereKey((int) $line['order_item_id'])
                     ->where('order_id', $order->id)
+                    ->lockForUpdate()
                     ->first();
 
                 if ($orderItem === null) {
@@ -437,9 +440,12 @@ class OrderReturnService
      */
     protected function assertOrderEligibleForReturn(Order $order): void
     {
-        if ($order->payment_status !== OrderPaymentStatus::Paid) {
+        if (! in_array($order->payment_status, [
+            OrderPaymentStatus::Paid,
+            OrderPaymentStatus::PartiallyRefunded,
+        ], true)) {
             throw ValidationException::withMessages([
-                'order' => 'Only paid orders can be returned.',
+                'order' => 'Only paid or partially refunded orders can be returned.',
             ]);
         }
 

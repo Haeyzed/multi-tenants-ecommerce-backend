@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant\Commerce;
 
 use App\Http\Requests\BaseRequest;
+use App\Rules\MoneyAmount;
 
 class StoreGiftCardRequest extends BaseRequest
 {
@@ -14,7 +15,7 @@ class StoreGiftCardRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', new MoneyAmount],
             'currency' => ['sometimes', 'nullable', 'string', 'size:3'],
             'expires_at' => ['sometimes', 'nullable', 'date', 'after:now'],
             'activate' => ['sometimes', 'boolean'],

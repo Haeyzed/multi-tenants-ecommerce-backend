@@ -311,7 +311,7 @@ class AccountingService
     {
         $referenceSuffix = str_replace('.', '', $amount);
 
-        return $this->journals->postUnique($order, 'partial_refund_'.$referenceSuffix, function (JournalEntryService $journals) use ($order, $amount): JournalEntry {
+        return $this->journals->postUnique($order, 'partial_refund_'.$referenceSuffix, function (JournalEntryService $journals) use ($order, $amount, $referenceSuffix): JournalEntry {
             $cashId = $this->accountId('accounting.cash');
             $salesId = $this->accountId('accounting.sales');
             $taxId = $this->accountId('accounting.tax_payable');

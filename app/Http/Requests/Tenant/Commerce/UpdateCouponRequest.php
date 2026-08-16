@@ -6,6 +6,7 @@ namespace App\Http\Requests\Tenant\Commerce;
 
 use App\Enums\Tenant\Commerce\CouponType;
 use App\Http\Requests\BaseRequest;
+use App\Rules\MoneyAmount;
 use Illuminate\Validation\Rule;
 
 class UpdateCouponRequest extends BaseRequest
@@ -22,9 +23,9 @@ class UpdateCouponRequest extends BaseRequest
             'name' => ['sometimes', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'type' => ['sometimes', 'string', Rule::enum(CouponType::class)],
-            'value' => ['sometimes', 'numeric', 'min:0'],
-            'minimum_order_amount' => ['sometimes', 'numeric', 'min:0'],
-            'maximum_discount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'value' => ['sometimes', new MoneyAmount(allowZero: true)],
+            'minimum_order_amount' => ['sometimes', new MoneyAmount(allowZero: true)],
+            'maximum_discount' => ['sometimes', 'nullable', new MoneyAmount(allowZero: true, allowNull: true)],
             'usage_limit' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'usage_limit_per_customer' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'starts_at' => ['sometimes', 'nullable', 'date'],

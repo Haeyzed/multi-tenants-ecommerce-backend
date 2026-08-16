@@ -6,6 +6,7 @@ namespace App\Http\Requests\Tenant\Commerce;
 
 use App\Http\Requests\BaseRequest;
 use App\Models\Tenant\Customer;
+use App\Rules\MoneyAmount;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
@@ -47,7 +48,7 @@ class CheckoutRequest extends BaseRequest
             'coupon_code' => ['sometimes', 'nullable', 'string', 'max:50'],
             'loyalty_points' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'gift_card_code' => ['sometimes', 'nullable', 'string', 'max:64'],
-            'store_credit_amount' => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
+            'store_credit_amount' => ['sometimes', 'nullable', new MoneyAmount(allowNull: true)],
             'idempotency_key' => ['sometimes', 'nullable', 'string', 'max:255'],
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
         ];

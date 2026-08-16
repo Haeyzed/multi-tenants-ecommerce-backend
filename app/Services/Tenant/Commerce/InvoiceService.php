@@ -87,7 +87,11 @@ class InvoiceService
             }
 
             if ($queuePdf) {
-                GenerateInvoicePdfJob::dispatch($invoice->id, tenancy()->initialized ? tenancy()->tenant->getTenantKey() : null);
+                $tenantKey = tenancy()->initialized ? tenancy()->tenant?->getTenantKey() : null;
+
+                if ($tenantKey !== null) {
+                    GenerateInvoicePdfJob::dispatch($invoice->id, $tenantKey);
+                }
             }
 
             return $invoice->fresh(['items', 'order', 'customer']) ?? $invoice;

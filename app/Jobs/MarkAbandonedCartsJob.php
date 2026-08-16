@@ -83,8 +83,8 @@ class MarkAbandonedCartsJob implements ShouldQueue
                 });
         };
 
-        if ($this->tenantId === null) {
-            $callback();
+        if ($this->tenantId === null || $this->tenantId === '') {
+            Log::warning('MarkAbandonedCartsJob: tenant id is required');
 
             return;
         }

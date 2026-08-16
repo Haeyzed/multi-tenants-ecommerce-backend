@@ -54,8 +54,10 @@ class GenerateInvoicePdfJob implements ShouldQueue
                 ->toMediaCollection(MediaCollection::Documents->value);
         };
 
-        if ($this->tenantId === null) {
-            $callback();
+        if ($this->tenantId === null || $this->tenantId === '') {
+            Log::warning('GenerateInvoicePdfJob: tenant id is required', [
+                'invoice_id' => $this->invoiceId,
+            ]);
 
             return;
         }
