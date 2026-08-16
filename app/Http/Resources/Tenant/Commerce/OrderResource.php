@@ -6,11 +6,16 @@ namespace App\Http\Resources\Tenant\Commerce;
 
 use App\Http\Resources\Tenant\Customer\CustomerResource;
 use App\Models\Tenant\Order;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * API resource for a sales order.
+ *
+ * `grand_total` / `amount_due` is the remaining gateway charge (prepaid tenders already
+ * applied). `recognized_total` is the economic order total including gift card and
+ * store credit snapshots.
  *
  * @mixin Order
  */
@@ -24,6 +29,11 @@ class OrderResource extends JsonResource
         /** @var Order $order */
         $order = $this->resource;
 
+        $amountDue = Money::add((string) $order->grand_total, '0');
+        $giftCardAmount = Money::add((string) ($order->gift_card_amount ?? '0.00'), '0');
+        $storeCreditAmount = Money::add((string) ($order->store_credit_amount ?? '0.00'), '0');
+        $recognizedTotal = Money::add(Money::add($amountDue, $giftCardAmount), $storeCreditAmount);
+
         return [
             'id' => $order->id,
             'order_number' => $order->order_number,
@@ -32,19 +42,21 @@ class OrderResource extends JsonResource
             'status' => $order->status,
             'payment_status' => $order->payment_status,
             'fulfillment_status' => $order->fulfillment_status,
-            'subtotal' => $order->subtotal,
-            'discount_total' => $order->discount_total,
+            'subtotal' => Money::add((string) $order->subtotal, '0'),
+            'discount_total' => Money::add((string) $order->discount_total, '0'),
             'coupon_id' => $order->coupon_id,
             'coupon_code' => $order->coupon_code,
             'promotion_snapshot' => $order->promotion_snapshot,
             'loyalty_points_earned' => $order->loyalty_points_earned,
             'loyalty_points_redeemed' => $order->loyalty_points_redeemed,
-            'tax_total' => $order->tax_total,
-            'shipping_total' => $order->shipping_total,
-            'grand_total' => $order->grand_total,
+            'tax_total' => Money::add((string) $order->tax_total, '0'),
+            'shipping_total' => Money::add((string) $order->shipping_total, '0'),
+            'grand_total' => $amountDue,
+            'amount_due' => $amountDue,
+            'recognized_total' => $recognizedTotal,
             'gift_card_id' => $order->gift_card_id,
-            'gift_card_amount' => $order->gift_card_amount,
-            'store_credit_amount' => $order->store_credit_amount,
+            'gift_card_amount' => $giftCardAmount,
+            'store_credit_amount' => $storeCreditAmount,
             'shipping_method_id' => $order->shipping_method_id,
             'shipping_address_snapshot' => $order->shipping_address_snapshot,
             'billing_address_snapshot' => $order->billing_address_snapshot,
@@ -63,7 +75,7 @@ class OrderResource extends JsonResource
                     'id' => $order->shippingMethod->id,
                     'name' => $order->shippingMethod->name,
                     'code' => $order->shippingMethod->code,
-                    'amount' => $order->shippingMethod->amount,
+                    'amount' => Money::add((string) $order->shippingMethod->amount, '0'),
                 ];
             }),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),

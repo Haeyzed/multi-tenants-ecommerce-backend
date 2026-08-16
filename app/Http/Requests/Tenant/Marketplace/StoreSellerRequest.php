@@ -6,6 +6,7 @@ namespace App\Http\Requests\Tenant\Marketplace;
 
 use App\Enums\Tenant\Marketplace\CommissionType;
 use App\Http\Requests\BaseRequest;
+use App\Rules\MoneyAmount;
 use Illuminate\Validation\Rule;
 
 class StoreSellerRequest extends BaseRequest
@@ -23,7 +24,7 @@ class StoreSellerRequest extends BaseRequest
             'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
             'commission_type' => ['sometimes', 'nullable', 'string', Rule::enum(CommissionType::class)],
             'commission_rate' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
-            'commission_fixed_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'commission_fixed_amount' => ['sometimes', 'nullable', new MoneyAmount(allowZero: true, allowNull: true)],
         ];
     }
 }

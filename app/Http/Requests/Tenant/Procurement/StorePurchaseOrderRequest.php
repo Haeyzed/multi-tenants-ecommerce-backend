@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant\Procurement;
 
 use App\Http\Requests\BaseRequest;
+use App\Rules\MoneyAmount;
 
 class StorePurchaseOrderRequest extends BaseRequest
 {
@@ -23,8 +24,8 @@ class StorePurchaseOrderRequest extends BaseRequest
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.product_variant_id' => ['sometimes', 'nullable', 'integer', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
-            'items.*.tax' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'items.*.unit_cost' => ['required', new MoneyAmount(allowZero: true)],
+            'items.*.tax' => ['sometimes', 'nullable', new MoneyAmount(allowZero: true, allowNull: true)],
         ];
     }
 }

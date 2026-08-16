@@ -10,6 +10,7 @@ use App\Enums\Tenant\Commerce\RefundStatus;
 use App\Events\OrderCreated;
 use App\Events\OrderPaid;
 use App\Http\Requests\Tenant\Commerce\StoreGiftCardRequest;
+use App\Http\Resources\Tenant\Commerce\OrderResource;
 use App\Jobs\GenerateInvoicePdfJob;
 use App\Jobs\MarkAbandonedCartsJob;
 use App\Models\Tenant\Customer;
@@ -145,6 +146,43 @@ test('partial prepaid refunds can restore the remaining balance in a later call'
     expect($second->status)->toBe(RefundStatus::Completed)
         ->and($order->fresh()->payment_status)->toBe(OrderPaymentStatus::Refunded)
         ->and($giftCard->fresh()->balance)->toBe('200.00');
+});
+
+test('order resource exposes amount_due and recognized_total for prepaid orders', function (): void {
+    Event::fake([OrderCreated::class, OrderPaid::class]);
+
+    $customer = Customer::factory()->create();
+    $address = CustomerAddress::factory()->for($customer)->default()->create();
+    $product = Product::factory()->active()->create(['allow_backorder' => false]);
+    ProductPrice::query()->create([
+        'priceable_type' => Product::class,
+        'priceable_id' => $product->id,
+        'currency' => 'NGN',
+        'amount' => '100.00',
+        'is_active' => true,
+    ]);
+    $warehouse = Warehouse::factory()->create(['is_default' => true]);
+    $inventory = app(InventoryService::class)->getOrCreate($warehouse, $product);
+    app(InventoryService::class)->adjust($inventory, 10, InventoryMovementType::OpeningStock, 'Opening');
+
+    [, $plainCode] = app(GiftCardService::class)->create([
+        'amount' => '200.00',
+        'currency' => 'NGN',
+        'activate' => true,
+    ]);
+
+    app(CartService::class)->addItem($customer, $product->id, null, 2);
+    $order = app(CheckoutService::class)->checkout($customer, [
+        'shipping_address_id' => $address->id,
+        'gift_card_code' => $plainCode,
+    ]);
+
+    $payload = (new OrderResource($order))->resolve();
+
+    expect($payload['amount_due'])->toBe('0.00')
+        ->and($payload['grand_total'])->toBe('0.00')
+        ->and($payload['gift_card_amount'])->toBe('200.00')
+        ->and($payload['recognized_total'])->toBe('200.00');
 });
 
 test('tenant commerce jobs exit safely when tenant id is missing', function (): void {

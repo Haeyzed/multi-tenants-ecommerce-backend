@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant\Accounting;
 
 use App\Http\Requests\BaseRequest;
+use App\Rules\MoneyAmount;
 
 /**
  * Validates journal entry create + post payloads.
@@ -24,8 +25,8 @@ class StoreJournalEntryRequest extends BaseRequest
             'post' => ['sometimes', 'boolean'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.account_id' => ['required', 'integer', 'exists:accounts,id'],
-            'lines.*.debit' => ['sometimes', 'numeric', 'min:0'],
-            'lines.*.credit' => ['sometimes', 'numeric', 'min:0'],
+            'lines.*.debit' => ['sometimes', new MoneyAmount(allowZero: true)],
+            'lines.*.credit' => ['sometimes', new MoneyAmount(allowZero: true)],
             'lines.*.description' => ['sometimes', 'nullable', 'string'],
         ];
     }

@@ -7,6 +7,7 @@ namespace App\Http\Requests\Tenant\Storefront;
 use App\Enums\Tenant\Catalog\ProductAvailability;
 use App\Enums\Tenant\Catalog\ProductSearchSort;
 use App\Http\Requests\BaseRequest;
+use App\Rules\MoneyAmount;
 use Illuminate\Validation\Rule;
 
 /**
@@ -27,8 +28,8 @@ class SearchStorefrontProductsRequest extends BaseRequest
             'collection_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'tag_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'seller_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'min_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'max_price' => ['sometimes', 'nullable', 'numeric', 'min:0', 'gte:min_price'],
+            'min_price' => ['sometimes', 'nullable', new MoneyAmount(allowZero: true, allowNull: true)],
+            'max_price' => ['sometimes', 'nullable', new MoneyAmount(allowZero: true, allowNull: true), 'gte:min_price'],
             'currency' => ['sometimes', 'nullable', 'string', 'size:3'],
             'min_rating' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:5'],
             'is_featured' => ['sometimes', 'nullable', 'boolean'],

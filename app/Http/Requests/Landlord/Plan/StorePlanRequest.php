@@ -6,6 +6,7 @@ namespace App\Http\Requests\Landlord\Plan;
 
 use App\Enums\Landlord\BillingInterval;
 use App\Http\Requests\BaseRequest;
+use App\Rules\MoneyAmount;
 use Illuminate\Validation\Rule;
 
 /**
@@ -22,7 +23,7 @@ class StorePlanRequest extends BaseRequest
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['sometimes', 'nullable', 'string', 'max:255', 'alpha_dash', Rule::unique('plans', 'slug')],
             'description' => ['sometimes', 'nullable', 'string'],
-            'price' => ['sometimes', 'numeric', 'min:0'],
+            'price' => ['sometimes', new MoneyAmount(allowZero: true)],
             'currency' => ['sometimes', 'string', 'size:3'],
             'currency_id' => ['sometimes', 'nullable', 'integer'],
             'billing_interval' => ['sometimes', Rule::enum(BillingInterval::class)],

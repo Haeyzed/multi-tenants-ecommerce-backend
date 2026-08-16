@@ -7,6 +7,7 @@ namespace App\Http\Requests\Landlord\Plan;
 use App\Enums\Landlord\BillingInterval;
 use App\Http\Requests\BaseRequest;
 use App\Models\Landlord\Plan;
+use App\Rules\MoneyAmount;
 use Illuminate\Validation\Rule;
 
 /**
@@ -33,7 +34,7 @@ class UpdatePlanRequest extends BaseRequest
                 Rule::unique('plans', 'slug')->ignore($plan?->id),
             ],
             'description' => ['sometimes', 'nullable', 'string'],
-            'price' => ['sometimes', 'numeric', 'min:0'],
+            'price' => ['sometimes', new MoneyAmount(allowZero: true)],
             'currency' => ['sometimes', 'string', 'size:3'],
             'currency_id' => ['sometimes', 'nullable', 'integer'],
             'billing_interval' => ['sometimes', Rule::enum(BillingInterval::class)],
