@@ -19,7 +19,7 @@ class UpdateCouponRequest extends BaseRequest
         $couponId = $this->route('coupon')?->id;
 
         return [
-            'code' => ['sometimes', 'string', 'max:50', Rule::unique('coupons', 'code')->ignore($couponId)],
+            'code' => ['sometimes', 'string', 'max:50', Rule::unique('coupons', 'code')->ignore($couponId)->withoutTrashed()],
             'name' => ['sometimes', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'type' => ['sometimes', 'string', Rule::enum(CouponType::class)],

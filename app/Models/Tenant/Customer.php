@@ -37,6 +37,26 @@ class Customer extends Authenticatable implements HasMedia, MustVerifyEmail
     use CanResetPassword, HasApiTokens, HasFactory, InteractsWithMedia, MustVerifyEmailTrait, Notifiable, SoftDeletes;
 
     /**
+     * Free unique email/phone values on soft delete so they can be re-registered.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Customer $customer): void {
+            if ($customer->isForceDeleting()) {
+                return;
+            }
+
+            $customer->email = 'deleted+'.$customer->id.'.'.time().'@deleted.local';
+
+            if ($customer->phone !== null && $customer->phone !== '') {
+                $customer->phone = 'deleted-'.$customer->id.'-'.time();
+            }
+
+            $customer->saveQuietly();
+        });
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

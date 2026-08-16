@@ -23,7 +23,9 @@ use App\Services\Payment\PaymentManager;
 use App\Services\Tenant\Accounting\AccountingService;
 use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -152,6 +154,23 @@ class RefundService
                 : new PaymentRefundResult(
                     successful: $gateway->refundPayment($providerTransactionId, $requestedAmount),
                 );
+        } catch (ConnectionException $exception) {
+            // Ambiguous: provider may have accepted the refund. Keep Processing so
+            // refundableAmount() blocks a blind retry that could double-refund.
+            $this->markRefundPendingReconciliation($refund, [
+                'exception' => $exception->getMessage(),
+            ]);
+
+            Log::warning('Refund left processing after ambiguous gateway failure', [
+                'refund_id' => $refund->id,
+                'order_id' => $order->id,
+                'payment_id' => $payment->id,
+                'exception' => $exception->getMessage(),
+            ]);
+
+            throw ValidationException::withMessages([
+                'refund' => 'Refund is pending reconciliation with the payment provider. Do not retry until status is confirmed.',
+            ]);
         } catch (Throwable $exception) {
             $this->markRefundFailed($refund, [
                 'exception' => $exception->getMessage(),
@@ -427,6 +446,20 @@ class RefundService
     {
         $refund->status = RefundStatus::Failed;
         $refund->metadata = $metadata;
+        $refund->save();
+    }
+
+    /**
+     * Persist reconciliation metadata while leaving the refund in Processing.
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    protected function markRefundPendingReconciliation(Refund $refund, array $metadata): void
+    {
+        $refund->metadata = array_merge($refund->metadata ?? [], $metadata, [
+            'pending_reconciliation' => true,
+            'at' => now()->toIso8601String(),
+        ]);
         $refund->save();
     }
 

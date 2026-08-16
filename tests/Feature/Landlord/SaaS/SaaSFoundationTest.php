@@ -22,6 +22,7 @@ use App\Models\Landlord\Tenant;
 use App\Models\Landlord\TenantProfile;
 use App\Models\Landlord\User;
 use App\Models\Landlord\WebhookEvent;
+use App\Services\Landlord\Domain\DomainService;
 use App\Services\Landlord\Feature\FeatureAccessService;
 use App\Services\Landlord\Subscription\SubscriptionService;
 use App\Services\Payment\Gateways\PaystackGateway;
@@ -409,6 +410,21 @@ test('subscription cancel and feature middleware deny access', function (): void
 });
 
 test('paystack webhook is idempotent and signature protected', function (): void {
+    Http::fake([
+        'https://api.paystack.co/transaction/verify/*' => Http::response([
+            'status' => true,
+            'message' => 'Verification successful',
+            'data' => [
+                'id' => 555,
+                'status' => 'success',
+                'reference' => 'wh_ref_1',
+                'amount' => 500000,
+                'currency' => 'NGN',
+                'paid_at' => now()->toIso8601String(),
+            ],
+        ], 200),
+    ]);
+
     $tenant = makeTenantRecord();
     $plan = makePlan(['slug' => 'wh-plan-'.uniqid(), 'price' => '5000.00']);
 
@@ -543,4 +559,30 @@ test('paystack gateway converts amounts and verifies via http fake', function ()
     $verify = $gateway->verifyPayment('ref_http_1');
     expect($verify->successful)->toBeTrue()
         ->and($verify->amount)->toBe('15000.00');
+});
+
+test('additional domains require custom-domain feature when subscribed', function (): void {
+    $tenant = makeTenantRecord();
+    $plan = makePlan(['name' => 'Starter Domains', 'slug' => 'starter-domains-'.uniqid(), 'price' => '0.00']);
+    $feature = makeFeature(['slug' => 'custom-domain', 'name' => 'Custom Domain']);
+    $plan->features()->sync([
+        $feature->id => ['is_enabled' => false, 'limit' => null],
+    ]);
+
+    app(SubscriptionService::class)->subscribe($tenant, $plan);
+
+    expect(fn () => app(DomainService::class)->store($tenant->fresh(), [
+        'domain' => 'custom-'.$tenant->slug.'.test',
+    ]))->toThrow(ValidationException::class);
+
+    $plan->features()->sync([
+        $feature->id => ['is_enabled' => true, 'limit' => null],
+    ]);
+
+    $domain = app(DomainService::class)->store($tenant->fresh(), [
+        'domain' => 'custom-'.$tenant->slug.'.test',
+    ]);
+
+    expect($domain->domain)->toBe('custom-'.$tenant->slug.'.test')
+        ->and($tenant->fresh()->domains()->count())->toBe(2);
 });

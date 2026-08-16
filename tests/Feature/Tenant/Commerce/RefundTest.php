@@ -15,6 +15,7 @@ use App\Models\Tenant\JournalEntry;
 use App\Models\Tenant\OrderPayment;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductPrice;
+use App\Models\Tenant\Refund;
 use App\Models\Tenant\Warehouse;
 use App\Services\Payment\Gateways\PaystackGateway;
 use App\Services\Tenant\Commerce\CartService;
@@ -24,6 +25,8 @@ use App\Services\Tenant\Commerce\RefundService;
 use App\Services\Tenant\Inventory\InventoryService;
 use Database\Seeders\Tenant\ChartOfAccountsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
@@ -46,6 +49,10 @@ beforeEach(function (): void {
     }
 
     $this->seed(ChartOfAccountsSeeder::class);
+});
+
+afterEach(function (): void {
+    Http::swap(new Factory);
 });
 
 /**
@@ -166,6 +173,32 @@ test('refund service rejects amount above refundable balance', function (): void
 
     expect(fn () => app(RefundService::class)->create($order, $fixture['payment'], [
         'amount' => '99999.00',
+    ]))->toThrow(ValidationException::class);
+});
+
+test('ambiguous gateway connection failures leave refund processing and block retries', function (): void {
+    $fixture = paidOrderFixture();
+    $order = $fixture['payment']->order;
+    $payment = $fixture['payment'];
+
+    $mock = Mockery::mock(PaystackGateway::class);
+    $mock->shouldReceive('refundPaymentDetailed')
+        ->once()
+        ->andThrow(new ConnectionException('Connection timed out'));
+    app()->instance(PaystackGateway::class, $mock);
+
+    expect(fn () => app(RefundService::class)->create($order, $payment, [
+        'reason' => 'Ambiguous timeout',
+    ]))->toThrow(ValidationException::class);
+
+    $refund = Refund::query()->where('order_id', $order->id)->latest('id')->first();
+
+    expect($refund)->not->toBeNull()
+        ->and($refund->status)->toBe(RefundStatus::Processing)
+        ->and(data_get($refund->metadata, 'pending_reconciliation'))->toBeTrue();
+
+    expect(fn () => app(RefundService::class)->create($order, $payment, [
+        'amount' => (string) $payment->amount,
     ]))->toThrow(ValidationException::class);
 });
 

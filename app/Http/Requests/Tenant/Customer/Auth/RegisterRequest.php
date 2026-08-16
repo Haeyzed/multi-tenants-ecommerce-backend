@@ -21,8 +21,8 @@ class RegisterRequest extends BaseRequest
         return [
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('customers', 'email')],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:50', Rule::unique('customers', 'phone')],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('customers', 'email')->withoutTrashed()],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50', Rule::unique('customers', 'phone')->withoutTrashed()],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
         ];
     }

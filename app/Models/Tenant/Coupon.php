@@ -36,6 +36,23 @@ class Coupon extends Model
     use HasFactory, SoftDeletes;
 
     /**
+     * Free unique `code` values on soft delete so codes can be reissued.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Coupon $coupon): void {
+            if ($coupon->isForceDeleting()) {
+                return;
+            }
+
+            $suffix = '__d'.$coupon->id;
+            $maxBase = max(1, 50 - strlen($suffix));
+            $coupon->code = substr($coupon->code, 0, $maxBase).$suffix;
+            $coupon->saveQuietly();
+        });
+    }
+
+    /**
      * @var list<string>
      */
     protected $fillable = [

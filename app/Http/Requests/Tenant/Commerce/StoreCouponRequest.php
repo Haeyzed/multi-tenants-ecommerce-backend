@@ -17,7 +17,7 @@ class StoreCouponRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:50', Rule::unique('coupons', 'code')],
+            'code' => ['required', 'string', 'max:50', Rule::unique('coupons', 'code')->withoutTrashed()],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'type' => ['required', 'string', Rule::enum(CouponType::class)],

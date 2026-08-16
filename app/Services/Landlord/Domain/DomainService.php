@@ -6,6 +6,7 @@ namespace App\Services\Landlord\Domain;
 
 use App\Models\Landlord\Domain;
 use App\Models\Landlord\Tenant;
+use App\Services\Landlord\Feature\FeatureGate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +17,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class DomainService
 {
+    public function __construct(private readonly FeatureGate $featureGate) {}
+
     /**
      * List domains for a tenant.
      *
@@ -32,12 +35,19 @@ class DomainService
     /**
      * Create a domain for the tenant.
      *
+     * The first (primary) domain is always allowed for provisioning. Additional
+     * domains require the custom-domain plan feature when a subscription exists.
+     *
      * @param  array{domain: string, is_primary?: bool}  $data
      *
      * @throws ValidationException
      */
     public function store(Tenant $tenant, array $data): Domain
     {
+        if ($tenant->activeSubscription() !== null && $tenant->domains()->exists()) {
+            $this->featureGate->assert('custom-domain', $tenant);
+        }
+
         return DB::transaction(function () use ($tenant, $data): Domain {
             $isPrimary = (bool) ($data['is_primary'] ?? false);
 

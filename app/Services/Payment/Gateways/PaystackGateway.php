@@ -168,7 +168,7 @@ class PaystackGateway implements PaymentGateway
         }
 
         try {
-            $response = $this->client()
+            $response = $this->client(withRetry: false)
                 ->post('/refund', $payload)
                 ->throw()
                 ->json();
@@ -201,8 +201,11 @@ class PaystackGateway implements PaymentGateway
 
     /**
      * Build a configured HTTP client for Paystack.
+     *
+     * Refund POSTs intentionally skip retries — retrying a non-idempotent refund
+     * can double-credit the customer when the first attempt actually succeeded.
      */
-    protected function client(): PendingRequest
+    protected function client(bool $withRetry = true): PendingRequest
     {
         $secret = (string) config('payment.drivers.paystack.secret_key');
 
@@ -210,12 +213,17 @@ class PaystackGateway implements PaymentGateway
             throw new RuntimeException('Paystack secret key is not configured.');
         }
 
-        return Http::baseUrl((string) config('payment.drivers.paystack.base_url', 'https://api.paystack.co'))
+        $request = Http::baseUrl((string) config('payment.drivers.paystack.base_url', 'https://api.paystack.co'))
             ->withToken($secret)
             ->acceptJson()
             ->timeout((int) config('payment.drivers.paystack.timeout', 15))
-            ->connectTimeout((int) config('payment.drivers.paystack.connect_timeout', 5))
-            ->retry([100, 500, 1000]);
+            ->connectTimeout((int) config('payment.drivers.paystack.connect_timeout', 5));
+
+        if ($withRetry) {
+            $request = $request->retry([100, 500, 1000]);
+        }
+
+        return $request;
     }
 
     /**
