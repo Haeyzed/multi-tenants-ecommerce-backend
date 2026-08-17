@@ -81,11 +81,11 @@ return [
          *
          * Only relevant if you're using the domain or subdomain identification middleware.
          */
-        'central_domains' => array_values(array_filter([
+        'central_domains' => array_values(array_unique(array_filter([
             '127.0.0.1',
             'localhost',
             str(env('APP_URL'))->after('://')->before('/')->before(':')->toString(),
-        ])),
+        ]))),
 
         /**
          * The default middleware used for tenant identification.

@@ -79,6 +79,13 @@ test('landlord can logout and revoke the current token', function (): void {
         ->assertJsonPath('success', true);
 });
 
+test('landlord me rejects a user authenticated on another guard', function (): void {
+    $user = landlordUser();
+    Sanctum::actingAs($user, ['*'], 'tenant');
+
+    $this->getJson('/api/auth/me')->assertUnauthorized();
+});
+
 test('landlord forgot password returns a generic success message', function (): void {
     Notification::fake();
     landlordUser(['admin'], [], ['email' => 'reset@example.com']);

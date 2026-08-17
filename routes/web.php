@@ -2,15 +2,30 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| Landlord (central) web routes are loaded from routes/landlord.php via
-| bootstrap/app.php. Tenant routes are loaded from routes/tenant.php by
-| App\Providers\TenancyServiceProvider.
+| Default Laravel welcome for the central application. Bound to central
+| domains so tenant `/` in routes/tenant.php stays reachable on tenant hosts.
 |
 */
+
+foreach (config('tenancy.identification.central_domains') as $index => $domain) {
+    $routes = Route::domain($domain)->middleware('central');
+
+    if ($index !== 0) {
+        $routes = $routes->name("central{$index}.");
+    }
+
+    $routes->group(function (): void {
+        Route::get('/', function () {
+            return view('welcome');
+        });
+    });
+}
 
 require __DIR__.'/landlord.php';

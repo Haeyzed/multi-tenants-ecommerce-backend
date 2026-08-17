@@ -1,6 +1,7 @@
 <?php
 
 use Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess;
+use Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy;
 
 return [
     /*
@@ -45,13 +46,12 @@ return [
         /*
          * API version.
          */
-        'version' => env('API_VERSION', '1.0.0'),
+        'version' => env('API_VERSION', '0.0.1'),
 
         /*
-         * Description rendered on the home page of the API documentation.
-         * Overridden per API in ScrambleDocumentationServiceProvider.
+         * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'Multi-tenants e-commerce platform API.',
+        'description' => '',
     ],
 
     'ui' => [
@@ -90,12 +90,20 @@ return [
     ],
 
     /*
-     * Default servers for the (disabled) default API. Landlord/tenant APIs override this
-     * in ScrambleDocumentationServiceProvider.
+     * The list of servers of the API. By default, when `null`, server URL will be created from
+     * `scramble.api_path` and `scramble.api_domain` config variables. When providing an array, you
+     * will need to specify the local server URL manually (if needed).
+     *
+     * Example of non-default config (final URLs are generated using Laravel `url` helper):
+     *
+     * ```php
+     * 'servers' => [
+     *     'Live' => 'api',
+     *     'Prod' => 'https://scramble.dedoc.co/api',
+     * ],
+     * ```
      */
-    'servers' => [
-        'Live' => 'api',
-    ],
+    'servers' => null,
 
     /**
      * Determines how Scramble stores the descriptions of enum cases.
@@ -162,6 +170,5 @@ return [
      *     ],
      * ],
      */
-    // 'security_strategy' => \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
-    'security_strategy' => null,
+    'security_strategy' => MiddlewareAuthSecurityStrategy::class,
 ];

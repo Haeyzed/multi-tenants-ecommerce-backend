@@ -14,12 +14,14 @@ class DepartmentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('hr.view') || $user->can('hr.departments.manage');
+        return $user->can('hr.departments.view')
+            || $user->can('hr.departments.manage')
+            || $user->can('hr.view');
     }
 
     public function view(User $user, Department $department): bool
     {
-        return $user->can('hr.view') || $user->can('hr.departments.manage');
+        return $this->viewAny($user);
     }
 
     public function create(User $user): bool

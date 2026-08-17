@@ -63,6 +63,16 @@ class Department extends Model
     }
 
     /**
+     * Job titles scoped to this department.
+     *
+     * @return HasMany<Designation, $this>
+     */
+    public function designations(): HasMany
+    {
+        return $this->hasMany(Designation::class);
+    }
+
+    /**
      * @param  Builder<Department>  $query
      * @param  array{search?: string|null, is_active?: bool|null}  $params
      * @return Builder<Department>

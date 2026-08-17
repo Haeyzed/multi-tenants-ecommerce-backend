@@ -11,6 +11,7 @@ use App\Contracts\Notification\SmsProvider;
 use App\Contracts\Payment\PaymentGateway;
 use App\Contracts\Shipping\CarrierHttpClientInterface;
 use App\Models\Tenant\Account;
+use App\Models\Tenant\Attendance;
 use App\Models\Tenant\Brand;
 use App\Models\Tenant\Category;
 use App\Models\Tenant\Cms\BlogCategory;
@@ -22,6 +23,7 @@ use App\Models\Tenant\CustomerGroup;
 use App\Models\Tenant\CustomerSegment;
 use App\Models\Tenant\Delivery;
 use App\Models\Tenant\Department;
+use App\Models\Tenant\Designation;
 use App\Models\Tenant\Driver;
 use App\Models\Tenant\Employee;
 use App\Models\Tenant\FlashSale;
@@ -29,6 +31,7 @@ use App\Models\Tenant\GiftCard;
 use App\Models\Tenant\Inventory;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\JournalEntry;
+use App\Models\Tenant\LeaveRequest;
 use App\Models\Tenant\LoyaltyAccount;
 use App\Models\Tenant\LoyaltyProgram;
 use App\Models\Tenant\Order;
@@ -61,6 +64,7 @@ use App\Models\Tenant\TaxZone;
 use App\Models\Tenant\Unit;
 use App\Models\Tenant\Warehouse;
 use App\Policies\Tenant\AccountPolicy;
+use App\Policies\Tenant\AttendancePolicy;
 use App\Policies\Tenant\BlogCategoryPolicy;
 use App\Policies\Tenant\BlogPostPolicy;
 use App\Policies\Tenant\BrandPolicy;
@@ -71,6 +75,7 @@ use App\Policies\Tenant\CustomerPolicy;
 use App\Policies\Tenant\CustomerSegmentPolicy;
 use App\Policies\Tenant\DeliveryPolicy;
 use App\Policies\Tenant\DepartmentPolicy;
+use App\Policies\Tenant\DesignationPolicy;
 use App\Policies\Tenant\DriverPolicy;
 use App\Policies\Tenant\EmployeePolicy;
 use App\Policies\Tenant\FlashSalePolicy;
@@ -78,6 +83,7 @@ use App\Policies\Tenant\GiftCardPolicy;
 use App\Policies\Tenant\InventoryPolicy;
 use App\Policies\Tenant\InvoicePolicy;
 use App\Policies\Tenant\JournalEntryPolicy;
+use App\Policies\Tenant\LeaveRequestPolicy;
 use App\Policies\Tenant\LoyaltyAccountPolicy;
 use App\Policies\Tenant\LoyaltyProgramPolicy;
 use App\Policies\Tenant\OrderPolicy;
@@ -85,6 +91,7 @@ use App\Policies\Tenant\OrderReturnPolicy;
 use App\Policies\Tenant\PagePolicy;
 use App\Policies\Tenant\PosSessionPolicy;
 use App\Policies\Tenant\PosTerminalPolicy;
+use App\Policies\Tenant\ProductAttributePolicy;
 use App\Policies\Tenant\ProductBadgePolicy;
 use App\Policies\Tenant\ProductCollectionPolicy;
 use App\Policies\Tenant\ProductOptionPolicy;
@@ -234,15 +241,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(SellerCommission::class, SellerCommissionPolicy::class);
         Gate::policy(SellerPayout::class, SellerPayoutPolicy::class);
         Gate::policy(Department::class, DepartmentPolicy::class);
+        Gate::policy(Designation::class, DesignationPolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
+        Gate::policy(Attendance::class, AttendancePolicy::class);
+        Gate::policy(LeaveRequest::class, LeaveRequestPolicy::class);
         Gate::policy(BlogCategory::class, BlogCategoryPolicy::class);
         Gate::policy(BlogPost::class, BlogPostPolicy::class);
         Gate::policy(Page::class, PagePolicy::class);
-
-        Gate::define('viewApiDocs', function ($user = null): bool {
-            // RestrictedDocsAccess already allows local; this gate covers non-local environments.
-            return app()->environment(['local', 'testing']);
-        });
 
         Gate::before(function ($user, string $ability): ?bool {
             if (method_exists($user, 'hasRole') && $user->hasRole('super-admin')) {

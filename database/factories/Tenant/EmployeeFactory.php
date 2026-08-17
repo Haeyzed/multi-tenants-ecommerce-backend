@@ -28,6 +28,7 @@ class EmployeeFactory extends Factory
         return [
             'user_id' => User::factory(),
             'department_id' => null,
+            'designation_id' => null,
             'job_title' => fake()->optional()->jobTitle(),
             'employee_number' => fake()->boolean()
                 ? fake()->unique()->bothify('EMP-####')

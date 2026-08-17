@@ -25,7 +25,7 @@ use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/landlord.php',
+        web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
@@ -71,8 +71,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
 
-        // Guard setters must run before Authenticate/Sanctum so auth:sanctum
-        // resolves tokens against the correct provider (seller/driver/customer/…).
+        // Guard setters must run before Authenticate so auth:landlord / auth:tenant
+        // (and the other named Sanctum guards) resolve tokens against the right provider.
         foreach ([
             SetLandlordGuard::class,
             SetTenantGuard::class,

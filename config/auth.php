@@ -33,23 +33,23 @@ return [
             'provider' => 'landlord_users',
         ],
         'landlord' => [
-            'driver' => 'session',
+            'driver' => 'sanctum',
             'provider' => 'landlord_users',
         ],
         'tenant' => [
-            'driver' => 'session',
+            'driver' => 'sanctum',
             'provider' => 'tenant_users',
         ],
         'customer' => [
-            'driver' => 'session',
+            'driver' => 'sanctum',
             'provider' => 'customers',
         ],
         'driver' => [
-            'driver' => 'session',
+            'driver' => 'sanctum',
             'provider' => 'drivers',
         ],
         'seller' => [
-            'driver' => 'session',
+            'driver' => 'sanctum',
             'provider' => 'sellers',
         ],
     ],

@@ -21,6 +21,7 @@ class UpdateEmployeeRequest extends BaseRequest
 
         return [
             'department_id' => ['sometimes', 'nullable', 'integer', 'exists:departments,id'],
+            'designation_id' => ['sometimes', 'nullable', 'integer', 'exists:designations,id'],
             'job_title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'employee_number' => ['sometimes', 'nullable', 'string', 'max:50', Rule::unique('employees', 'employee_number')->ignore($employee->id)],
             'employment_status' => ['sometimes', 'string', Rule::enum(EmploymentStatus::class)],

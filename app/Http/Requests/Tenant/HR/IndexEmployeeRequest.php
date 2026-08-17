@@ -18,6 +18,7 @@ class IndexEmployeeRequest extends BaseRequest
         return [
             'search' => ['sometimes', 'nullable', 'string', 'max:255'],
             'department_id' => ['sometimes', 'nullable', 'integer', 'exists:departments,id'],
+            'designation_id' => ['sometimes', 'nullable', 'integer', 'exists:designations,id'],
             'employment_status' => ['sometimes', 'nullable', 'string', Rule::enum(EmploymentStatus::class)],
             'sort' => ['sometimes', 'nullable', 'string', 'max:50'],
             'per_page' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:100'],
