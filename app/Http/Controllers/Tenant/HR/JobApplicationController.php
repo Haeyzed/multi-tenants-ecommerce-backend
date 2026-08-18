@@ -7,11 +7,13 @@ namespace App\Http\Controllers\Tenant\HR;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\HR\HireCandidateRequest;
 use App\Http\Requests\Tenant\HR\IndexJobApplicationRequest;
+use App\Http\Requests\Tenant\HR\IndexRecruitmentActivityRequest;
 use App\Http\Requests\Tenant\HR\MoveApplicationStageRequest;
 use App\Http\Requests\Tenant\HR\StoreJobApplicationRequest;
 use App\Http\Requests\Tenant\HR\UpdateJobApplicationRequest;
 use App\Http\Resources\Tenant\HR\EmployeeResource;
 use App\Http\Resources\Tenant\HR\JobApplicationResource;
+use App\Http\Resources\Tenant\HR\RecruitmentActivityResource;
 use App\Models\Tenant\JobApplication;
 use App\Models\Tenant\RecruitmentStage;
 use App\Models\Tenant\User;
@@ -69,6 +71,20 @@ class JobApplicationController extends Controller
         return $this->success(
             new JobApplicationResource($this->applications->show($job_application)),
             'Job application retrieved successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Application activity feed.', type: 'array{success: true, message: string, data: RecruitmentActivityResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
+    public function activities(IndexRecruitmentActivityRequest $request, JobApplication $job_application): JsonResponse
+    {
+        $this->authorize('view', $job_application);
+
+        $activities = $this->applications->listActivities($job_application, $request->validated());
+
+        return $this->success(
+            RecruitmentActivityResource::collection($activities->items()),
+            'Application activity retrieved successfully.',
+            $this->paginationMeta($activities),
         );
     }
 

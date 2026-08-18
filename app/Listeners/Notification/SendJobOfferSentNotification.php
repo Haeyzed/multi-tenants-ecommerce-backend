@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Listeners\Notification;
 
 use App\Events\JobOfferSent;
+use App\Services\Tenant\HR\JobOfferService;
 use App\Support\RecruitmentNotifier;
 
 class SendJobOfferSentNotification
 {
-    public function __construct(private readonly RecruitmentNotifier $notifier) {}
+    public function __construct(
+        private readonly RecruitmentNotifier $notifier,
+        private readonly JobOfferService $offers,
+    ) {}
 
     public function handle(JobOfferSent $event): void
     {
@@ -27,6 +31,7 @@ class SendJobOfferSentNotification
 
             if ($event->publicToken !== null) {
                 $candidatePayload['offer_token'] = $event->publicToken;
+                $candidatePayload['offer_url'] = $this->offers->publicResponseUrl($event->publicToken);
             }
 
             $this->notifier->notifyCandidate($application->candidate, 'hr.offer.sent', $candidatePayload);

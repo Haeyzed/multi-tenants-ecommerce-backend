@@ -170,6 +170,7 @@ use App\Services\Tenant\Catalog\Recommendations\PopularProductsProvider;
 use App\Services\Tenant\Catalog\Recommendations\RecentlyViewedProvider;
 use App\Services\Tenant\Catalog\Recommendations\RelatedProductsProvider;
 use App\Services\Tenant\Delivery\DriverAssignmentManager;
+use App\Services\Tenant\HR\Meetings\InterviewMeetingManager;
 use App\Services\Tenant\Marketplace\Payout\ManualPayoutDriver;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -187,6 +188,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PaymentManager::class);
         $this->app->singleton(PaymentWebhookManager::class);
+        $this->app->singleton(InterviewMeetingManager::class);
         $this->app->singleton(ShippingCarrierManager::class);
         $this->app->singleton(CarrierWebhookManager::class);
         $this->app->singleton(DriverAssignmentManager::class);

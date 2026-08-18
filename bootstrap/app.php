@@ -14,6 +14,7 @@ use App\Jobs\EnsureCurrentPayrollPeriodJob;
 use App\Jobs\MarkAbandonedCartsJob;
 use App\Jobs\ReconcileProcessingRefundsJob;
 use App\Jobs\RefreshCustomerSegmentStatsJob;
+use App\Jobs\SendInterviewRemindersJob;
 use App\Models\Landlord\Tenant;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Console\Scheduling\Schedule;
@@ -63,6 +64,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 EnsureCurrentPayrollPeriodJob::dispatch($tenant->getTenantKey());
             });
         })->daily()->name('ensure-current-payroll-period')->withoutOverlapping();
+
+        $schedule->call(function (): void {
+            Tenant::query()->cursor()->each(function (Tenant $tenant): void {
+                SendInterviewRemindersJob::dispatch($tenant->getTenantKey());
+            });
+        })->hourly()->name('send-interview-reminders')->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

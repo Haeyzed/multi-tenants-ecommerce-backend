@@ -6,11 +6,13 @@ namespace App\Http\Controllers\Tenant\HR;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\HR\IndexCandidateRequest;
+use App\Http\Requests\Tenant\HR\IndexRecruitmentActivityRequest;
 use App\Http\Requests\Tenant\HR\StoreCandidateRequest;
 use App\Http\Requests\Tenant\HR\StoreCandidateResumeRequest;
 use App\Http\Requests\Tenant\HR\UpdateCandidateRequest;
 use App\Http\Resources\Media\MediaResource;
 use App\Http\Resources\Tenant\HR\CandidateResource;
+use App\Http\Resources\Tenant\HR\RecruitmentActivityResource;
 use App\Models\Tenant\Candidate;
 use App\Services\Tenant\HR\CandidateService;
 use App\Support\ApiResponseSchema;
@@ -57,6 +59,20 @@ class CandidateController extends Controller
         return $this->success(
             new CandidateResource($this->candidates->show($candidate)),
             'Candidate retrieved successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Candidate activity feed.', type: 'array{success: true, message: string, data: RecruitmentActivityResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
+    public function activities(IndexRecruitmentActivityRequest $request, Candidate $candidate): JsonResponse
+    {
+        $this->authorize('view', $candidate);
+
+        $activities = $this->candidates->listActivities($candidate, $request->validated());
+
+        return $this->success(
+            RecruitmentActivityResource::collection($activities->items()),
+            'Candidate activity retrieved successfully.',
+            $this->paginationMeta($activities),
         );
     }
 

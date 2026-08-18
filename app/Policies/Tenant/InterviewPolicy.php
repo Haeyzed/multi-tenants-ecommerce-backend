@@ -13,12 +13,15 @@ class InterviewPolicy
     {
         return $user->can('hr.recruitment.view')
             || $user->can('hr.recruitment.manage')
+            || $user->can('hr.recruitment.feedback')
             || $user->can('hr.view');
     }
 
     public function view(User $user, Interview $interview): bool
     {
-        return $this->viewAny($user)
+        return $user->can('hr.recruitment.view')
+            || $user->can('hr.recruitment.manage')
+            || $user->can('hr.view')
             || $interview->interviewers()->whereKey($user->id)->exists();
     }
 

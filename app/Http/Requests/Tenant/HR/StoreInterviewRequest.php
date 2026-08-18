@@ -6,6 +6,7 @@ namespace App\Http\Requests\Tenant\HR;
 
 use App\Enums\Tenant\HR\InterviewStatus;
 use App\Enums\Tenant\HR\InterviewType;
+use App\Enums\Tenant\HR\MeetingProvider;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,9 +21,12 @@ class StoreInterviewRequest extends BaseRequest
             'job_application_id' => ['required', 'integer', 'exists:job_applications,id'],
             'interview_type' => ['sometimes', 'string', Rule::enum(InterviewType::class)],
             'scheduled_at' => ['required', 'date'],
+            'timezone' => ['sometimes', 'nullable', 'timezone'],
             'duration_minutes' => ['sometimes', 'nullable', 'integer', 'min:5', 'max:480'],
             'location' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'meeting_url' => ['sometimes', 'nullable', 'url', 'max:255'],
+            'meeting_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
+            'meeting_provider' => ['sometimes', 'nullable', 'string', Rule::in(array_merge(MeetingProvider::publicValues(), ['fake']))],
+            'meeting_password' => ['sometimes', 'nullable', 'string', 'max:64'],
             'status' => ['sometimes', 'string', Rule::enum(InterviewStatus::class)],
             'notes' => ['sometimes', 'nullable', 'string'],
             'interviewer_ids' => ['sometimes', 'array'],

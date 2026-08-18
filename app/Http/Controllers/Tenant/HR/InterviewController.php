@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant\HR;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\HR\IndexInterviewRequest;
 use App\Http\Requests\Tenant\HR\StoreInterviewFeedbackRequest;
 use App\Http\Requests\Tenant\HR\StoreInterviewRequest;
 use App\Http\Requests\Tenant\HR\UpdateInterviewRequest;
@@ -13,6 +14,7 @@ use App\Http\Resources\Tenant\HR\InterviewResource;
 use App\Models\Tenant\Interview;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\InterviewService;
+use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +23,35 @@ use Illuminate\Http\JsonResponse;
 class InterviewController extends Controller
 {
     public function __construct(private readonly InterviewService $interviews) {}
+
+    #[Response(status: 200, description: 'Paginated interviews.', type: 'array{success: true, message: string, data: InterviewResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
+    public function index(IndexInterviewRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', Interview::class);
+
+        /** @var User $user */
+        $user = $request->user();
+        $params = $request->validated();
+
+        if (
+            ! empty($params['mine'])
+            || (
+                ! $user->can('hr.recruitment.view')
+                && ! $user->can('hr.recruitment.manage')
+                && ! $user->can('hr.view')
+            )
+        ) {
+            $params['interviewer_id'] = $user->id;
+        }
+
+        $interviews = $this->interviews->list($params);
+
+        return $this->success(
+            InterviewResource::collection($interviews->items()),
+            'Interviews retrieved successfully.',
+            $this->paginationMeta($interviews),
+        );
+    }
 
     #[Response(status: 201, description: 'Scheduled interview.', type: 'array{success: true, message: string, data: InterviewResource, meta: null, errors: null}')]
     public function store(StoreInterviewRequest $request): JsonResponse

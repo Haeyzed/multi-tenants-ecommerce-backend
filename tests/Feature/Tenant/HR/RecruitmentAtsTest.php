@@ -24,6 +24,7 @@ use App\Models\Tenant\WorkLocation;
 use App\Policies\Tenant\CandidatePolicy;
 use App\Services\Tenant\HR\CandidateService;
 use App\Services\Tenant\HR\HiringService;
+use App\Services\Tenant\HR\HrReportService;
 use App\Services\Tenant\HR\HrSettingsService;
 use App\Services\Tenant\HR\InterviewService;
 use App\Services\Tenant\HR\JobApplicationService;
@@ -77,6 +78,9 @@ beforeEach(function (): void {
         '2026_08_18_183542_add_response_token_hash_to_job_offers_table.php',
         '2026_08_18_183545_create_recruitment_activities_table.php',
         '2026_08_18_183548_migrate_job_opening_open_status_to_published.php',
+        '2026_08_18_223849_create_interview_meetings_table.php',
+        '2026_08_18_223854_create_interview_meeting_provider_settings_table.php',
+        '2026_08_18_223902_add_timezone_and_reminders_to_interviews_table.php',
     ];
 
     foreach ($migrations as $file) {
@@ -101,6 +105,8 @@ beforeEach(function (): void {
             '2026_08_18_154957_create_job_offers_table.php' => 'job_offers',
             '2026_08_18_183538_create_work_locations_table.php' => 'work_locations',
             '2026_08_18_183545_create_recruitment_activities_table.php' => 'recruitment_activities',
+            '2026_08_18_223849_create_interview_meetings_table.php' => 'interview_meetings',
+            '2026_08_18_223854_create_interview_meeting_provider_settings_table.php' => 'interview_meeting_provider_settings',
             default => null,
         };
 
@@ -141,6 +147,10 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_183542_add_response_token_hash_to_job_offers_table.php' && Schema::hasColumn('job_offers', 'response_token_hash')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_223902_add_timezone_and_reminders_to_interviews_table.php' && Schema::hasColumn('interviews', 'timezone')) {
             continue;
         }
 
@@ -407,6 +417,11 @@ test('recruitment routes are registered for staff and public careers', function 
     expect(app('router')->getRoutes()->getByName('tenant.candidates.index'))->not->toBeNull()
         ->and(app('router')->getRoutes()->getByName('tenant.job-applications.hire'))->not->toBeNull()
         ->and(app('router')->getRoutes()->getByName('tenant.job-offers.send'))->not->toBeNull()
+        ->and(app('router')->getRoutes()->getByName('tenant.interviews.index'))->not->toBeNull()
+        ->and(app('router')->getRoutes()->getByName('tenant.interviews.meeting.store'))->not->toBeNull()
+        ->and(app('router')->getRoutes()->getByName('tenant.hr.interview-providers.index'))->not->toBeNull()
+        ->and(app('router')->getRoutes()->getByName('tenant.candidates.activities'))->not->toBeNull()
+        ->and(app('router')->getRoutes()->getByName('tenant.job-applications.activities'))->not->toBeNull()
         ->and(app('router')->getRoutes()->getByName('tenant.public.jobs.index'))->not->toBeNull()
         ->and(app('router')->getRoutes()->getByName('tenant.public.jobs.apply'))->not->toBeNull()
         ->and(app('router')->getRoutes()->getByName('tenant.public.offers.accept'))->not->toBeNull()
@@ -490,4 +505,107 @@ test('staff notifications skip missing recruitment permissions', function (): vo
         'job_title' => 'Engineer',
         'candidate_name' => 'Ada Lovelace',
     ]))->not->toThrow(Throwable::class);
+});
+
+test('interviews can be listed by calendar window and opening', function (): void {
+    $admin = User::factory()->create();
+    $admin->syncRoles(['admin']);
+
+    $opening = app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store(['title' => 'Calendar Role']));
+    $other = app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store(['title' => 'Other Role']));
+    $application = app(JobApplicationService::class)->store([
+        'job_opening_id' => $opening->id,
+        'first_name' => 'Ngozi',
+        'last_name' => 'Okoro',
+        'email' => 'ngozi@example.com',
+    ], $admin);
+    $otherApplication = app(JobApplicationService::class)->store([
+        'job_opening_id' => $other->id,
+        'first_name' => 'Chidi',
+        'last_name' => 'Okeke',
+        'email' => 'chidi@example.com',
+    ], $admin);
+
+    $inside = app(InterviewService::class)->store([
+        'job_application_id' => $application->id,
+        'scheduled_at' => '2026-08-20 10:00:00',
+        'interviewer_ids' => [$admin->id],
+    ]);
+    app(InterviewService::class)->store([
+        'job_application_id' => $otherApplication->id,
+        'scheduled_at' => '2026-08-21 10:00:00',
+    ]);
+    app(InterviewService::class)->store([
+        'job_application_id' => $application->id,
+        'scheduled_at' => '2026-09-01 10:00:00',
+    ]);
+
+    $listed = app(InterviewService::class)->list([
+        'from' => '2026-08-20',
+        'to' => '2026-08-21',
+        'job_opening_id' => $opening->id,
+    ]);
+
+    expect($listed->total())->toBe(1)
+        ->and($listed->items()[0]->id)->toBe($inside->id)
+        ->and($listed->items()[0]->application?->jobOpening?->title)->toBe('Calendar Role');
+});
+
+test('application and candidate activity feeds include pipeline events', function (): void {
+    $admin = User::factory()->create();
+    $admin->syncRoles(['admin']);
+
+    $opening = app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store(['title' => 'Activity Role']));
+    $application = app(JobApplicationService::class)->store([
+        'job_opening_id' => $opening->id,
+        'first_name' => 'Funke',
+        'last_name' => 'Adebayo',
+        'email' => 'funke@example.com',
+    ], $admin);
+
+    app(InterviewService::class)->store([
+        'job_application_id' => $application->id,
+        'scheduled_at' => now()->addDay()->toDateTimeString(),
+        'interviewer_ids' => [$admin->id],
+    ]);
+
+    $applicationFeed = app(JobApplicationService::class)->listActivities($application);
+    $candidateFeed = app(CandidateService::class)->listActivities($application->candidate);
+
+    expect($applicationFeed->total())->toBeGreaterThanOrEqual(2)
+        ->and($applicationFeed->pluck('action')->all())->toContain('received')
+        ->and($applicationFeed->pluck('action')->all())->toContain('scheduled')
+        ->and($candidateFeed->total())->toBeGreaterThanOrEqual(2);
+});
+
+test('offer emails include a public response url and recruitment reports expose funnel timing', function (): void {
+    $admin = User::factory()->create();
+    $admin->syncRoles(['admin']);
+
+    $opening = app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store(['title' => 'Funnel Role']));
+    $application = app(JobApplicationService::class)->store([
+        'job_opening_id' => $opening->id,
+        'first_name' => 'Tunde',
+        'last_name' => 'Bakare',
+        'email' => 'tunde@example.com',
+    ], $admin);
+
+    $screening = app(RecruitmentStageService::class)->stageForKind(JobApplicationStatus::Screening);
+    app(JobApplicationService::class)->moveStage($application, $screening, null, $admin);
+
+    $url = app(JobOfferService::class)->publicResponseUrl('offer-token-example');
+    expect($url)->toContain('/api/public/offers/offer-token-example');
+
+    $report = app(HrReportService::class)->recruitment([
+        'from' => now()->toDateString(),
+        'to' => now()->toDateString(),
+    ]);
+
+    $received = collect($report['funnel'])->firstWhere('status', JobApplicationStatus::Received->value);
+    $screeningRow = collect($report['funnel'])->firstWhere('status', JobApplicationStatus::Screening->value);
+
+    expect($received['reached'])->toBe(1)
+        ->and($received['advanced'])->toBe(1)
+        ->and($screeningRow['reached'])->toBe(1)
+        ->and($report['time_in_stage'])->not->toBeEmpty();
 });

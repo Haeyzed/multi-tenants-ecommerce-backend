@@ -13,18 +13,15 @@ class SendInterviewScheduledNotification
 
     public function handle(InterviewScheduled $event): void
     {
-        $interview = $event->interview->loadMissing(['application.candidate', 'application.jobOpening']);
+        $interview = $event->interview->loadMissing(['application.candidate', 'application.jobOpening', 'currentMeeting']);
         $application = $interview->application;
-        $payload = [
-            'job_title' => $application?->jobOpening?->title ?? '',
-            'candidate_name' => trim(($application?->first_name ?? '').' '.($application?->last_name ?? '')),
-            'scheduled_at' => $interview->scheduled_at->toDateTimeString(),
-        ];
+        $candidatePayload = $interview->recruitmentNotificationPayload(includeHostUrl: false);
+        $staffPayload = $interview->recruitmentNotificationPayload(includeHostUrl: true);
 
-        $this->notifier->notifyStaff('hr.interview.scheduled', $payload);
+        $this->notifier->notifyStaff('hr.interview.scheduled', $staffPayload);
 
         if ($application?->candidate !== null) {
-            $this->notifier->notifyCandidate($application->candidate, 'hr.interview.scheduled', $payload);
+            $this->notifier->notifyCandidate($application->candidate, 'hr.interview.scheduled', $candidatePayload);
         }
     }
 }

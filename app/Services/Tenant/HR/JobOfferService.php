@@ -212,6 +212,11 @@ class JobOfferService
         return $offer->fresh(['application.candidate', 'application.jobOpening']) ?? $offer;
     }
 
+    public function publicResponseUrl(string $token): string
+    {
+        return route('tenant.public.offers.show', ['token' => $token], absolute: true);
+    }
+
     /**
      * @throws ValidationException
      */

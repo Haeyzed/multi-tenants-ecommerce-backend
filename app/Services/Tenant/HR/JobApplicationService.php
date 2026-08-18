@@ -11,6 +11,7 @@ use App\Events\JobApplicationStageChanged;
 use App\Models\Tenant\ApplicationStageHistory;
 use App\Models\Tenant\JobApplication;
 use App\Models\Tenant\JobOpening;
+use App\Models\Tenant\RecruitmentActivity;
 use App\Models\Tenant\RecruitmentStage;
 use App\Models\Tenant\User;
 use App\Services\Landlord\Feature\UsageLimiter;
@@ -142,6 +143,17 @@ class JobApplicationService
             'interviews.interviewers',
             'offers',
         ]);
+    }
+
+    /**
+     * @param  array{sort?: string|null, per_page?: int|null}  $params
+     * @return LengthAwarePaginator<int, RecruitmentActivity>
+     */
+    public function listActivities(JobApplication $application, array $params = []): LengthAwarePaginator
+    {
+        $this->hrSettings->assertRecruitmentEnabled();
+
+        return $this->activities->listForApplication($application, $params);
     }
 
     /**

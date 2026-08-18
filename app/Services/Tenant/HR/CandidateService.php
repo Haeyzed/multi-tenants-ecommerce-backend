@@ -7,6 +7,7 @@ namespace App\Services\Tenant\HR;
 use App\Enums\Media\MediaCollection;
 use App\Enums\Tenant\HR\CandidateStatus;
 use App\Models\Tenant\Candidate;
+use App\Models\Tenant\RecruitmentActivity;
 use App\Services\Media\MediaService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -54,6 +55,17 @@ class CandidateService
         $this->hrSettings->assertRecruitmentEnabled();
 
         return $candidate->load(['employee.user', 'applications.jobOpening'])->loadCount('applications');
+    }
+
+    /**
+     * @param  array{sort?: string|null, per_page?: int|null}  $params
+     * @return LengthAwarePaginator<int, RecruitmentActivity>
+     */
+    public function listActivities(Candidate $candidate, array $params = []): LengthAwarePaginator
+    {
+        $this->hrSettings->assertRecruitmentEnabled();
+
+        return $this->activities->listForCandidate($candidate, $params);
     }
 
     /**

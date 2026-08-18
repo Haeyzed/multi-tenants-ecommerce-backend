@@ -13,6 +13,8 @@ use App\Http\Controllers\Tenant\HR\HrReportController;
 use App\Http\Controllers\Tenant\HR\HrSettingsController;
 use App\Http\Controllers\Tenant\HR\HrSummaryController;
 use App\Http\Controllers\Tenant\HR\InterviewController;
+use App\Http\Controllers\Tenant\HR\InterviewMeetingController;
+use App\Http\Controllers\Tenant\HR\InterviewMeetingProviderController;
 use App\Http\Controllers\Tenant\HR\JobApplicationController;
 use App\Http\Controllers\Tenant\HR\JobOfferController;
 use App\Http\Controllers\Tenant\HR\JobOpeningController;
@@ -34,6 +36,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('feature:hr')->group(function (): void {
     Route::get('hr/settings', [HrSettingsController::class, 'show'])->middleware('permission:hr.settings.view|hr.settings.update|hr.view')->name('tenant.hr.settings.show');
     Route::match(['put', 'patch'], 'hr/settings', [HrSettingsController::class, 'update'])->middleware('permission:hr.settings.update')->name('tenant.hr.settings.update');
+
+    Route::get('hr/interview-providers', [InterviewMeetingProviderController::class, 'index'])->middleware('permission:hr.settings.view|hr.settings.update|hr.view')->name('tenant.hr.interview-providers.index');
+    Route::match(['put', 'patch'], 'hr/interview-providers/{provider}', [InterviewMeetingProviderController::class, 'update'])->middleware('permission:hr.settings.update')->name('tenant.hr.interview-providers.update');
+    Route::post('hr/interview-providers/{provider}/test', [InterviewMeetingProviderController::class, 'test'])->middleware('permission:hr.settings.update')->name('tenant.hr.interview-providers.test');
 
     Route::middleware('hr.enabled')->group(function (): void {
         Route::get('hr/summary', [HrSummaryController::class, 'show'])->middleware('permission:hr.view|hr.employees.view|hr.payroll.view')->name('tenant.hr.summary');
@@ -159,6 +165,7 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::get('candidates', [CandidateController::class, 'index'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->name('tenant.candidates.index');
         Route::post('candidates', [CandidateController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.candidates.store');
         Route::get('candidates/{candidate}', [CandidateController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('candidate')->name('tenant.candidates.show');
+        Route::get('candidates/{candidate}/activities', [CandidateController::class, 'activities'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('candidate')->name('tenant.candidates.activities');
         Route::match(['put', 'patch'], 'candidates/{candidate}', [CandidateController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('candidate')->name('tenant.candidates.update');
         Route::post('candidates/{candidate}/resume', [CandidateController::class, 'resume'])->middleware('permission:hr.recruitment.manage')->whereNumber('candidate')->name('tenant.candidates.resume');
         Route::delete('candidates/{candidate}', [CandidateController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('candidate')->name('tenant.candidates.destroy');
@@ -172,11 +179,13 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::get('job-applications', [JobApplicationController::class, 'index'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->name('tenant.job-applications.index');
         Route::post('job-applications', [JobApplicationController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.job-applications.store');
         Route::get('job-applications/{job_application}', [JobApplicationController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('job_application')->name('tenant.job-applications.show');
+        Route::get('job-applications/{job_application}/activities', [JobApplicationController::class, 'activities'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('job_application')->name('tenant.job-applications.activities');
         Route::match(['put', 'patch'], 'job-applications/{job_application}', [JobApplicationController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_application')->name('tenant.job-applications.update');
         Route::post('job-applications/{job_application}/stage', [JobApplicationController::class, 'moveStage'])->middleware('permission:hr.recruitment.stage|hr.recruitment.manage')->whereNumber('job_application')->name('tenant.job-applications.stage');
         Route::post('job-applications/{job_application}/hire', [JobApplicationController::class, 'hire'])->middleware('permission:hr.recruitment.hire|hr.recruitment.manage')->whereNumber('job_application')->name('tenant.job-applications.hire');
         Route::delete('job-applications/{job_application}', [JobApplicationController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_application')->name('tenant.job-applications.destroy');
 
+        Route::get('interviews', [InterviewController::class, 'index'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.recruitment.feedback|hr.view')->name('tenant.interviews.index');
         Route::post('interviews', [InterviewController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.interviews.store');
         Route::get('interviews/{interview}', [InterviewController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('interview')->name('tenant.interviews.show');
         Route::match(['put', 'patch'], 'interviews/{interview}', [InterviewController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.update');
@@ -184,6 +193,9 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::post('interviews/{interview}/cancel', [InterviewController::class, 'cancel'])->middleware('permission:hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.cancel');
         Route::post('interviews/{interview}/feedback', [InterviewController::class, 'feedback'])->middleware('permission:hr.recruitment.feedback|hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.feedback');
         Route::delete('interviews/{interview}', [InterviewController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.destroy');
+        Route::post('interviews/{interview}/meeting', [InterviewMeetingController::class, 'store'])->middleware('permission:hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.meeting.store');
+        Route::match(['put', 'patch'], 'interviews/{interview}/meeting', [InterviewMeetingController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.meeting.update');
+        Route::delete('interviews/{interview}/meeting', [InterviewMeetingController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.meeting.destroy');
 
         Route::post('job-offers', [JobOfferController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.job-offers.store');
         Route::get('job-offers/{job_offer}', [JobOfferController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('job_offer')->name('tenant.job-offers.show');

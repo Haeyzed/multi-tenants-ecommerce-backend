@@ -10,6 +10,7 @@ use App\Enums\Tenant\HR\JobApplicationStatus;
 use App\Enums\Tenant\HR\JobOpeningStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
 use App\Enums\Tenant\HR\PayrollRunStatus;
+use App\Models\Tenant\ApplicationStageHistory;
 use App\Models\Tenant\Attendance;
 use App\Models\Tenant\Employee;
 use App\Models\Tenant\JobApplication;
@@ -19,6 +20,7 @@ use App\Models\Tenant\PayrollItem;
 use App\Models\Tenant\PayrollItemLine;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * Detailed HR operational reports for a date window.
@@ -297,6 +299,14 @@ class HrReportService
             ->whereDate('created_at', '<=', $to)
             ->get();
 
+        $history = $applications->isEmpty()
+            ? collect()
+            : ApplicationStageHistory::query()
+                ->whereIn('job_application_id', $applications->modelKeys())
+                ->orderBy('id')
+                ->get()
+                ->groupBy('job_application_id');
+
         $byJob = $applications
             ->groupBy('job_opening_id')
             ->map(fn ($group, $openingId): array => [
@@ -344,11 +354,114 @@ class HrReportService
             'applications' => $applications->count(),
             'hires' => $hires->count(),
             'average_time_to_hire_days' => $timeToHireDays !== null ? round((float) $timeToHireDays, 1) : null,
+            'funnel' => $this->recruitmentFunnel($applications, $history),
+            'time_in_stage' => $this->timeInStage($applications, $history),
             'by_job' => $byJob,
             'by_stage' => $byStage,
             'by_source' => $bySource,
             'rows' => $byJob,
         ];
+    }
+
+    /**
+     * @param  Collection<int, JobApplication>  $applications
+     * @param  Collection<int|string, Collection<int, ApplicationStageHistory>>  $history
+     * @return list<array{status: string, reached: int, advanced: int}>
+     */
+    protected function recruitmentFunnel($applications, $history): array
+    {
+        $pipeline = [
+            JobApplicationStatus::Received,
+            JobApplicationStatus::Screening,
+            JobApplicationStatus::Shortlisted,
+            JobApplicationStatus::Interview,
+            JobApplicationStatus::Offered,
+            JobApplicationStatus::Hired,
+        ];
+
+        $reachedByApplication = [];
+
+        foreach ($applications as $application) {
+            $reached = collect($history->get($application->id, collect()))
+                ->map(fn (ApplicationStageHistory $row): string => $row->to_status->value)
+                ->push($application->status->value)
+                ->unique()
+                ->all();
+
+            $reachedByApplication[$application->id] = $reached;
+        }
+
+        $funnel = [];
+
+        foreach ($pipeline as $index => $status) {
+            $reached = collect($reachedByApplication)
+                ->filter(fn (array $statuses): bool => in_array($status->value, $statuses, true))
+                ->count();
+
+            $next = $pipeline[$index + 1] ?? null;
+            $advanced = $next === null
+                ? $reached
+                : collect($reachedByApplication)
+                    ->filter(fn (array $statuses): bool => in_array($status->value, $statuses, true)
+                        && in_array($next->value, $statuses, true))
+                    ->count();
+
+            $funnel[] = [
+                'status' => $status->value,
+                'reached' => $reached,
+                'advanced' => $advanced,
+            ];
+        }
+
+        return $funnel;
+    }
+
+    /**
+     * @param  Collection<int, JobApplication>  $applications
+     * @param  Collection<int|string, Collection<int, ApplicationStageHistory>>  $history
+     * @return list<array{status: string, average_days: float, samples: int}>
+     */
+    protected function timeInStage($applications, $history): array
+    {
+        $durations = [];
+
+        foreach ($applications as $application) {
+            /** @var Collection<int, ApplicationStageHistory> $rows */
+            $rows = collect($history->get($application->id, collect()))->values();
+
+            if ($rows->isEmpty()) {
+                $start = $application->applied_at ?? $application->created_at;
+
+                if ($start !== null) {
+                    $durations[$application->status->value][] = max(0, $start->diffInSeconds(now()) / 86400);
+                }
+
+                continue;
+            }
+
+            foreach ($rows as $index => $row) {
+                $start = $row->created_at ?? $application->applied_at ?? $application->created_at;
+                $end = $rows->get($index + 1)?->created_at ?? now();
+
+                if ($start === null) {
+                    continue;
+                }
+
+                $durations[$row->to_status->value][] = max(0, $start->diffInSeconds($end) / 86400);
+            }
+        }
+
+        $summary = [];
+
+        foreach ($durations as $status => $samples) {
+            $summary[] = [
+                'status' => $status,
+                'average_days' => round(array_sum($samples) / count($samples), 1),
+                'samples' => count($samples),
+            ];
+        }
+
+        return $summary;
     }
 
     /**

@@ -26,11 +26,31 @@ class InterviewResource extends JsonResource
             'job_application_id' => $interview->job_application_id,
             'interview_type' => $interview->interview_type,
             'scheduled_at' => $interview->scheduled_at,
+            'scheduled_at_local' => $interview->scheduled_at === null
+                ? null
+                : $interview->scheduled_at->copy()->timezone($interview->timezone ?: (string) config('app.timezone'))->toDateTimeString(),
+            'timezone' => $interview->timezone,
             'duration_minutes' => $interview->duration_minutes,
             'location' => $interview->location,
             'meeting_url' => $interview->meeting_url,
+            'meeting' => $this->whenLoaded('currentMeeting', fn () => $interview->currentMeeting === null
+                ? null
+                : new InterviewMeetingResource($interview->currentMeeting)),
             'status' => $interview->status,
             'notes' => $interview->notes,
+            'application' => $this->whenLoaded('application', fn () => $interview->application === null ? null : [
+                'id' => $interview->application->id,
+                'first_name' => $interview->application->first_name,
+                'last_name' => $interview->application->last_name,
+                'status' => $interview->application->status,
+                'job_opening_id' => $interview->application->job_opening_id,
+                'job_opening' => $interview->application->relationLoaded('jobOpening') && $interview->application->jobOpening !== null
+                    ? [
+                        'id' => $interview->application->jobOpening->id,
+                        'title' => $interview->application->jobOpening->title,
+                    ]
+                    : null,
+            ]),
             'interviewers' => $this->whenLoaded('interviewers', fn () => $interview->interviewers->map(fn ($user) => [
                 'id' => $user->id,
                 'first_name' => $user->first_name,

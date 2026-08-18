@@ -147,6 +147,13 @@ class CommerceSettingService
             'hr.notifications.leave' => ['type' => 'bool', 'default' => true],
             'hr.notifications.payroll' => ['type' => 'bool', 'default' => true],
             'hr.notifications.recruitment' => ['type' => 'bool', 'default' => true],
+            'hr.interviews.online_enabled' => ['type' => 'bool', 'default' => true],
+            'hr.interviews.default_provider' => ['type' => 'string', 'default' => 'manual'],
+            'hr.interviews.auto_create_meeting' => ['type' => 'bool', 'default' => true],
+            'hr.interviews.auto_sync_meeting' => ['type' => 'bool', 'default' => true],
+            'hr.interviews.cancel_external_meeting' => ['type' => 'bool', 'default' => true],
+            'hr.interviews.default_duration_minutes' => ['type' => 'int', 'default' => 60],
+            'hr.interviews.reminder_hours' => ['type' => 'string', 'default' => '24,1'],
         ],
     ];
 

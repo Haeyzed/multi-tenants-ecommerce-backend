@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant\HR;
 
 use App\Enums\Tenant\HR\EmploymentStatus;
+use App\Enums\Tenant\HR\MeetingProvider;
 use App\Enums\Tenant\HR\PayFrequency;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
@@ -85,6 +86,13 @@ class UpdateHrSettingsRequest extends BaseRequest
             'hr\.notifications\.leave' => ['sometimes', 'boolean'],
             'hr\.notifications\.payroll' => ['sometimes', 'boolean'],
             'hr\.notifications\.recruitment' => ['sometimes', 'boolean'],
+            'hr\.interviews\.online_enabled' => ['sometimes', 'boolean'],
+            'hr\.interviews\.default_provider' => ['sometimes', 'string', Rule::in(MeetingProvider::publicValues())],
+            'hr\.interviews\.auto_create_meeting' => ['sometimes', 'boolean'],
+            'hr\.interviews\.auto_sync_meeting' => ['sometimes', 'boolean'],
+            'hr\.interviews\.cancel_external_meeting' => ['sometimes', 'boolean'],
+            'hr\.interviews\.default_duration_minutes' => ['sometimes', 'integer', 'min:5', 'max:480'],
+            'hr\.interviews\.reminder_hours' => ['sometimes', 'string', 'max:64', 'regex:/^(\d+)(,\d+)*$/'],
         ];
     }
 

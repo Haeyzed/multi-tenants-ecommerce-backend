@@ -380,6 +380,74 @@ class HrSettingsService
         return (bool) $this->value('hr.notifications.recruitment');
     }
 
+    public function onlineInterviewsEnabled(): bool
+    {
+        return $this->isRecruitmentEnabled() && (bool) $this->value('hr.interviews.online_enabled');
+    }
+
+    public function defaultInterviewMeetingProvider(): string
+    {
+        $provider = strtolower(trim((string) $this->value('hr.interviews.default_provider')));
+
+        return $provider !== '' ? $provider : 'manual';
+    }
+
+    public function autoCreateInterviewMeeting(): bool
+    {
+        return (bool) $this->value('hr.interviews.auto_create_meeting');
+    }
+
+    public function autoSyncInterviewMeeting(): bool
+    {
+        return (bool) $this->value('hr.interviews.auto_sync_meeting');
+    }
+
+    public function cancelExternalInterviewMeeting(): bool
+    {
+        return (bool) $this->value('hr.interviews.cancel_external_meeting');
+    }
+
+    public function defaultInterviewDurationMinutes(): int
+    {
+        $minutes = (int) $this->value('hr.interviews.default_duration_minutes');
+
+        return ($minutes >= 5 && $minutes <= 480) ? $minutes : 60;
+    }
+
+    /**
+     * Hours before scheduled_at at which interview reminders are sent.
+     *
+     * @return list<int>
+     */
+    public function interviewReminderHours(): array
+    {
+        $raw = (string) $this->value('hr.interviews.reminder_hours');
+        $hours = array_values(array_unique(array_filter(
+            array_map(static fn (string $hour): int => (int) trim($hour), explode(',', $raw)),
+            static fn (int $hour): bool => $hour > 0 && $hour <= 168,
+        )));
+
+        sort($hours);
+
+        return $hours;
+    }
+
+    public function interviewTimezone(): string
+    {
+        $tenant = tenant();
+        $timezone = null;
+
+        if ($tenant instanceof Tenant) {
+            $timezone = $tenant->profile?->timezone;
+        }
+
+        if (! is_string($timezone) || $timezone === '') {
+            $timezone = (string) config('app.timezone', 'UTC');
+        }
+
+        return $timezone !== '' ? $timezone : 'UTC';
+    }
+
     public function isPerformanceEnabled(): bool
     {
         return $this->isEnabled() && (bool) $this->value('hr.performance.enabled');
