@@ -27,6 +27,7 @@ class LeaveBalanceResource extends JsonResource
             'leave_type_id' => $balance->leave_type_id,
             'year' => $balance->year,
             'entitled' => $balance->entitled,
+            'carried_over' => $balance->carried_over,
             'used' => $balance->used,
             'remaining' => $balance->remaining(),
             'leave_type' => $this->whenLoaded('leaveType', fn () => $balance->leaveType === null ? null : [

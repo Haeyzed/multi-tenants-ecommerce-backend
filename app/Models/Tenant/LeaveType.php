@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_paid
  * @property bool $is_active
  * @property int $default_days
+ * @property bool $allow_carry_over
  * @property string|null $description
  */
 class LeaveType extends Model
@@ -35,6 +36,7 @@ class LeaveType extends Model
         'is_paid',
         'is_active',
         'default_days',
+        'allow_carry_over',
         'description',
     ];
 
@@ -45,6 +47,7 @@ class LeaveType extends Model
         'is_paid' => true,
         'is_active' => true,
         'default_days' => 0,
+        'allow_carry_over' => false,
     ];
 
     /**
@@ -56,6 +59,7 @@ class LeaveType extends Model
             'is_paid' => 'boolean',
             'is_active' => 'boolean',
             'default_days' => 'integer',
+            'allow_carry_over' => 'boolean',
         ];
     }
 

@@ -10,6 +10,7 @@ use App\Http\Middleware\SetLandlordGuard;
 use App\Http\Middleware\SetSellerGuard;
 use App\Http\Middleware\SetTenantGuard;
 use App\Jobs\CleanupDriverLocationsJob;
+use App\Jobs\EnsureCurrentPayrollPeriodJob;
 use App\Jobs\MarkAbandonedCartsJob;
 use App\Jobs\ReconcileProcessingRefundsJob;
 use App\Jobs\RefreshCustomerSegmentStatsJob;
@@ -56,6 +57,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 CleanupDriverLocationsJob::dispatch($tenant->getTenantKey());
             });
         })->daily()->name('cleanup-driver-locations')->withoutOverlapping();
+
+        $schedule->call(function (): void {
+            Tenant::query()->cursor()->each(function (Tenant $tenant): void {
+                EnsureCurrentPayrollPeriodJob::dispatch($tenant->getTenantKey());
+            });
+        })->daily()->name('ensure-current-payroll-period')->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

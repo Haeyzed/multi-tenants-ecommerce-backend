@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
  * Batch payroll for a pay period.
  *
  * @property int $id
+ * @property int|null $payroll_period_id
  * @property string $reference
  * @property Carbon $period_start
  * @property Carbon $period_end
@@ -42,6 +43,7 @@ class PayrollRun extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'payroll_period_id',
         'reference',
         'period_start',
         'period_end',
@@ -78,6 +80,7 @@ class PayrollRun extends Model
         return [
             'period_start' => 'date',
             'period_end' => 'date',
+            'payroll_period_id' => 'integer',
             'status' => PayrollRunStatus::class,
             'employee_count' => 'integer',
             'processed_at' => 'datetime',
@@ -93,6 +96,14 @@ class PayrollRun extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PayrollItem::class);
+    }
+
+    /**
+     * @return BelongsTo<PayrollPeriod, $this>
+     */
+    public function payrollPeriod(): BelongsTo
+    {
+        return $this->belongsTo(PayrollPeriod::class);
     }
 
     /**

@@ -43,6 +43,11 @@ class UpdateHrSettingsRequest extends BaseRequest
             'hr\.payroll\.payment_day' => ['sometimes', 'integer', 'min:1', 'max:28'],
             'hr\.payroll\.expense_account_id' => ['sometimes', 'nullable', 'integer', 'exists:accounts,id'],
             'hr\.payroll\.payable_account_id' => ['sometimes', 'nullable', 'integer', 'exists:accounts,id'],
+            'hr\.overtime\.enabled' => ['sometimes', 'boolean'],
+            'hr\.overtime\.rate_percent' => ['sometimes', 'integer', 'min:100', 'max:400'],
+            'hr\.working_hours_per_day' => ['sometimes', 'integer', 'min:1', 'max:24'],
+            'hr\.leave\.carry_over_enabled' => ['sometimes', 'boolean'],
+            'hr\.leave\.carry_over_max_days' => ['sometimes', 'integer', 'min:0', 'max:365'],
             'hr\.notifications\.leave' => ['sometimes', 'boolean'],
             'hr\.notifications\.payroll' => ['sometimes', 'boolean'],
         ];

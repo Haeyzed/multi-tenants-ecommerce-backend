@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
+use App\Enums\Tenant\HR\EmploymentChangeType;
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Events\EmployeeCreated;
 use App\Events\EmployeeStatusChanged;
 use App\Models\Tenant\Designation;
 use App\Models\Tenant\Employee;
+use App\Models\Tenant\EmploymentRecord;
 use App\Models\Tenant\User;
 use App\Services\Media\MediaService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -93,6 +95,8 @@ class EmployeeService
 
         $employee = Employee::query()->create($payload)->load(['user', 'department', 'designation', 'manager.user']);
 
+        $this->recordEmployment($employee, EmploymentChangeType::Hired, $employee->hired_at?->toDateString());
+
         event(new EmployeeCreated($employee));
 
         return $employee;
@@ -126,6 +130,14 @@ class EmployeeService
         unset($data['user_id']);
 
         $previousStatus = $employee->employment_status;
+        $previousAssignment = [
+            'department_id' => $employee->department_id,
+            'designation_id' => $employee->designation_id,
+            'manager_id' => $employee->manager_id,
+            'job_title' => $employee->job_title,
+            'employment_type' => $employee->employment_type?->value,
+            'work_location' => $employee->work_location,
+        ];
 
         if (array_key_exists('manager_id', $data)) {
             $this->assertManager($data['manager_id'], $employee->id);
@@ -152,7 +164,10 @@ class EmployeeService
         $employee = $employee->fresh(['user', 'department', 'designation', 'manager.user']) ?? $employee;
 
         if ($employee->employment_status !== $previousStatus) {
+            $this->recordEmployment($employee, EmploymentChangeType::StatusChanged);
             event(new EmployeeStatusChanged($employee, $previousStatus, $employee->employment_status));
+        } elseif ($this->assignmentSnapshot($employee) !== $previousAssignment) {
+            $this->recordEmployment($employee, EmploymentChangeType::AssignmentChanged);
         }
 
         return $employee;
@@ -221,6 +236,50 @@ class EmployeeService
         }
 
         return $data;
+    }
+
+    /**
+     * @return list<EmploymentRecord>
+     */
+    public function employmentHistory(Employee $employee): array
+    {
+        return $employee->employmentRecords()
+            ->with(['department', 'designation', 'manager.user'])
+            ->orderByDesc('effective_on')
+            ->orderByDesc('id')
+            ->get()
+            ->all();
+    }
+
+    protected function recordEmployment(Employee $employee, EmploymentChangeType $changeType, ?string $effectiveOn = null): void
+    {
+        EmploymentRecord::query()->create([
+            'employee_id' => $employee->id,
+            'change_type' => $changeType,
+            'department_id' => $employee->department_id,
+            'designation_id' => $employee->designation_id,
+            'manager_id' => $employee->manager_id,
+            'job_title' => $employee->job_title,
+            'employment_status' => $employee->employment_status,
+            'employment_type' => $employee->employment_type,
+            'work_location' => $employee->work_location,
+            'effective_on' => $effectiveOn ?? now()->toDateString(),
+        ]);
+    }
+
+    /**
+     * @return array{department_id: int|null, designation_id: int|null, manager_id: int|null, job_title: string|null, employment_type: string|null, work_location: string|null}
+     */
+    protected function assignmentSnapshot(Employee $employee): array
+    {
+        return [
+            'department_id' => $employee->department_id,
+            'designation_id' => $employee->designation_id,
+            'manager_id' => $employee->manager_id,
+            'job_title' => $employee->job_title,
+            'employment_type' => $employee->employment_type?->value,
+            'work_location' => $employee->work_location,
+        ];
     }
 
     /**

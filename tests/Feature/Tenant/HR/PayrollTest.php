@@ -7,7 +7,9 @@ use App\Enums\Tenant\Accounting\JournalEntryStatus;
 use App\Enums\Tenant\HR\AttendanceStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
 use App\Enums\Tenant\HR\LeaveType;
+use App\Enums\Tenant\HR\PayrollLineType;
 use App\Enums\Tenant\HR\PayrollRunStatus;
+use App\Enums\Tenant\HR\SalaryComponentCalculation;
 use App\Events\PayrollPaid;
 use App\Events\PayrollProcessed;
 use App\Events\PayslipAvailable;
@@ -26,6 +28,7 @@ use App\Services\Tenant\HR\PayrollRunService;
 use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -52,6 +55,10 @@ beforeEach(function (): void {
         '2026_08_18_003144_create_leave_balances_table.php',
         '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php',
         '2026_08_18_003148_add_manager_id_to_departments_table.php',
+        '2026_08_18_014811_create_employee_salary_components_table.php',
+        '2026_08_18_014813_create_payroll_periods_table.php',
+        '2026_08_18_014816_add_payroll_period_id_to_payroll_runs_table.php',
+        '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php',
     ];
 
     foreach ($migrations as $file) {
@@ -74,6 +81,10 @@ beforeEach(function (): void {
             '2026_08_18_003144_create_leave_balances_table.php' => 'leave_balances',
             '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php' => null,
             '2026_08_18_003148_add_manager_id_to_departments_table.php' => null,
+            '2026_08_18_014811_create_employee_salary_components_table.php' => 'employee_salary_components',
+            '2026_08_18_014813_create_payroll_periods_table.php' => 'payroll_periods',
+            '2026_08_18_014816_add_payroll_period_id_to_payroll_runs_table.php' => null,
+            '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' => null,
             default => null,
         };
 
@@ -90,6 +101,14 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_003148_add_manager_id_to_departments_table.php' && Schema::hasColumn('departments', 'manager_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_014816_add_payroll_period_id_to_payroll_runs_table.php' && Schema::hasColumn('payroll_runs', 'payroll_period_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' && Schema::hasColumn('attendances', 'overtime_minutes')) {
             continue;
         }
 
@@ -311,4 +330,157 @@ test('payroll approval setting routes process into pending approval', function (
     $approved = $service->approve($pending, $admin);
 
     expect($approved->status)->toBe(PayrollRunStatus::Processed);
+});
+
+test('salary components including tax percent of gross appear on generated payslips', function (): void {
+    $employee = Employee::factory()->create();
+    app(EmployeeSalaryService::class)->upsert($employee, [
+        'base_salary' => '100000.00',
+        'components' => [
+            [
+                'type' => PayrollLineType::Earning->value,
+                'calculation' => SalaryComponentCalculation::Fixed->value,
+                'code' => 'housing',
+                'label' => 'Housing allowance',
+                'amount' => '20000.00',
+            ],
+            [
+                'type' => PayrollLineType::Deduction->value,
+                'calculation' => SalaryComponentCalculation::Percent->value,
+                'code' => 'pension',
+                'label' => 'Pension',
+                'amount' => '5',
+            ],
+            [
+                'type' => PayrollLineType::Deduction->value,
+                'calculation' => SalaryComponentCalculation::Percent->value,
+                'code' => 'paye',
+                'label' => 'PAYE',
+                'amount' => '10',
+                'is_tax' => true,
+            ],
+        ],
+    ]);
+
+    $run = app(PayrollRunService::class)->create([
+        'period_start' => now()->startOfMonth()->toDateString(),
+        'period_end' => now()->endOfMonth()->toDateString(),
+    ]);
+
+    $item = $run->items->first();
+    $codes = $item?->lines->pluck('code') ?? collect();
+
+    expect($item)->not->toBeNull()
+        ->and((float) $item->gross_pay)->toBe(120000.0)
+        ->and((float) $item->deduction_total)->toBe(17000.0)
+        ->and((float) $item->net_pay)->toBe(103000.0)
+        ->and($codes)->toContain('housing')
+        ->and($codes)->toContain('pension')
+        ->and($codes)->toContain('paye');
+});
+
+test('enabled overtime adds an earning line from attendance minutes', function (): void {
+    app(HrSettingsService::class)->update([
+        'hr.overtime.enabled' => true,
+        'hr.working_hours_per_day' => 8,
+        'hr.overtime.rate_percent' => 150,
+    ]);
+
+    $employee = Employee::factory()->create();
+    EmployeeSalary::factory()->create([
+        'employee_id' => $employee->id,
+        'base_salary' => '100000.00',
+    ]);
+
+    $weekday = now()->startOfMonth();
+    while (! $weekday->isWeekday()) {
+        $weekday->addDay();
+    }
+
+    Attendance::factory()->create([
+        'employee_id' => $employee->id,
+        'work_date' => $weekday->toDateString(),
+        'status' => AttendanceStatus::Present,
+        'overtime_minutes' => 120,
+    ]);
+
+    $run = app(PayrollRunService::class)->create([
+        'period_start' => now()->startOfMonth()->toDateString(),
+        'period_end' => now()->endOfMonth()->toDateString(),
+    ]);
+
+    $item = $run->items->first();
+
+    expect($item)->not->toBeNull()
+        ->and($item->overtime_minutes)->toBe(120)
+        ->and((float) $item->gross_pay)->toBeGreaterThan(100000)
+        ->and($item->lines->pluck('code'))->toContain('overtime');
+});
+
+test('payroll runs without dates use the current period from frequency and payment day', function (): void {
+    $this->travelTo(Carbon::parse('2026-08-18 10:00:00'));
+
+    EmployeeSalary::factory()->create([
+        'base_salary' => '75000.00',
+    ]);
+
+    $run = app(PayrollRunService::class)->create([]);
+
+    expect($run->period_start->toDateString())->toBe('2026-08-01')
+        ->and($run->period_end->toDateString())->toBe('2026-08-31')
+        ->and($run->payroll_period_id)->not->toBeNull()
+        ->and($run->payrollPeriod?->payment_date?->toDateString())->toBe('2026-08-25');
+});
+
+test('payment day schedules a draft run once for the current period', function (): void {
+    $this->travelTo(Carbon::parse('2026-08-25 09:00:00'));
+
+    EmployeeSalary::factory()->create([
+        'base_salary' => '75000.00',
+    ]);
+
+    $service = app(PayrollRunService::class);
+
+    $scheduled = $service->scheduleCurrentPeriodRun();
+    $duplicate = $service->scheduleCurrentPeriodRun();
+
+    expect($scheduled)->not->toBeNull()
+        ->and($scheduled->status)->toBe(PayrollRunStatus::Draft)
+        ->and($scheduled->payroll_period_id)->not->toBeNull()
+        ->and($duplicate)->toBeNull();
+});
+
+test('paying a payroll run posts to accounting when hr account defaults are set', function (): void {
+    Event::fake([PayrollProcessed::class, PayrollPaid::class, PayslipAvailable::class]);
+
+    $expense = Account::factory()->create(['type' => AccountType::Expense]);
+    $payable = Account::factory()->create(['type' => AccountType::Liability]);
+
+    app(HrSettingsService::class)->update([
+        'hr.payroll.expense_account_id' => $expense->id,
+        'hr.payroll.payable_account_id' => $payable->id,
+    ]);
+
+    EmployeeSalary::factory()->create([
+        'base_salary' => '100000.00',
+    ]);
+
+    $admin = User::factory()->create();
+    $service = app(PayrollRunService::class);
+    $run = $service->create([
+        'period_start' => now()->startOfMonth()->toDateString(),
+        'period_end' => now()->endOfMonth()->toDateString(),
+    ]);
+    $processed = $service->process($run, $admin);
+    $paid = $service->pay($processed, $admin);
+
+    $journal = JournalEntry::query()
+        ->where('source_type', $paid->getMorphClass())
+        ->where('source_id', $paid->id)
+        ->where('entry_type', 'payroll')
+        ->first();
+
+    expect($paid->status)->toBe(PayrollRunStatus::Paid)
+        ->and($journal)->not->toBeNull()
+        ->and($journal->status)->toBe(JournalEntryStatus::Posted);
 });

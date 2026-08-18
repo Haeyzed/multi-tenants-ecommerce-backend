@@ -184,6 +184,16 @@ class Employee extends Model implements HasMedia
     }
 
     /**
+     * Employment history snapshots for transfers and status changes.
+     *
+     * @return HasMany<EmploymentRecord, $this>
+     */
+    public function employmentRecords(): HasMany
+    {
+        return $this->hasMany(EmploymentRecord::class);
+    }
+
+    /**
      * Register HR document media for the employee profile.
      */
     public function registerMediaCollections(): void

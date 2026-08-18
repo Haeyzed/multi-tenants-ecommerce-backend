@@ -28,6 +28,7 @@ class LeaveTypeResource extends JsonResource
             'is_paid' => $type->is_paid,
             'is_active' => $type->is_active,
             'default_days' => $type->default_days,
+            'allow_carry_over' => $type->allow_carry_over,
             'description' => $type->description,
             'created_at' => $type->created_at,
             'updated_at' => $type->updated_at,

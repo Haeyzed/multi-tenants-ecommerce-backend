@@ -7,24 +7,30 @@ namespace App\Services\Tenant\HR;
 use App\Enums\Tenant\HR\AttendanceStatus;
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
+use App\Enums\Tenant\HR\PayFrequency;
 use App\Enums\Tenant\HR\PayrollLineType;
+use App\Enums\Tenant\HR\PayrollPeriodStatus;
 use App\Enums\Tenant\HR\PayrollRunStatus;
+use App\Enums\Tenant\HR\SalaryComponentCalculation;
 use App\Events\PayrollPaid;
 use App\Events\PayrollProcessed;
 use App\Events\PayslipAvailable;
 use App\Models\Tenant\Account;
 use App\Models\Tenant\Attendance;
 use App\Models\Tenant\Employee;
+use App\Models\Tenant\EmployeeSalaryComponent;
 use App\Models\Tenant\JournalEntry;
 use App\Models\Tenant\LeaveRequest;
 use App\Models\Tenant\LeaveType;
 use App\Models\Tenant\PayrollItem;
 use App\Models\Tenant\PayrollItemLine;
+use App\Models\Tenant\PayrollPeriod;
 use App\Models\Tenant\PayrollRun;
 use App\Models\Tenant\User;
 use App\Services\Tenant\Accounting\JournalEntryService;
 use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -60,8 +66,9 @@ class PayrollRunService
 
     /**
      * @param  array{
-     *     period_start: string,
-     *     period_end: string,
+     *     period_start?: string|null,
+     *     period_end?: string|null,
+     *     payroll_period_id?: int|null,
      *     currency?: string|null,
      *     notes?: string|null
      * }  $data
@@ -72,15 +79,25 @@ class PayrollRunService
     {
         $this->hrSettings->assertPayrollEnabled();
 
+        if (empty($data['period_start'] ?? null) || empty($data['period_end'] ?? null)) {
+            $window = $this->periodWindow();
+            $data['period_start'] = $window['period_start'];
+            $data['period_end'] = $window['period_end'];
+        }
+
         if ($data['period_end'] < $data['period_start']) {
             throw ValidationException::withMessages([
                 'period_end' => ['The payroll period end must be on or after the start date.'],
             ]);
         }
 
+        $period = $this->findOrCreatePeriod((string) $data['period_start'], (string) $data['period_end']);
+        $data['payroll_period_id'] = $period->id;
+
         $this->assertNoOverlappingRun($data['period_start'], $data['period_end']);
 
         $run = PayrollRun::query()->create([
+            'payroll_period_id' => $data['payroll_period_id'] ?? null,
             'reference' => $this->nextReference(),
             'period_start' => $data['period_start'],
             'period_end' => $data['period_end'],
@@ -95,6 +112,7 @@ class PayrollRunService
     public function show(PayrollRun $payrollRun): PayrollRun
     {
         return $payrollRun->load([
+            'payrollPeriod',
             'items.employee.user',
             'items.lines',
             'processedByUser',
@@ -119,7 +137,7 @@ class PayrollRunService
             });
 
             $employees = Employee::query()
-                ->with('salary')
+                ->with('salary.components')
                 ->whereIn('employment_status', [
                     EmploymentStatus::Active,
                     EmploymentStatus::OnLeave,
@@ -245,7 +263,7 @@ class PayrollRunService
             ]);
             $payrollRun->save();
 
-            if ((bool) ($options['post_to_accounting'] ?? false)) {
+            if ($this->shouldPostToAccounting($options)) {
                 $this->postToAccounting($payrollRun, $options);
             }
 
@@ -339,15 +357,44 @@ class PayrollRunService
         $workingDays = $this->countWorkingDays($periodStart, $periodEnd);
         $absentDays = $this->countAbsentDays($employee, $periodStart, $periodEnd);
         $unpaidLeaveDays = $this->countUnpaidLeaveDays($employee, $periodStart, $periodEnd);
+        $overtimeMinutes = $this->countOvertimeMinutes($employee, $periodStart, $periodEnd);
 
         $dailyRate = $workingDays > 0
             ? Money::div($baseSalary, (string) $workingDays)
             : '0.00';
+        $hourlyRate = Money::div($dailyRate, (string) $this->hrSettings->workingHoursPerDay());
+        $overtimeHours = Money::div((string) $overtimeMinutes, '60');
+        $overtimePay = $this->hrSettings->isOvertimeEnabled()
+            ? Money::percent(Money::mul($hourlyRate, $overtimeHours), (string) $this->hrSettings->overtimeRatePercent())
+            : '0.00';
 
         $absenceDeduction = Money::mul($dailyRate, (string) $absentDays);
         $unpaidLeaveDeduction = Money::mul($dailyRate, (string) $unpaidLeaveDays);
+        $grossPay = Money::add($baseSalary, $overtimePay);
         $deductionTotal = Money::add($absenceDeduction, $unpaidLeaveDeduction);
-        $grossPay = $baseSalary;
+        $componentLines = [];
+
+        foreach ($salary->components ?? [] as $component) {
+            if ($component->type !== PayrollLineType::Earning) {
+                continue;
+            }
+
+            $componentAmount = $this->resolveComponentAmount($component, $baseSalary);
+            $grossPay = Money::add($grossPay, $componentAmount);
+            $componentLines[] = [$component, $componentAmount];
+        }
+
+        foreach ($salary->components ?? [] as $component) {
+            if ($component->type === PayrollLineType::Earning) {
+                continue;
+            }
+
+            $base = $component->is_tax ? $grossPay : $baseSalary;
+            $componentAmount = $this->resolveComponentAmount($component, $base);
+            $deductionTotal = Money::add($deductionTotal, $componentAmount);
+            $componentLines[] = [$component, $componentAmount];
+        }
+
         $netPay = Money::sub($grossPay, $deductionTotal);
 
         if (bccomp($netPay, '0', 2) < 0) {
@@ -365,9 +412,28 @@ class PayrollRunService
             'working_days' => $workingDays,
             'absent_days' => $absentDays,
             'unpaid_leave_days' => $unpaidLeaveDays,
+            'overtime_minutes' => $overtimeMinutes,
         ]);
 
         $this->createLine($item, PayrollLineType::Earning, 'base_salary', 'Base salary', $baseSalary);
+
+        if (bccomp($overtimePay, '0', 2) > 0) {
+            $this->createLine($item, PayrollLineType::Earning, 'overtime', 'Overtime', $overtimePay);
+        }
+
+        foreach ($componentLines as [$component, $componentAmount]) {
+            if (bccomp($componentAmount, '0', 2) <= 0) {
+                continue;
+            }
+
+            $this->createLine(
+                $item,
+                $component->type,
+                $component->code,
+                $component->label,
+                $componentAmount,
+            );
+        }
 
         if (bccomp($absenceDeduction, '0', 2) > 0) {
             $this->createLine($item, PayrollLineType::Deduction, 'absence', 'Absence deduction', $absenceDeduction);
@@ -460,6 +526,190 @@ class PayrollRunService
         }
 
         return $days;
+    }
+
+    protected function countOvertimeMinutes(Employee $employee, string $periodStart, string $periodEnd): int
+    {
+        if (! $this->hrSettings->isOvertimeEnabled()) {
+            return 0;
+        }
+
+        return (int) Attendance::query()
+            ->where('employee_id', $employee->id)
+            ->whereDate('work_date', '>=', $periodStart)
+            ->whereDate('work_date', '<=', $periodEnd)
+            ->sum('overtime_minutes');
+    }
+
+    protected function resolveComponentAmount(EmployeeSalaryComponent $component, string $baseSalary): string
+    {
+        if ($component->calculation === SalaryComponentCalculation::Percent) {
+            return Money::percent($baseSalary, (string) $component->amount);
+        }
+
+        return Money::add((string) $component->amount, '0');
+    }
+
+    /**
+     * @param  array{
+     *     post_to_accounting?: bool|null,
+     *     expense_account_id?: int|null,
+     *     payable_account_id?: int|null
+     * }  $options
+     */
+    protected function shouldPostToAccounting(array $options): bool
+    {
+        if (array_key_exists('post_to_accounting', $options)) {
+            return (bool) $options['post_to_accounting'];
+        }
+
+        return $this->hrSettings->payrollExpenseAccountId() !== null
+            && $this->hrSettings->payrollPayableAccountId() !== null;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function createFromCurrentPeriod(?string $currency = null, ?string $notes = null): PayrollRun
+    {
+        $period = $this->ensureCurrentPeriod();
+
+        return $this->create([
+            'payroll_period_id' => $period->id,
+            'period_start' => $period->period_start->toDateString(),
+            'period_end' => $period->period_end->toDateString(),
+            'currency' => $currency,
+            'notes' => $notes,
+        ]);
+    }
+
+    public function ensureCurrentPeriod(?Carbon $asOf = null): PayrollPeriod
+    {
+        $window = $this->periodWindow($asOf ?? now());
+
+        return $this->findOrCreatePeriod($window['period_start'], $window['period_end'], $window['payment_date']);
+    }
+
+    /**
+     * Create a draft run for the current period when today is the configured payment day.
+     */
+    public function scheduleCurrentPeriodRun(): ?PayrollRun
+    {
+        if (! $this->hrSettings->isPayrollEnabled()) {
+            return null;
+        }
+
+        $period = $this->ensureCurrentPeriod();
+
+        if (! $period->payment_date->isToday()) {
+            return null;
+        }
+
+        $existing = PayrollRun::query()
+            ->where(function ($query) use ($period): void {
+                $query->where('payroll_period_id', $period->id)
+                    ->orWhere(function ($query) use ($period): void {
+                        $query->whereDate('period_start', $period->period_start->toDateString())
+                            ->whereDate('period_end', $period->period_end->toDateString());
+                    });
+            })
+            ->whereNot('status', PayrollRunStatus::Cancelled)
+            ->exists();
+
+        if ($existing) {
+            return null;
+        }
+
+        return $this->create([
+            'payroll_period_id' => $period->id,
+            'period_start' => $period->period_start->toDateString(),
+            'period_end' => $period->period_end->toDateString(),
+        ]);
+    }
+
+    /**
+     * @return array{period_start: string, period_end: string, payment_date: string}
+     */
+    public function periodWindow(?Carbon $asOf = null): array
+    {
+        $asOf ??= now();
+        $frequency = $this->hrSettings->payrollFrequency();
+
+        [$start, $end] = match ($frequency) {
+            PayFrequency::Weekly => [
+                $asOf->copy()->startOfWeek(),
+                $asOf->copy()->endOfWeek(),
+            ],
+            PayFrequency::Biweekly => $this->biweeklyBounds($asOf),
+            default => [
+                $asOf->copy()->startOfMonth(),
+                $asOf->copy()->endOfMonth(),
+            ],
+        };
+
+        $paymentDay = $this->hrSettings->payrollPaymentDay();
+        $paymentDate = $frequency === PayFrequency::Monthly
+            ? $start->copy()->day(min($paymentDay, $end->daysInMonth))
+            : $end->copy();
+
+        return [
+            'period_start' => $start->toDateString(),
+            'period_end' => $end->toDateString(),
+            'payment_date' => $paymentDate->toDateString(),
+        ];
+    }
+
+    protected function findOrCreatePeriod(string $periodStart, string $periodEnd, ?string $paymentDate = null): PayrollPeriod
+    {
+        $periodStart = Carbon::parse($periodStart)->toDateString();
+        $periodEnd = Carbon::parse($periodEnd)->toDateString();
+
+        $existing = PayrollPeriod::query()
+            ->whereDate('period_start', $periodStart)
+            ->whereDate('period_end', $periodEnd)
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $window = $this->periodWindow(Carbon::parse($periodStart));
+
+        try {
+            return PayrollPeriod::query()->create([
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd,
+                'payment_date' => $paymentDate ?? $window['payment_date'],
+                'frequency' => $this->hrSettings->payrollFrequency(),
+                'status' => PayrollPeriodStatus::Open,
+            ]);
+        } catch (QueryException) {
+            $created = PayrollPeriod::query()
+                ->whereDate('period_start', $periodStart)
+                ->whereDate('period_end', $periodEnd)
+                ->first();
+
+            if ($created !== null) {
+                return $created;
+            }
+
+            throw ValidationException::withMessages([
+                'period_start' => ['Unable to create a payroll period for this window.'],
+            ]);
+        }
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    protected function biweeklyBounds(Carbon $asOf): array
+    {
+        $yearStart = $asOf->copy()->startOfYear();
+        $days = (int) $yearStart->diffInDays($asOf);
+        $bucket = intdiv($days, 14);
+        $start = $yearStart->copy()->addDays($bucket * 14);
+
+        return [$start, $start->copy()->addDays(13)];
     }
 
     /**

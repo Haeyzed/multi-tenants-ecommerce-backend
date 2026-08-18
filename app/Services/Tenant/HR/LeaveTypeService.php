@@ -62,6 +62,7 @@ class LeaveTypeService
      *     is_paid?: bool,
      *     is_active?: bool,
      *     default_days?: int,
+     *     allow_carry_over?: bool,
      *     description?: string|null
      * }  $data
      */
@@ -75,6 +76,7 @@ class LeaveTypeService
             'is_paid' => $data['is_paid'] ?? true,
             'is_active' => $data['is_active'] ?? true,
             'default_days' => $data['default_days'] ?? 0,
+            'allow_carry_over' => $data['allow_carry_over'] ?? false,
             'description' => $data['description'] ?? null,
         ]);
     }
@@ -91,6 +93,7 @@ class LeaveTypeService
      *     is_paid?: bool,
      *     is_active?: bool,
      *     default_days?: int,
+     *     allow_carry_over?: bool,
      *     description?: string|null
      * }  $data
      */
@@ -156,10 +159,10 @@ class LeaveTypeService
         }
 
         $defaults = [
-            ['name' => 'Annual', 'code' => LeaveTypeCode::Annual->value, 'is_paid' => true, 'default_days' => 21],
-            ['name' => 'Sick', 'code' => LeaveTypeCode::Sick->value, 'is_paid' => true, 'default_days' => 10],
-            ['name' => 'Unpaid', 'code' => LeaveTypeCode::Unpaid->value, 'is_paid' => false, 'default_days' => 0],
-            ['name' => 'Other', 'code' => LeaveTypeCode::Other->value, 'is_paid' => true, 'default_days' => 0],
+            ['name' => 'Annual', 'code' => LeaveTypeCode::Annual->value, 'is_paid' => true, 'default_days' => 21, 'allow_carry_over' => true],
+            ['name' => 'Sick', 'code' => LeaveTypeCode::Sick->value, 'is_paid' => true, 'default_days' => 10, 'allow_carry_over' => false],
+            ['name' => 'Unpaid', 'code' => LeaveTypeCode::Unpaid->value, 'is_paid' => false, 'default_days' => 0, 'allow_carry_over' => false],
+            ['name' => 'Other', 'code' => LeaveTypeCode::Other->value, 'is_paid' => true, 'default_days' => 0, 'allow_carry_over' => false],
         ];
 
         foreach ($defaults as $default) {

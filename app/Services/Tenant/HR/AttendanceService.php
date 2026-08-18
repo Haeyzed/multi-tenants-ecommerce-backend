@@ -69,6 +69,7 @@ class AttendanceService
             'status' => $data['status'] ?? AttendanceStatus::Present,
             'checked_in_at' => $data['checked_in_at'] ?? null,
             'checked_out_at' => $data['checked_out_at'] ?? null,
+            'overtime_minutes' => $data['overtime_minutes'] ?? 0,
             'notes' => $data['notes'] ?? null,
         ])->load(['employee.user']);
     }
@@ -181,6 +182,11 @@ class AttendanceService
         }
 
         $attendance->checked_out_at = now();
+
+        if ($this->hrSettings->isOvertimeEnabled() && (int) $attendance->overtime_minutes === 0) {
+            $attendance->overtime_minutes = $this->overtimeMinutesFromClock($attendance);
+        }
+
         $attendance->save();
 
         return $attendance->fresh(['employee.user']) ?? $attendance;
@@ -192,6 +198,18 @@ class AttendanceService
         $threshold = $start->copy()->addMinutes($this->hrSettings->lateToleranceMinutes());
 
         return $now->gt($threshold) ? AttendanceStatus::Late : AttendanceStatus::Present;
+    }
+
+    protected function overtimeMinutesFromClock(Attendance $attendance): int
+    {
+        if ($attendance->checked_in_at === null || $attendance->checked_out_at === null) {
+            return 0;
+        }
+
+        $workedMinutes = max(0, $attendance->checked_in_at->diffInMinutes($attendance->checked_out_at));
+        $standardMinutes = $this->hrSettings->workingHoursPerDay() * 60;
+
+        return (int) max(0, $workedMinutes - $standardMinutes);
     }
 
     /**

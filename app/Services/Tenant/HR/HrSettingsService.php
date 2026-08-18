@@ -177,6 +177,35 @@ class HrSettingsService
         return $id === null ? null : (int) $id;
     }
 
+    public function isOvertimeEnabled(): bool
+    {
+        return $this->isAttendanceEnabled() && (bool) $this->value('hr.overtime.enabled');
+    }
+
+    public function overtimeRatePercent(): int
+    {
+        $rate = (int) $this->value('hr.overtime.rate_percent');
+
+        return $rate > 0 ? $rate : 150;
+    }
+
+    public function workingHoursPerDay(): int
+    {
+        $hours = (int) $this->value('hr.working_hours_per_day');
+
+        return ($hours >= 1 && $hours <= 24) ? $hours : 8;
+    }
+
+    public function leaveCarryOverEnabled(): bool
+    {
+        return $this->isLeaveEnabled() && (bool) $this->value('hr.leave.carry_over_enabled');
+    }
+
+    public function leaveCarryOverMaxDays(): int
+    {
+        return max(0, (int) $this->value('hr.leave.carry_over_max_days'));
+    }
+
     public function notifyLeave(): bool
     {
         return (bool) $this->value('hr.notifications.leave');

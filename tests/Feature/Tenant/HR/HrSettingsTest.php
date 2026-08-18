@@ -6,6 +6,8 @@ use App\Enums\Tenant\HR\LeaveStatus;
 use App\Enums\Tenant\HR\LeaveType as LeaveTypeCode;
 use App\Http\Middleware\EnsureHrEnabled;
 use App\Models\Tenant\Employee;
+use App\Models\Tenant\LeaveBalance;
+use App\Models\Tenant\LeaveType;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\HrSettingsService;
 use App\Services\Tenant\HR\HrSummaryService;
@@ -37,6 +39,8 @@ beforeEach(function (): void {
         '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php',
         '2026_08_18_003148_add_manager_id_to_departments_table.php',
         '2026_08_18_001429_create_payroll_runs_table.php',
+        '2026_08_18_014813_create_payroll_periods_table.php',
+        '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php',
     ];
 
     foreach ($migrations as $file) {
@@ -53,6 +57,8 @@ beforeEach(function (): void {
             '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php' => null,
             '2026_08_18_003148_add_manager_id_to_departments_table.php' => null,
             '2026_08_18_001429_create_payroll_runs_table.php' => 'payroll_runs',
+            '2026_08_18_014813_create_payroll_periods_table.php' => 'payroll_periods',
+            '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' => null,
             default => null,
         };
 
@@ -69,6 +75,10 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_003148_add_manager_id_to_departments_table.php' && Schema::hasColumn('departments', 'manager_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' && Schema::hasColumn('attendances', 'overtime_minutes')) {
             continue;
         }
 
@@ -94,6 +104,8 @@ test('hr settings return defaults and persist allowlisted keys', function (): vo
         ->and($defaults['hr.employee_code_prefix'])->toBe('EMP')
         ->and($defaults['hr.payroll.frequency'])->toBe('monthly')
         ->and($defaults['hr.payroll.approval_required'])->toBeFalse()
+        ->and($defaults['hr.overtime.enabled'])->toBeFalse()
+        ->and($defaults['hr.leave.carry_over_enabled'])->toBeFalse()
         ->and($settings->workingDays())->toBe([1, 2, 3, 4, 5]);
 
     $updated = $settings->update([
@@ -189,7 +201,8 @@ test('hr summary returns foundation totals', function (): void {
 
     $summary = app(HrSummaryService::class)->summary();
 
-    expect($summary)->toHaveKeys(['employees', 'departments', 'attendance_today', 'leave', 'payroll'])
+    expect($summary)->toHaveKeys(['employees', 'departments', 'attendance_today', 'overtime_minutes_this_period', 'leave', 'payroll'])
+        ->and($summary['payroll'])->toHaveKeys(['draft', 'pending_approval', 'processed', 'paid', 'current_period', 'open_periods'])
         ->and($summary['employees']['total'])->toBeGreaterThanOrEqual(1);
 });
 
@@ -215,4 +228,35 @@ test('hr operational routes require the hr feature and enabled setting', functio
         ->and($settings)->not->toBeNull()
         ->and(implode(',', $settings->gatherMiddleware()))->toContain('feature:hr')
         ->and(implode(',', $settings->gatherMiddleware()))->not->toContain('hr.enabled');
+});
+
+test('leave carry-over uses the previous year remaining days up to the configured max', function (): void {
+    app(LeaveTypeService::class)->ensureDefaults();
+    app(HrSettingsService::class)->update([
+        'hr.leave.carry_over_enabled' => true,
+        'hr.leave.carry_over_max_days' => 5,
+        'hr.leave.year_start_month' => 1,
+    ]);
+
+    $employee = Employee::factory()->create();
+    $annual = LeaveType::query()->where('code', LeaveTypeCode::Annual->value)->first();
+
+    expect($annual)->not->toBeNull()
+        ->and($annual->allow_carry_over)->toBeTrue();
+
+    LeaveBalance::query()->create([
+        'employee_id' => $employee->id,
+        'leave_type_id' => $annual->id,
+        'year' => now()->year - 1,
+        'entitled' => 21,
+        'carried_over' => 0,
+        'used' => 10,
+    ]);
+
+    $balances = app(LeaveRequestService::class)->balancesFor($employee, now()->year);
+    $current = collect($balances)->first(fn ($balance) => $balance->leave_type_id === $annual->id);
+
+    expect($current)->not->toBeNull()
+        ->and($current->carried_over)->toBe(5)
+        ->and($current->remaining())->toBe(26);
 });

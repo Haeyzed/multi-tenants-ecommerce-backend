@@ -256,17 +256,52 @@ class LeaveRequestService
 
     protected function balanceFor(Employee $employee, LeaveType $leaveType, int $year): LeaveBalance
     {
-        return LeaveBalance::query()->firstOrCreate(
-            [
-                'employee_id' => $employee->id,
-                'leave_type_id' => $leaveType->id,
-                'year' => $year,
-            ],
-            [
-                'entitled' => $leaveType->default_days,
-                'used' => 0,
-            ],
-        );
+        $existing = LeaveBalance::query()
+            ->where('employee_id', $employee->id)
+            ->where('leave_type_id', $leaveType->id)
+            ->where('year', $year)
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $carriedOver = $this->carryOverDays($employee, $leaveType, $year);
+
+        return LeaveBalance::query()->create([
+            'employee_id' => $employee->id,
+            'leave_type_id' => $leaveType->id,
+            'year' => $year,
+            'entitled' => $leaveType->default_days,
+            'carried_over' => $carriedOver,
+            'used' => 0,
+        ]);
+    }
+
+    protected function carryOverDays(Employee $employee, LeaveType $leaveType, int $year): int
+    {
+        if (! $this->hrSettings->leaveCarryOverEnabled() || ! $leaveType->allow_carry_over) {
+            return 0;
+        }
+
+        $previous = LeaveBalance::query()
+            ->where('employee_id', $employee->id)
+            ->where('leave_type_id', $leaveType->id)
+            ->where('year', $year - 1)
+            ->first();
+
+        if ($previous === null) {
+            return 0;
+        }
+
+        $remaining = $previous->remaining();
+        $max = $this->hrSettings->leaveCarryOverMaxDays();
+
+        if ($max > 0) {
+            $remaining = min($remaining, $max);
+        }
+
+        return $remaining;
     }
 
     protected function countWorkingDays(string $startDate, string $endDate): int

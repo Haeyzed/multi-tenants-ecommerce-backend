@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property AttendanceStatus $status
  * @property Carbon|null $checked_in_at
  * @property Carbon|null $checked_out_at
+ * @property int $overtime_minutes
  * @property string|null $notes
  */
 class Attendance extends Model
@@ -37,6 +38,7 @@ class Attendance extends Model
         'status',
         'checked_in_at',
         'checked_out_at',
+        'overtime_minutes',
         'notes',
     ];
 
@@ -45,6 +47,7 @@ class Attendance extends Model
      */
     protected $attributes = [
         'status' => 'present',
+        'overtime_minutes' => 0,
     ];
 
     /**
@@ -58,6 +61,7 @@ class Attendance extends Model
             'status' => AttendanceStatus::class,
             'checked_in_at' => 'datetime',
             'checked_out_at' => 'datetime',
+            'overtime_minutes' => 'integer',
         ];
     }
 

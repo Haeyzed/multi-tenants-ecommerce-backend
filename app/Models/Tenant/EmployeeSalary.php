@@ -9,6 +9,7 @@ use Database\Factories\Tenant\EmployeeSalaryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -64,5 +65,15 @@ class EmployeeSalary extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    /**
+     * Configurable earnings, deductions, and tax components.
+     *
+     * @return HasMany<EmployeeSalaryComponent, $this>
+     */
+    public function components(): HasMany
+    {
+        return $this->hasMany(EmployeeSalaryComponent::class)->orderBy('sort_order')->orderBy('id');
     }
 }

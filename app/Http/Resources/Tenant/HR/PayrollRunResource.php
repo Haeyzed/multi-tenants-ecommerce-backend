@@ -23,6 +23,7 @@ class PayrollRunResource extends JsonResource
 
         return [
             'id' => $run->id,
+            'payroll_period_id' => $run->payroll_period_id,
             'reference' => $run->reference,
             'period_start' => $run->period_start?->toDateString(),
             'period_end' => $run->period_end?->toDateString(),
@@ -38,6 +39,13 @@ class PayrollRunResource extends JsonResource
             'paid_by' => $run->paid_by,
             'notes' => $run->notes,
             'items' => PayrollItemResource::collection($this->whenLoaded('items')),
+            'payroll_period' => $this->whenLoaded('payrollPeriod', fn () => $run->payrollPeriod === null ? null : [
+                'id' => $run->payrollPeriod->id,
+                'period_start' => $run->payrollPeriod->period_start?->toDateString(),
+                'period_end' => $run->payrollPeriod->period_end?->toDateString(),
+                'payment_date' => $run->payrollPeriod->payment_date?->toDateString(),
+                'frequency' => $run->payrollPeriod->frequency,
+            ]),
             'processed_by_user' => $this->whenLoaded('processedByUser', fn () => $run->processedByUser === null ? null : [
                 'id' => $run->processedByUser->id,
                 'first_name' => $run->processedByUser->first_name,

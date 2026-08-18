@@ -7,11 +7,13 @@ use App\Http\Controllers\Tenant\HR\DepartmentController;
 use App\Http\Controllers\Tenant\HR\DesignationController;
 use App\Http\Controllers\Tenant\HR\EmployeeController;
 use App\Http\Controllers\Tenant\HR\EmployeeSalaryController;
+use App\Http\Controllers\Tenant\HR\EmploymentRecordController;
 use App\Http\Controllers\Tenant\HR\HrSettingsController;
 use App\Http\Controllers\Tenant\HR\HrSummaryController;
 use App\Http\Controllers\Tenant\HR\LeaveBalanceController;
 use App\Http\Controllers\Tenant\HR\LeaveRequestController;
 use App\Http\Controllers\Tenant\HR\LeaveTypeController;
+use App\Http\Controllers\Tenant\HR\PayrollPeriodController;
 use App\Http\Controllers\Tenant\HR\PayrollRunController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,6 +47,7 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::post('employees/{employee}/documents', [EmployeeController::class, 'storeDocument'])->middleware('permission:hr.employees.update')->whereNumber('employee')->name('tenant.employees.documents.store');
         Route::delete('employees/{employee}/documents/{media}', [EmployeeController::class, 'destroyDocument'])->middleware('permission:hr.employees.update')->whereNumber('employee')->whereNumber('media')->name('tenant.employees.documents.destroy');
         Route::get('employees/{employee}/leave-balances', [LeaveBalanceController::class, 'index'])->whereNumber('employee')->name('tenant.employees.leave-balances.index');
+        Route::get('employees/{employee}/employment-records', [EmploymentRecordController::class, 'index'])->whereNumber('employee')->name('tenant.employees.employment-records.index');
         Route::get('employees/{employee}/payslips', [PayrollRunController::class, 'employeeItems'])->whereNumber('employee')->name('tenant.employees.payslips.index');
         Route::get('employees/{employee}/salary', [EmployeeSalaryController::class, 'show'])->whereNumber('employee')->name('tenant.employees.salary.show');
         Route::match(['put', 'patch'], 'employees/{employee}/salary', [EmployeeSalaryController::class, 'upsert'])->middleware('permission:hr.payroll.manage')->whereNumber('employee')->name('tenant.employees.salary.upsert');
@@ -71,6 +74,8 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->middleware('permission:hr.leave.manage|hr.leave.approve')->whereNumber('leave_request')->name('tenant.leave-requests.reject');
         Route::post('leave-requests/{leave_request}/cancel', [LeaveRequestController::class, 'cancel'])->whereNumber('leave_request')->name('tenant.leave-requests.cancel');
 
+        Route::get('payroll-periods', [PayrollPeriodController::class, 'index'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->name('tenant.payroll-periods.index');
+        Route::get('payroll-periods/current', [PayrollPeriodController::class, 'current'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->name('tenant.payroll-periods.current');
         Route::get('payroll-runs', [PayrollRunController::class, 'index'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->name('tenant.payroll-runs.index');
         Route::post('payroll-runs', [PayrollRunController::class, 'store'])->middleware('permission:hr.payroll.manage')->name('tenant.payroll-runs.store');
         Route::get('payroll-runs/{payroll_run}', [PayrollRunController::class, 'show'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->whereNumber('payroll_run')->name('tenant.payroll-runs.show');

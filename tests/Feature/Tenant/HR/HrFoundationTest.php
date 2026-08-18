@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\Tenant\HR\AttendanceStatus;
+use App\Enums\Tenant\HR\EmploymentChangeType;
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
 use App\Enums\Tenant\HR\LeaveType;
@@ -13,6 +14,7 @@ use App\Models\Tenant\Attendance;
 use App\Models\Tenant\Department;
 use App\Models\Tenant\Designation;
 use App\Models\Tenant\Employee;
+use App\Models\Tenant\EmploymentRecord;
 use App\Models\Tenant\LeaveRequest;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\AttendanceService;
@@ -25,6 +27,7 @@ use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -45,6 +48,8 @@ beforeEach(function (): void {
         '2026_08_18_003144_create_leave_balances_table.php',
         '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php',
         '2026_08_18_003148_add_manager_id_to_departments_table.php',
+        '2026_08_18_014822_create_employment_records_table.php',
+        '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php',
     ];
 
     foreach ($migrations as $file) {
@@ -60,6 +65,8 @@ beforeEach(function (): void {
             '2026_08_18_003144_create_leave_balances_table.php' => 'leave_balances',
             '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php' => null,
             '2026_08_18_003148_add_manager_id_to_departments_table.php' => null,
+            '2026_08_18_014822_create_employment_records_table.php' => 'employment_records',
+            '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' => null,
             default => null,
         };
 
@@ -76,6 +83,10 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_003148_add_manager_id_to_departments_table.php' && Schema::hasColumn('departments', 'manager_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' && Schema::hasColumn('attendances', 'overtime_minutes')) {
             continue;
         }
 
@@ -339,4 +350,46 @@ test('hr permissions isolate admin from customer', function (): void {
         ->and($customer->can('delete', $department))->toBeFalse()
         ->and($customer->can('update', $attendance))->toBeFalse()
         ->and($customer->can('review', $leave))->toBeFalse();
+});
+
+test('employee create and assignment changes write employment history', function (): void {
+    Event::fake([EmployeeCreated::class]);
+
+    $user = User::factory()->create();
+    $department = Department::factory()->create();
+    $service = app(EmployeeService::class);
+
+    $employee = $service->store([
+        'user_id' => $user->id,
+        'department_id' => $department->id,
+        'job_title' => 'Engineer',
+        'hired_at' => now()->toDateString(),
+    ]);
+
+    expect(EmploymentRecord::query()->where('employee_id', $employee->id)->where('change_type', EmploymentChangeType::Hired)->exists())->toBeTrue();
+
+    $service->update($employee, ['job_title' => 'Lead Engineer']);
+
+    expect(EmploymentRecord::query()->where('employee_id', $employee->id)->where('change_type', EmploymentChangeType::AssignmentChanged)->exists())->toBeTrue()
+        ->and($service->employmentHistory($employee))->not->toBeEmpty();
+});
+
+test('clock out records overtime minutes when overtime is enabled', function (): void {
+    $this->travelTo(Carbon::parse('2026-08-18 09:00:00'));
+
+    app(HrSettingsService::class)->update([
+        'hr.working_days' => '1,2,3,4,5,6,7',
+        'hr.work_start_time' => '09:00',
+        'hr.overtime.enabled' => true,
+        'hr.working_hours_per_day' => 8,
+    ]);
+
+    $employee = Employee::factory()->create();
+    $service = app(AttendanceService::class);
+
+    $service->clockIn($employee);
+    $this->travelTo(Carbon::parse('2026-08-18 19:00:00'));
+    $clockedOut = $service->clockOut($employee);
+
+    expect($clockedOut->overtime_minutes)->toBe(120);
 });

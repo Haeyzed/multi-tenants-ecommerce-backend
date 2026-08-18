@@ -19,6 +19,7 @@ class UpdateAttendanceRequest extends BaseRequest
             'status' => ['sometimes', 'string', Rule::enum(AttendanceStatus::class)],
             'checked_in_at' => ['sometimes', 'nullable', 'date'],
             'checked_out_at' => ['sometimes', 'nullable', 'date'],
+            'overtime_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],
             'notes' => ['sometimes', 'nullable', 'string'],
         ];
     }

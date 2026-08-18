@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $leave_type_id
  * @property int $year
  * @property int $entitled
+ * @property int $carried_over
  * @property int $used
  */
 class LeaveBalance extends Model
@@ -27,6 +28,7 @@ class LeaveBalance extends Model
         'leave_type_id',
         'year',
         'entitled',
+        'carried_over',
         'used',
     ];
 
@@ -35,6 +37,7 @@ class LeaveBalance extends Model
      */
     protected $attributes = [
         'entitled' => 0,
+        'carried_over' => 0,
         'used' => 0,
     ];
 
@@ -48,6 +51,7 @@ class LeaveBalance extends Model
             'leave_type_id' => 'integer',
             'year' => 'integer',
             'entitled' => 'integer',
+            'carried_over' => 'integer',
             'used' => 'integer',
         ];
     }
@@ -57,7 +61,7 @@ class LeaveBalance extends Model
      */
     public function remaining(): int
     {
-        return max(0, $this->entitled - $this->used);
+        return max(0, ($this->entitled + $this->carried_over) - $this->used);
     }
 
     /**

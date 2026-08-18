@@ -32,6 +32,7 @@ class PayrollItemResource extends JsonResource
             'working_days' => $item->working_days,
             'absent_days' => $item->absent_days,
             'unpaid_leave_days' => $item->unpaid_leave_days,
+            'overtime_minutes' => $item->overtime_minutes,
             'notes' => $item->notes,
             'employee' => $this->whenLoaded('employee', fn () => $item->employee === null ? null : [
                 'id' => $item->employee->id,

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $working_days
  * @property int $absent_days
  * @property int $unpaid_leave_days
+ * @property int $overtime_minutes
  * @property string|null $notes
  */
 class PayrollItem extends Model
@@ -43,6 +44,7 @@ class PayrollItem extends Model
         'working_days',
         'absent_days',
         'unpaid_leave_days',
+        'overtime_minutes',
         'notes',
     ];
 
@@ -54,6 +56,7 @@ class PayrollItem extends Model
         'working_days' => 0,
         'absent_days' => 0,
         'unpaid_leave_days' => 0,
+        'overtime_minutes' => 0,
     ];
 
     /**
@@ -67,6 +70,7 @@ class PayrollItem extends Model
             'working_days' => 'integer',
             'absent_days' => 'integer',
             'unpaid_leave_days' => 'integer',
+            'overtime_minutes' => 'integer',
         ];
     }
 

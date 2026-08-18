@@ -20,6 +20,7 @@ class StoreLeaveTypeRequest extends BaseRequest
             'is_paid' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
             'default_days' => ['sometimes', 'integer', 'min:0', 'max:365'],
+            'allow_carry_over' => ['sometimes', 'boolean'],
             'description' => ['sometimes', 'nullable', 'string'],
         ];
     }
