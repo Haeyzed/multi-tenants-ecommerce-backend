@@ -90,6 +90,14 @@ class FeatureSeeder extends Seeder
             'name' => 'Recruitment',
             'description' => 'Job listings, candidates, interviews, offers, and hiring.',
         ],
+        'active_job_listings' => [
+            'name' => 'Active Job Listings',
+            'description' => 'Limit the number of published or paused job listings.',
+        ],
+        'applications_per_month' => [
+            'name' => 'Applications Per Month',
+            'description' => 'Limit the number of job applications accepted each month.',
+        ],
     ];
 
     /**

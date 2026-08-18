@@ -7,10 +7,13 @@ namespace App\Services\Tenant\HR;
 use App\Enums\Media\MediaCollection;
 use App\Enums\Tenant\HR\JobOpeningStatus;
 use App\Models\Tenant\JobOpening;
+use App\Models\Tenant\WorkLocation;
+use App\Services\Landlord\Feature\UsageLimiter;
 use App\Services\Media\MediaService;
 use App\Services\Tenant\Catalog\SeoService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
@@ -23,6 +26,8 @@ class JobOpeningService
         private readonly HrSettingsService $hrSettings,
         private readonly SeoService $seo,
         private readonly MediaService $media,
+        private readonly UsageLimiter $usageLimiter,
+        private readonly RecruitmentActivityService $activities,
     ) {}
 
     /**
@@ -34,7 +39,7 @@ class JobOpeningService
         $this->hrSettings->assertRecruitmentEnabled();
 
         return JobOpening::query()
-            ->with(['department', 'designation', 'seo'])
+            ->with($this->openingRelations())
             ->withCount('applications')
             ->filter($params)
             ->applySort($params['sort'] ?? null)
@@ -51,7 +56,7 @@ class JobOpeningService
 
         return JobOpening::query()
             ->publiclyListed()
-            ->with(['department', 'designation', 'seo'])
+            ->with($this->openingRelations())
             ->filter(['search' => $params['search'] ?? null])
             ->applySort($params['sort'] ?? '-published_at')
             ->paginate($this->perPage($params));
@@ -67,6 +72,8 @@ class JobOpeningService
         $seo = $data['seo'] ?? null;
         unset($data['seo']);
 
+        $this->assertListingLimit($data['status'] ?? JobOpeningStatus::Draft);
+
         $opening = JobOpening::query()->create($this->payload($data, true));
         $this->syncLifecycleTimestamps($opening);
 
@@ -74,14 +81,16 @@ class JobOpeningService
             $this->seo->upsert($opening, $seo);
         }
 
-        return $opening->load(['department', 'designation']);
+        $this->activities->record($opening, 'created');
+
+        return $opening->load($this->openingRelations());
     }
 
     public function show(JobOpening $opening): JobOpening
     {
         $this->hrSettings->assertRecruitmentEnabled();
 
-        return $opening->load(['department', 'designation', 'seo'])->loadCount('applications');
+        return $opening->load($this->openingRelations())->loadCount('applications');
     }
 
     public function showPublicBySlug(string $slug): JobOpening
@@ -90,7 +99,7 @@ class JobOpeningService
 
         return JobOpening::query()
             ->publiclyListed()
-            ->with(['department', 'designation', 'seo'])
+            ->with($this->openingRelations())
             ->where('slug', $slug)
             ->firstOrFail();
     }
@@ -109,6 +118,14 @@ class JobOpeningService
             $data['code'] = $this->nullableCode($data['code']);
         }
 
+        $nextStatus = array_key_exists('status', $data)
+            ? JobOpeningStatus::fromInput($data['status'])
+            : $opening->status;
+
+        if (! $opening->status->isActiveListing() && $nextStatus->isActiveListing()) {
+            $this->assertListingLimit($nextStatus);
+        }
+
         $opening->fill($this->payload($data, false));
         $this->syncLifecycleTimestamps($opening);
         $opening->save();
@@ -117,13 +134,17 @@ class JobOpeningService
             $this->seo->upsert($opening, $seo);
         }
 
-        return $opening->fresh(['department', 'designation']) ?? $opening;
+        $this->activities->record($opening, 'updated', null, [
+            'status' => $opening->status->value,
+        ]);
+
+        return $opening->fresh($this->openingRelations()) ?? $opening;
     }
 
     public function publish(JobOpening $opening): JobOpening
     {
         return $this->update($opening, [
-            'status' => JobOpeningStatus::Open,
+            'status' => JobOpeningStatus::Published,
             'published_at' => $opening->published_at ?? now(),
             'closed_at' => null,
         ]);
@@ -171,6 +192,7 @@ class JobOpeningService
         }
 
         $opening->clearMediaCollection(MediaCollection::FeaturedImage->value);
+        $this->activities->record($opening, 'deleted');
         $opening->delete();
     }
 
@@ -183,7 +205,7 @@ class JobOpeningService
         $payload = [];
 
         $keys = [
-            'title', 'slug', 'department_id', 'designation_id', 'employment_type', 'work_location',
+            'title', 'slug', 'department_id', 'designation_id', 'work_location_id', 'employment_type', 'work_location',
             'remote_type', 'experience_level', 'status', 'openings_count', 'salary_min', 'salary_max',
             'salary_currency', 'description', 'short_description', 'requirements', 'responsibilities',
             'qualifications', 'skills', 'benefits', 'closes_at', 'published_at', 'closed_at',
@@ -200,7 +222,7 @@ class JobOpeningService
         if ($creating) {
             $payload['title'] = $data['title'];
             $payload['code'] = $this->nullableCode($data['code'] ?? null);
-            $payload['status'] = $data['status'] ?? JobOpeningStatus::Draft;
+            $payload['status'] = JobOpeningStatus::fromInput($data['status'] ?? JobOpeningStatus::Draft);
             $payload['openings_count'] = $data['openings_count'] ?? 1;
             $payload['salary_currency'] = strtoupper((string) ($data['salary_currency'] ?? $this->hrSettings->payrollCurrency()));
         } elseif (array_key_exists('code', $data)) {
@@ -211,18 +233,62 @@ class JobOpeningService
             $payload['salary_currency'] = strtoupper((string) $payload['salary_currency']);
         }
 
+        if (array_key_exists('status', $payload) && $payload['status'] !== null) {
+            $payload['status'] = JobOpeningStatus::fromInput($payload['status']);
+        }
+
+        if (array_key_exists('work_location_id', $payload) && $payload['work_location_id'] && Schema::hasTable('work_locations')) {
+            $location = WorkLocation::query()->find((int) $payload['work_location_id']);
+            if ($location !== null && (! array_key_exists('work_location', $payload) || $payload['work_location'] === null || $payload['work_location'] === '')) {
+                $payload['work_location'] = $location->name;
+            }
+        }
+
+        if (array_key_exists('work_location_id', $payload) && ! Schema::hasColumn('job_openings', 'work_location_id')) {
+            unset($payload['work_location_id']);
+        }
+
         return $payload;
     }
 
     protected function syncLifecycleTimestamps(JobOpening $opening): void
     {
-        if ($opening->status === JobOpeningStatus::Open && $opening->published_at === null) {
+        if ($opening->status->isPubliclyListable() && $opening->published_at === null) {
             $opening->published_at = now();
         }
 
         if (in_array($opening->status, [JobOpeningStatus::Closed, JobOpeningStatus::Cancelled], true) && $opening->closed_at === null) {
             $opening->closed_at = now();
         }
+    }
+
+    protected function assertListingLimit(JobOpeningStatus|string $status): void
+    {
+        $normalized = JobOpeningStatus::fromInput($status);
+
+        if (! $normalized->isActiveListing()) {
+            return;
+        }
+
+        $this->usageLimiter->assertLimitIfPresent('active_job_listings');
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function openingRelations(): array
+    {
+        $relations = ['department', 'designation'];
+
+        if (Schema::hasTable('seo_meta')) {
+            $relations[] = 'seo';
+        }
+
+        if (Schema::hasColumn('job_openings', 'work_location_id')) {
+            $relations[] = 'workLocation';
+        }
+
+        return $relations;
     }
 
     protected function nullableCode(mixed $code): ?string

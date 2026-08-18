@@ -29,6 +29,7 @@ class JobOpeningResource extends JsonResource
             'code' => $opening->code,
             'department_id' => $opening->department_id,
             'designation_id' => $opening->designation_id,
+            'work_location_id' => $opening->work_location_id,
             'employment_type' => $opening->employment_type,
             'work_location' => $opening->work_location,
             'remote_type' => $opening->remote_type,
@@ -56,6 +57,10 @@ class JobOpeningResource extends JsonResource
             'designation' => $this->whenLoaded('designation', fn () => $opening->designation === null ? null : [
                 'id' => $opening->designation->id,
                 'name' => $opening->designation->name,
+            ]),
+            'work_location_record' => $this->whenLoaded('workLocation', fn () => $opening->workLocation === null ? null : [
+                'id' => $opening->workLocation->id,
+                'name' => $opening->workLocation->name,
             ]),
             'seo' => $this->whenLoaded('seo', fn () => $opening->seo === null ? null : new SeoMetaResource($opening->seo)),
             'created_at' => $opening->created_at,

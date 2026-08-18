@@ -9,14 +9,19 @@ use App\Enums\Tenant\HR\JobApplicationStatus;
 use App\Enums\Tenant\HR\JobOfferStatus;
 use App\Enums\Tenant\HR\JobOpeningStatus;
 use App\Events\CandidateHired;
+use App\Events\InterviewCompleted;
 use App\Events\InterviewScheduled;
 use App\Events\JobApplicationReceived;
 use App\Events\JobApplicationStageChanged;
 use App\Events\JobOfferAccepted;
+use App\Events\JobOfferRejected;
 use App\Events\JobOfferSent;
 use App\Models\Tenant\Candidate;
 use App\Models\Tenant\Employee;
+use App\Models\Tenant\RecruitmentActivity;
 use App\Models\Tenant\User;
+use App\Models\Tenant\WorkLocation;
+use App\Policies\Tenant\CandidatePolicy;
 use App\Services\Tenant\HR\CandidateService;
 use App\Services\Tenant\HR\HiringService;
 use App\Services\Tenant\HR\HrSettingsService;
@@ -25,6 +30,8 @@ use App\Services\Tenant\HR\JobApplicationService;
 use App\Services\Tenant\HR\JobOfferService;
 use App\Services\Tenant\HR\JobOpeningService;
 use App\Services\Tenant\HR\RecruitmentStageService;
+use App\Services\Tenant\HR\WorkLocationService;
+use App\Support\RecruitmentNotifier;
 use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -33,6 +40,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);
 
@@ -63,6 +72,11 @@ beforeEach(function (): void {
         '2026_08_18_154952_create_interview_interviewers_table.php',
         '2026_08_18_154954_create_interview_feedback_table.php',
         '2026_08_18_154957_create_job_offers_table.php',
+        '2026_08_18_183538_create_work_locations_table.php',
+        '2026_08_18_183540_add_work_location_id_to_employees_and_job_openings_tables.php',
+        '2026_08_18_183542_add_response_token_hash_to_job_offers_table.php',
+        '2026_08_18_183545_create_recruitment_activities_table.php',
+        '2026_08_18_183548_migrate_job_opening_open_status_to_published.php',
     ];
 
     foreach ($migrations as $file) {
@@ -85,6 +99,8 @@ beforeEach(function (): void {
             '2026_08_18_154952_create_interview_interviewers_table.php' => 'interview_interviewers',
             '2026_08_18_154954_create_interview_feedback_table.php' => 'interview_feedback',
             '2026_08_18_154957_create_job_offers_table.php' => 'job_offers',
+            '2026_08_18_183538_create_work_locations_table.php' => 'work_locations',
+            '2026_08_18_183545_create_recruitment_activities_table.php' => 'recruitment_activities',
             default => null,
         };
 
@@ -120,6 +136,14 @@ beforeEach(function (): void {
             continue;
         }
 
+        if ($file === '2026_08_18_183540_add_work_location_id_to_employees_and_job_openings_tables.php' && Schema::hasColumn('employees', 'work_location_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_183542_add_response_token_hash_to_job_offers_table.php' && Schema::hasColumn('job_offers', 'response_token_hash')) {
+            continue;
+        }
+
         $this->artisan('migrate', [
             '--path' => database_path('migrations/tenant/'.$file),
             '--realpath' => true,
@@ -136,8 +160,10 @@ beforeEach(function (): void {
         JobApplicationReceived::class,
         JobApplicationStageChanged::class,
         InterviewScheduled::class,
+        InterviewCompleted::class,
         JobOfferSent::class,
         JobOfferAccepted::class,
+        JobOfferRejected::class,
         CandidateHired::class,
     ]);
 });
@@ -146,14 +172,14 @@ test('job openings generate tenant-scoped slugs and hide unpublished listings fr
     $openings = app(JobOpeningService::class);
 
     $draft = $openings->store(['title' => 'Backend Engineer', 'status' => JobOpeningStatus::Draft]);
-    $paused = $openings->store(['title' => 'Paused Role', 'status' => JobOpeningStatus::Open]);
+    $paused = $openings->store(['title' => 'Paused Role', 'status' => JobOpeningStatus::Published]);
     $openings->pause($paused);
-    $closed = $openings->store(['title' => 'Closed Role', 'status' => JobOpeningStatus::Open]);
+    $closed = $openings->store(['title' => 'Closed Role', 'status' => JobOpeningStatus::Published]);
     $openings->close($closed);
     $live = $openings->publish($openings->store(['title' => 'Frontend Engineer', 'status' => JobOpeningStatus::Draft]));
 
     expect($draft->slug)->toBe('backend-engineer')
-        ->and($live->status)->toBe(JobOpeningStatus::Open)
+        ->and($live->status)->toBe(JobOpeningStatus::Published)
         ->and($live->published_at)->not->toBeNull();
 
     $public = $openings->listPublic();
@@ -172,7 +198,7 @@ test('expired and paused job listings reject applications', function (): void {
 
     $expired = $openings->store([
         'title' => 'Expired Role',
-        'status' => JobOpeningStatus::Open,
+        'status' => JobOpeningStatus::Published,
         'closes_at' => '2026-08-01',
     ]);
 
@@ -185,7 +211,7 @@ test('expired and paused job listings reject applications', function (): void {
 
     $paused = $openings->pause($openings->store([
         'title' => 'Paused Apply',
-        'status' => JobOpeningStatus::Open,
+        'status' => JobOpeningStatus::Published,
     ]));
 
     expect(fn () => $applications->store([
@@ -383,5 +409,85 @@ test('recruitment routes are registered for staff and public careers', function 
         ->and(app('router')->getRoutes()->getByName('tenant.job-offers.send'))->not->toBeNull()
         ->and(app('router')->getRoutes()->getByName('tenant.public.jobs.index'))->not->toBeNull()
         ->and(app('router')->getRoutes()->getByName('tenant.public.jobs.apply'))->not->toBeNull()
+        ->and(app('router')->getRoutes()->getByName('tenant.public.offers.accept'))->not->toBeNull()
+        ->and(app('router')->getRoutes()->getByName('tenant.work-locations.index'))->not->toBeNull()
         ->and(implode(',', app('router')->getRoutes()->getByName('tenant.public.jobs.apply')->gatherMiddleware()))->toContain('throttle:10,1');
+});
+
+test('work locations attach to job openings without duplicating department data', function (): void {
+    $location = app(WorkLocationService::class)->store([
+        'name' => 'Lekki Office',
+        'code' => 'LK1',
+        'address' => 'Lekki Phase 1',
+    ]);
+
+    $opening = app(JobOpeningService::class)->store([
+        'title' => 'Office Manager',
+        'work_location_id' => $location->id,
+    ]);
+
+    expect($opening->work_location_id)->toBe($location->id)
+        ->and($opening->work_location)->toBe('Lekki Office')
+        ->and(WorkLocation::query()->count())->toBe(1);
+});
+
+test('legacy open status is stored as published and candidates can accept offers by token', function (): void {
+    $admin = User::factory()->create();
+    $admin->syncRoles(['admin']);
+
+    $opening = app(JobOpeningService::class)->store([
+        'title' => 'Support Lead',
+        'status' => 'open',
+    ]);
+
+    expect($opening->status)->toBe(JobOpeningStatus::Published);
+
+    $application = app(JobApplicationService::class)->store([
+        'job_opening_id' => $opening->id,
+        'first_name' => 'Ngozi',
+        'last_name' => 'Okeke',
+        'email' => 'ngozi@example.com',
+    ], $admin);
+
+    $offer = app(JobOfferService::class)->store([
+        'job_application_id' => $application->id,
+        'salary' => '300000.00',
+        'currency' => 'NGN',
+    ]);
+
+    app(JobOfferService::class)->send($offer, $admin);
+
+    $token = null;
+    Event::assertDispatched(JobOfferSent::class, function (JobOfferSent $event) use (&$token): bool {
+        $token = $event->publicToken;
+
+        return is_string($event->publicToken) && $event->publicToken !== '';
+    });
+
+    $accepted = app(JobOfferService::class)->acceptPublicByToken((string) $token);
+
+    expect($accepted->status)->toBe(JobOfferStatus::Accepted)
+        ->and($accepted->response_token_hash)->toBeNull()
+        ->and(RecruitmentActivity::query()->where('action', 'sent')->exists())->toBeTrue();
+
+    expect(fn () => app(JobOfferService::class)->showPublicByToken((string) $token))
+        ->toThrow(ValidationException::class);
+});
+
+test('hired employee role cannot view candidates', function (): void {
+    $employeeUser = User::factory()->create();
+    $employeeUser->syncRoles(['employee']);
+
+    expect($employeeUser->can('hr.recruitment.view'))->toBeFalse()
+        ->and((new CandidatePolicy)->viewAny($employeeUser))->toBeFalse();
+});
+
+test('staff notifications skip missing recruitment permissions', function (): void {
+    Permission::query()->where('name', 'like', 'hr.recruitment.%')->delete();
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    expect(fn () => app(RecruitmentNotifier::class)->notifyStaff('hr.application.received', [
+        'job_title' => 'Engineer',
+        'candidate_name' => 'Ada Lovelace',
+    ]))->not->toThrow(Throwable::class);
 });

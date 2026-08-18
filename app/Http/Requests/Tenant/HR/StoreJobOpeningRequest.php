@@ -23,6 +23,7 @@ class StoreJobOpeningRequest extends BaseRequest
             'code' => ['sometimes', 'nullable', 'string', 'max:50', 'alpha_dash', Rule::unique('job_openings', 'code')],
             'department_id' => ['sometimes', 'nullable', 'integer', 'exists:departments,id'],
             'designation_id' => ['sometimes', 'nullable', 'integer', 'exists:designations,id'],
+            'work_location_id' => ['sometimes', 'nullable', 'integer', 'exists:work_locations,id'],
             'employment_type' => ['sometimes', 'nullable', 'string', Rule::enum(EmploymentType::class)],
             'work_location' => ['sometimes', 'nullable', 'string', 'max:255'],
             'remote_type' => ['sometimes', 'nullable', 'string', Rule::enum(JobRemoteType::class)],

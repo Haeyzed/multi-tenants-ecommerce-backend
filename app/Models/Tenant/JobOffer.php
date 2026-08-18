@@ -47,6 +47,14 @@ class JobOffer extends Model
         'approved_by',
         'sent_at',
         'decided_at',
+        'response_token_hash',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    protected $hidden = [
+        'response_token_hash',
     ];
 
     /**

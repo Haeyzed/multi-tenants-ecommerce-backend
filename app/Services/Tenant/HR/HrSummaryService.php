@@ -89,7 +89,7 @@ class HrSummaryService
         }
 
         return [
-            'open_jobs' => JobOpening::query()->where('status', JobOpeningStatus::Open)->count(),
+            'open_jobs' => JobOpening::query()->whereIn('status', [JobOpeningStatus::Published, JobOpeningStatus::Open])->count(),
             'applications' => JobApplication::query()->count(),
             'candidates' => Schema::hasTable('candidates') ? Candidate::query()->count() : 0,
             'interviews' => Schema::hasTable('interviews') ? Interview::query()->count() : 0,

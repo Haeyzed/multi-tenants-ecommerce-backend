@@ -26,7 +26,7 @@ class JobOpeningFactory extends Factory
         return [
             'title' => fake()->jobTitle(),
             'code' => fake()->unique()->bothify('JOB-###'),
-            'status' => JobOpeningStatus::Open,
+            'status' => JobOpeningStatus::Published,
             'openings_count' => 1,
             'description' => fake()->optional()->sentence(),
             'closes_at' => now()->addMonth()->toDateString(),

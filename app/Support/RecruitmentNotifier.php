@@ -9,6 +9,9 @@ use App\Models\Tenant\Candidate;
 use App\Models\Tenant\User;
 use App\Services\Notification\NotificationService;
 use App\Services\Tenant\HR\HrSettingsService;
+use Illuminate\Support\Collection;
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
+use Spatie\Permission\Models\Permission;
 
 /**
  * Fan-out recruitment notifications to HR staff and candidates.
@@ -29,11 +32,7 @@ class RecruitmentNotifier
             return;
         }
 
-        $staff = User::query()
-            ->permission(['hr.recruitment.manage', 'hr.recruitment.hire', 'hr.recruitment.view'])
-            ->get();
-
-        foreach ($staff as $user) {
+        foreach ($this->staffWithRecruitmentAccess() as $user) {
             $this->notifications->send(
                 $user,
                 $key,
@@ -70,5 +69,28 @@ class RecruitmentNotifier
                 NotificationChannel::Email->value,
             ],
         );
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    protected function staffWithRecruitmentAccess(): Collection
+    {
+        $names = [];
+
+        foreach (['hr.recruitment.manage', 'hr.recruitment.hire', 'hr.recruitment.view'] as $name) {
+            try {
+                Permission::findByName($name, 'tenant');
+                $names[] = $name;
+            } catch (PermissionDoesNotExist) {
+                continue;
+            }
+        }
+
+        if ($names === []) {
+            return collect();
+        }
+
+        return User::query()->permission($names)->get();
     }
 }

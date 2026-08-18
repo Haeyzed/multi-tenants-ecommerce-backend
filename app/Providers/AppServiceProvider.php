@@ -78,6 +78,7 @@ use App\Models\Tenant\TaxTable;
 use App\Models\Tenant\TaxZone;
 use App\Models\Tenant\Unit;
 use App\Models\Tenant\Warehouse;
+use App\Models\Tenant\WorkLocation;
 use App\Models\Tenant\WorkSchedule;
 use App\Policies\Tenant\AccountPolicy;
 use App\Policies\Tenant\AttendancePolicy;
@@ -147,6 +148,7 @@ use App\Policies\Tenant\TaxTablePolicy;
 use App\Policies\Tenant\TaxZonePolicy;
 use App\Policies\Tenant\UnitPolicy;
 use App\Policies\Tenant\WarehousePolicy;
+use App\Policies\Tenant\WorkLocationPolicy;
 use App\Policies\Tenant\WorkSchedulePolicy;
 use App\Services\Notification\ChannelResolver;
 use App\Services\Notification\Channels\DatabaseChannel;
@@ -169,8 +171,12 @@ use App\Services\Tenant\Catalog\Recommendations\RecentlyViewedProvider;
 use App\Services\Tenant\Catalog\Recommendations\RelatedProductsProvider;
 use App\Services\Tenant\Delivery\DriverAssignmentManager;
 use App\Services\Tenant\Marketplace\Payout\ManualPayoutDriver;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\PermissionRegistrar;
+use Stancl\Tenancy\Events\TenancyEnded;
+use Stancl\Tenancy\Events\TenancyInitialized;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -273,6 +279,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(SellerCommission::class, SellerCommissionPolicy::class);
         Gate::policy(SellerPayout::class, SellerPayoutPolicy::class);
         Gate::policy(Department::class, DepartmentPolicy::class);
+        Gate::policy(WorkLocation::class, WorkLocationPolicy::class);
         Gate::policy(Designation::class, DesignationPolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
         Gate::policy(EmployeeSalary::class, EmployeeSalaryPolicy::class);
@@ -330,6 +337,14 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return null;
+        });
+
+        Event::listen(TenancyInitialized::class, function (): void {
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+        });
+
+        Event::listen(TenancyEnded::class, function (): void {
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
         });
     }
 }

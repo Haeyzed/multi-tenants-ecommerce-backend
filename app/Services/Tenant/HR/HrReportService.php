@@ -340,7 +340,7 @@ class HrReportService
         return [
             'from' => $from,
             'to' => $to,
-            'open_positions' => JobOpening::query()->where('status', JobOpeningStatus::Open)->count(),
+            'open_positions' => JobOpening::query()->whereIn('status', [JobOpeningStatus::Published, JobOpeningStatus::Open])->count(),
             'applications' => $applications->count(),
             'hires' => $hires->count(),
             'average_time_to_hire_days' => $timeToHireDays !== null ? round((float) $timeToHireDays, 1) : null,

@@ -21,6 +21,7 @@ class CandidateService
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly MediaService $media,
+        private readonly RecruitmentActivityService $activities,
     ) {}
 
     /**
@@ -71,6 +72,8 @@ class CandidateService
         $candidate->fill($data);
         $candidate->save();
 
+        $this->activities->record($candidate, 'updated');
+
         return $candidate->fresh(['employee.user']) ?? $candidate;
     }
 
@@ -88,6 +91,7 @@ class CandidateService
         }
 
         $candidate->clearMediaCollection(MediaCollection::Resume->value);
+        $this->activities->record($candidate, 'deleted');
         $candidate->delete();
     }
 
@@ -134,11 +138,15 @@ class CandidateService
             return $candidate->fresh() ?? $candidate;
         }
 
-        return Candidate::query()->create([
+        $created = Candidate::query()->create([
             ...$payload,
             'notes' => $data['notes'] ?? null,
             'status' => $data['status'] ?? CandidateStatus::Active,
         ]);
+
+        $this->activities->record($created, 'created');
+
+        return $created;
     }
 
     /**

@@ -19,7 +19,7 @@ use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 
-#[Group('HR')]
+#[Group('HR / Candidates')]
 class CandidateController extends Controller
 {
     public function __construct(private readonly CandidateService $candidates) {}

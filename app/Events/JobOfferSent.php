@@ -12,5 +12,8 @@ class JobOfferSent
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public JobOffer $offer) {}
+    public function __construct(
+        public JobOffer $offer,
+        public ?string $publicToken = null,
+    ) {}
 }

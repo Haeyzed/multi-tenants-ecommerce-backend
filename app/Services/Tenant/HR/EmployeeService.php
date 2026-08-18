@@ -12,9 +12,11 @@ use App\Models\Tenant\Designation;
 use App\Models\Tenant\Employee;
 use App\Models\Tenant\EmploymentRecord;
 use App\Models\Tenant\User;
+use App\Models\Tenant\WorkLocation;
 use App\Services\Media\MediaService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
@@ -42,7 +44,7 @@ class EmployeeService
     public function list(array $params = []): LengthAwarePaginator
     {
         return Employee::query()
-            ->with(['user', 'department', 'designation', 'manager.user', 'workSchedule'])
+            ->with($this->employeeRelations())
             ->filter($params)
             ->applySort($params['sort'] ?? null)
             ->paginate($this->perPage($params));
@@ -85,12 +87,13 @@ class EmployeeService
 
         $this->assertManager($data['manager_id'] ?? null);
 
-        $payload = $this->syncDesignationDepartment([
+        $payload = $this->syncDesignationDepartment($this->syncWorkLocation([
             'user_id' => $user->id,
             'department_id' => $data['department_id'] ?? null,
             'designation_id' => $data['designation_id'] ?? null,
             'manager_id' => $data['manager_id'] ?? null,
             'work_schedule_id' => $data['work_schedule_id'] ?? null,
+            'work_location_id' => $data['work_location_id'] ?? null,
             'job_title' => $data['job_title'] ?? null,
             'employee_number' => $data['employee_number'] ?? $this->nextEmployeeNumber(),
             'employment_status' => $data['employment_status'] ?? $this->hrSettings->defaultEmploymentStatus(),
@@ -106,9 +109,13 @@ class EmployeeService
             'pension_pin' => $data['pension_pin'] ?? null,
             'nhf_number' => $data['nhf_number'] ?? null,
             'nsitf_number' => $data['nsitf_number'] ?? null,
-        ]);
+        ]));
 
-        $employee = Employee::query()->create($payload)->load(['user', 'department', 'designation', 'manager.user', 'workSchedule']);
+        if (! Schema::hasColumn('employees', 'work_location_id')) {
+            unset($payload['work_location_id']);
+        }
+
+        $employee = Employee::query()->create($payload)->load($this->employeeRelations());
 
         $this->recordEmployment($employee, EmploymentChangeType::Hired, $employee->hired_at?->toDateString());
 
@@ -119,7 +126,7 @@ class EmployeeService
 
     public function show(Employee $employee): Employee
     {
-        return $employee->load(['user', 'department', 'designation', 'manager.user', 'workSchedule']);
+        return $employee->load($this->employeeRelations());
     }
 
     /**
@@ -156,6 +163,7 @@ class EmployeeService
             'designation_id' => $employee->designation_id,
             'manager_id' => $employee->manager_id,
             'work_schedule_id' => $employee->work_schedule_id,
+            'work_location_id' => $employee->work_location_id,
             'job_title' => $employee->job_title,
             'employment_type' => $employee->employment_type?->value,
             'work_location' => $employee->work_location,
@@ -180,10 +188,10 @@ class EmployeeService
             }
         }
 
-        $employee->fill($this->syncDesignationDepartment($data, $employee));
+        $employee->fill($this->syncDesignationDepartment($this->syncWorkLocation($data), $employee));
         $employee->save();
 
-        $employee = $employee->fresh(['user', 'department', 'designation', 'manager.user', 'workSchedule']) ?? $employee;
+        $employee = $employee->fresh($this->employeeRelations()) ?? $employee;
 
         if ($employee->employment_status !== $previousStatus) {
             $this->recordEmployment($employee, EmploymentChangeType::StatusChanged);
@@ -290,7 +298,7 @@ class EmployeeService
     }
 
     /**
-     * @return array{department_id: int|null, designation_id: int|null, manager_id: int|null, work_schedule_id: int|null, job_title: string|null, employment_type: string|null, work_location: string|null}
+     * @return array{department_id: int|null, designation_id: int|null, manager_id: int|null, work_schedule_id: int|null, work_location_id: int|null, job_title: string|null, employment_type: string|null, work_location: string|null}
      */
     protected function assignmentSnapshot(Employee $employee): array
     {
@@ -299,10 +307,46 @@ class EmployeeService
             'designation_id' => $employee->designation_id,
             'manager_id' => $employee->manager_id,
             'work_schedule_id' => $employee->work_schedule_id,
+            'work_location_id' => $employee->work_location_id,
             'job_title' => $employee->job_title,
             'employment_type' => $employee->employment_type?->value,
             'work_location' => $employee->work_location,
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function employeeRelations(): array
+    {
+        $relations = ['user', 'department', 'designation', 'manager.user', 'workSchedule'];
+
+        if (Schema::hasColumn('employees', 'work_location_id')) {
+            $relations[] = 'workLocation';
+        }
+
+        return $relations;
+    }
+
+    /**
+     * Copy the location name onto the snapshot string when a location is assigned.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function syncWorkLocation(array $data): array
+    {
+        if (! Schema::hasTable('work_locations') || ! array_key_exists('work_location_id', $data) || $data['work_location_id'] === null || $data['work_location_id'] === '') {
+            return $data;
+        }
+
+        $location = WorkLocation::query()->find((int) $data['work_location_id']);
+
+        if ($location !== null && (! array_key_exists('work_location', $data) || $data['work_location'] === null || $data['work_location'] === '')) {
+            $data['work_location'] = $location->name;
+        }
+
+        return $data;
     }
 
     /**

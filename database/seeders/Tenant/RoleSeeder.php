@@ -221,6 +221,8 @@ class RoleSeeder extends Seeder
             'hr.departments.manage',
             'hr.designations.view',
             'hr.designations.manage',
+            'hr.work_locations.view',
+            'hr.work_locations.manage',
             'hr.employees.view',
             'hr.employees.create',
             'hr.employees.update',

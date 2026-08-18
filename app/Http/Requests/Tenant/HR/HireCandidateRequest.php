@@ -21,6 +21,7 @@ class HireCandidateRequest extends BaseRequest
             'job_title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'employment_type' => ['sometimes', 'nullable', 'string', Rule::enum(EmploymentType::class)],
             'work_location' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'work_location_id' => ['sometimes', 'nullable', 'integer', 'exists:work_locations,id'],
             'hired_at' => ['sometimes', 'nullable', 'date'],
             'base_salary' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'currency' => ['sometimes', 'string', 'size:3'],

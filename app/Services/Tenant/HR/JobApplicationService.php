@@ -13,6 +13,7 @@ use App\Models\Tenant\JobApplication;
 use App\Models\Tenant\JobOpening;
 use App\Models\Tenant\RecruitmentStage;
 use App\Models\Tenant\User;
+use App\Services\Landlord\Feature\UsageLimiter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,8 @@ class JobApplicationService
         private readonly HrSettingsService $hrSettings,
         private readonly CandidateService $candidates,
         private readonly RecruitmentStageService $stages,
+        private readonly UsageLimiter $usageLimiter,
+        private readonly RecruitmentActivityService $activities,
     ) {}
 
     /**
@@ -59,6 +62,7 @@ class JobApplicationService
 
         $opening = JobOpening::query()->findOrFail($data['job_opening_id']);
         $this->assertAcceptsApplications($opening);
+        $this->usageLimiter->assertLimitIfPresent('applications_per_month');
 
         $candidate = $this->candidates->findOrCreate($data);
 
@@ -104,6 +108,10 @@ class JobApplicationService
         });
 
         event(new JobApplicationReceived($application));
+        $this->activities->record($application, 'received', $actor, [
+            'job_opening_id' => $opening->id,
+            'candidate_id' => $candidate->id,
+        ]);
 
         return $application->load(['jobOpening', 'candidate', 'stage', 'hiredEmployee.user']);
     }
@@ -216,6 +224,12 @@ class JobApplicationService
         $this->recordHistory($application, $fromStage, $stage, $fromStatus, $status, $actor, $notes);
 
         event(new JobApplicationStageChanged($application, $fromStatus, $status));
+
+        $this->activities->record($application, 'stage_changed', $actor, [
+            'from_status' => $fromStatus instanceof JobApplicationStatus ? $fromStatus->value : null,
+            'to_status' => $status->value,
+            'to_stage_id' => $stage->id,
+        ]);
 
         return $application->fresh(['jobOpening', 'candidate', 'stage', 'hiredEmployee.user']) ?? $application;
     }

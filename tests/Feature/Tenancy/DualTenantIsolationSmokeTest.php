@@ -5,15 +5,18 @@ declare(strict_types=1);
 use App\Enums\Cms\CmsContentStatus;
 use App\Enums\Landlord\TenantStatus;
 use App\Enums\Tenant\HR\EmploymentStatus;
+use App\Enums\Tenant\HR\JobOpeningStatus;
 use App\Enums\Tenant\Marketplace\SellerStatus;
 use App\Enums\Tenant\Marketplace\SellerVerificationStatus;
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Cms\Page;
 use App\Models\Tenant\Department;
+use App\Models\Tenant\JobOpening;
 use App\Models\Tenant\Seller;
 use App\Models\Tenant\User;
 use App\Services\Landlord\Tenant\TenantService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
+use App\Services\Tenant\HR\JobOpeningService;
 use Database\Seeders\Landlord\PermissionSeeder;
 use Database\Seeders\Landlord\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -128,6 +131,19 @@ function seedTenantIsolationFixtures(string $label): array
         'employment_status' => EmploymentStatus::Active,
     ]);
 
+    app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store([
+        'title' => "Engineer {$label}",
+        'slug' => 'backend-engineer',
+        'status' => JobOpeningStatus::Draft,
+    ]));
+
+    JobOpening::query()->create([
+        'title' => "Secret {$label}",
+        'slug' => 'secret-role',
+        'status' => JobOpeningStatus::Draft,
+        'openings_count' => 1,
+    ]);
+
     Page::query()->create([
         'title' => "About {$label}",
         'slug' => $pageSlug,
@@ -211,4 +227,28 @@ test('dual tenant isolation smoke covers seller hr cms domain and tokens', funct
     $this->withToken($fixturesA['token'])
         ->getJson('http://'.$tenantB['domain'].'/api/seller/me')
         ->assertUnauthorized();
+
+    $jobsA = $this->getJson('http://'.$tenantA['domain'].'/api/public/jobs')->assertSuccessful()->json('data');
+    $jobsB = $this->getJson('http://'.$tenantB['domain'].'/api/public/jobs')->assertSuccessful()->json('data');
+
+    expect(collect($jobsA)->pluck('title')->all())->toContain('Engineer a')
+        ->and(collect($jobsA)->pluck('title')->all())->not->toContain('Secret a')
+        ->and(collect($jobsA)->pluck('title')->all())->not->toContain('Engineer b')
+        ->and(collect($jobsB)->pluck('title')->all())->toContain('Engineer b')
+        ->and(collect($jobsB)->pluck('slug')->all())->toContain('backend-engineer');
+
+    $this->getJson('http://'.$tenantA['domain'].'/api/public/jobs/secret-role')->assertNotFound();
+    $this->getJson('http://'.$tenantA['domain'].'/api/candidates')->assertUnauthorized();
+
+    $apply = $this->postJson('http://'.$tenantA['domain'].'/api/public/jobs/backend-engineer/applications', [
+        'first_name' => 'Ada',
+        'last_name' => 'Lovelace',
+        'email' => 'ada@example.com',
+        'tenant_id' => $tenantB['tenant']->getTenantKey(),
+        'status' => 'hired',
+        'notes' => 'should be ignored',
+    ])->assertSuccessful()->json();
+
+    expect($apply['data'])->toBe(['received' => true])
+        ->and(json_encode($apply))->not->toContain('ada@example.com');
 });

@@ -8,11 +8,13 @@ use App\Enums\Tenant\HR\InterviewStatus;
 use App\Enums\Tenant\HR\JobApplicationStatus;
 use App\Enums\Tenant\HR\JobOfferStatus;
 use App\Events\JobOfferAccepted;
+use App\Events\JobOfferRejected;
 use App\Events\JobOfferSent;
 use App\Models\Tenant\JobApplication;
 use App\Models\Tenant\JobOffer;
 use App\Models\Tenant\User;
 use App\Support\Money;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -24,6 +26,7 @@ class JobOfferService
         private readonly HrSettingsService $hrSettings,
         private readonly JobApplicationService $applications,
         private readonly RecruitmentStageService $stages,
+        private readonly RecruitmentActivityService $activities,
     ) {}
 
     /**
@@ -49,6 +52,11 @@ class JobOfferService
             'notes' => $data['notes'] ?? null,
         ]);
 
+        $this->activities->record($offer, 'created', null, [
+            'job_application_id' => $application->id,
+            'status' => $offer->status->value,
+        ]);
+
         return $offer->load(['application.candidate', 'application.jobOpening']);
     }
 
@@ -58,6 +66,25 @@ class JobOfferService
         $this->expireIfNeeded($offer);
 
         return $offer->load(['application.candidate', 'application.jobOpening', 'approvedByUser']);
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function showPublicByToken(string $token): JobOffer
+    {
+        $this->hrSettings->assertRecruitmentEnabled();
+
+        $offer = $this->offerFromToken($token);
+        $this->expireIfNeeded($offer);
+
+        if ($offer->status !== JobOfferStatus::Sent) {
+            throw ValidationException::withMessages([
+                'token' => ['This offer is no longer available.'],
+            ]);
+        }
+
+        return $offer->load(['application.jobOpening']);
     }
 
     /**
@@ -76,7 +103,7 @@ class JobOfferService
             ]);
         }
 
-        unset($data['job_application_id'], $data['status'], $data['approved_by']);
+        unset($data['job_application_id'], $data['status'], $data['approved_by'], $data['response_token_hash']);
 
         if (isset($data['salary'])) {
             $data['salary'] = Money::add((string) $data['salary'], '0');
@@ -88,6 +115,8 @@ class JobOfferService
 
         $offer->fill($data);
         $offer->save();
+
+        $this->activities->record($offer, 'updated', null, ['status' => $offer->status->value]);
 
         return $offer->fresh(['application.candidate', 'application.jobOpening']) ?? $offer;
     }
@@ -108,6 +137,8 @@ class JobOfferService
         $offer->status = JobOfferStatus::PendingApproval;
         $offer->save();
 
+        $this->activities->record($offer, 'submitted_for_approval', null, ['status' => $offer->status->value]);
+
         return $offer->fresh(['application.candidate']) ?? $offer;
     }
 
@@ -127,6 +158,8 @@ class JobOfferService
         $offer->status = JobOfferStatus::Draft;
         $offer->approved_by = $actor->id;
         $offer->save();
+
+        $this->activities->record($offer, 'approved', $actor, ['status' => $offer->status->value]);
 
         return $offer->fresh(['application.candidate', 'approvedByUser']) ?? $offer;
     }
@@ -161,15 +194,20 @@ class JobOfferService
             ]);
         }
 
+        $token = Str::random(64);
+
         $offer->status = JobOfferStatus::Sent;
         $offer->sent_at = now();
+        $offer->response_token_hash = hash('sha256', $token);
         $offer->save();
 
         $application = $offer->application;
         $stage = $this->stages->stageForKind(JobApplicationStatus::Offered);
         $this->applications->moveStage($application, $stage, JobApplicationStatus::Offered, $actor, 'Offer sent.');
 
-        event(new JobOfferSent($offer));
+        $this->activities->record($offer, 'sent', $actor, ['status' => $offer->status->value]);
+
+        event(new JobOfferSent($offer, $token));
 
         return $offer->fresh(['application.candidate', 'application.jobOpening']) ?? $offer;
     }
@@ -193,6 +231,22 @@ class JobOfferService
     /**
      * @throws ValidationException
      */
+    public function acceptPublicByToken(string $token): JobOffer
+    {
+        return $this->accept($this->showPublicByToken($token));
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function rejectPublicByToken(string $token): JobOffer
+    {
+        return $this->reject($this->showPublicByToken($token));
+    }
+
+    /**
+     * @throws ValidationException
+     */
     public function withdraw(JobOffer $offer): JobOffer
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -206,7 +260,10 @@ class JobOfferService
 
         $offer->status = JobOfferStatus::Withdrawn;
         $offer->decided_at = now();
+        $offer->response_token_hash = null;
         $offer->save();
+
+        $this->activities->record($offer, 'withdrawn', null, ['status' => $offer->status->value]);
 
         return $offer->fresh(['application.candidate']) ?? $offer;
     }
@@ -216,7 +273,9 @@ class JobOfferService
         if ($offer->isExpired()) {
             $offer->status = JobOfferStatus::Expired;
             $offer->decided_at = now();
+            $offer->response_token_hash = null;
             $offer->save();
+            $this->activities->record($offer, 'expired', null, ['status' => $offer->status->value]);
         }
 
         return $offer;
@@ -238,12 +297,16 @@ class JobOfferService
 
         $offer->status = $decision;
         $offer->decided_at = now();
+        $offer->response_token_hash = null;
         $offer->save();
+
+        $this->activities->record($offer, $decision->value, $actor, ['status' => $decision->value]);
 
         if ($decision === JobOfferStatus::Rejected) {
             $application = $offer->application;
             $stage = $this->stages->stageForKind(JobApplicationStatus::Rejected);
             $this->applications->moveStage($application, $stage, JobApplicationStatus::Rejected, $actor, 'Offer rejected.');
+            event(new JobOfferRejected($offer));
         }
 
         if ($decision === JobOfferStatus::Accepted) {
@@ -251,6 +314,32 @@ class JobOfferService
         }
 
         return $offer->fresh(['application.candidate', 'application.jobOpening']) ?? $offer;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    protected function offerFromToken(string $token): JobOffer
+    {
+        $token = trim($token);
+
+        if ($token === '') {
+            throw ValidationException::withMessages([
+                'token' => ['The offer token is invalid.'],
+            ]);
+        }
+
+        $offer = JobOffer::query()
+            ->where('response_token_hash', hash('sha256', $token))
+            ->first();
+
+        if ($offer === null) {
+            throw ValidationException::withMessages([
+                'token' => ['The offer token is invalid.'],
+            ]);
+        }
+
+        return $offer;
     }
 
     /**

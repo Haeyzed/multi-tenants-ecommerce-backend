@@ -19,7 +19,7 @@ use Illuminate\Http\UploadedFile;
 /**
  * Public careers listings and applications. Tenant is resolved by domain.
  */
-#[Group('Public Recruitment')]
+#[Group('Public Recruitment / Job Listings')]
 class PublicJobOpeningController extends Controller
 {
     public function __construct(

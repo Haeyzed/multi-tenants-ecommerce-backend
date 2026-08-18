@@ -32,6 +32,7 @@ class HiringService
         private readonly JobApplicationService $applications,
         private readonly RecruitmentStageService $stages,
         private readonly JobOfferService $offers,
+        private readonly RecruitmentActivityService $activities,
     ) {}
 
     /**
@@ -85,6 +86,7 @@ class HiringService
                     'job_title' => $data['job_title'] ?? $offer->position ?? $opening?->title,
                     'employment_type' => $data['employment_type'] ?? $opening?->employment_type,
                     'work_location' => $data['work_location'] ?? $opening?->work_location,
+                    'work_location_id' => $data['work_location_id'] ?? $opening?->work_location_id,
                     'hired_at' => $data['hired_at'] ?? $offer->start_date?->toDateString() ?? now()->toDateString(),
                     'notes' => $data['notes'] ?? null,
                 ]);
@@ -96,6 +98,11 @@ class HiringService
 
             $this->linkApplication($application, $employee, $actor);
             $this->syncSalary($employee, $offer, $data);
+
+            $this->activities->record($application, 'hired', $actor, [
+                'employee_id' => $employee->id,
+                'candidate_id' => $locked->id,
+            ]);
 
             event(new CandidateHired($application->fresh(['candidate', 'hiredEmployee']) ?? $application, $employee));
 

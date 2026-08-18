@@ -27,6 +27,7 @@ use App\Http\Controllers\Tenant\HR\PerformanceReviewController;
 use App\Http\Controllers\Tenant\HR\PublicHolidayController;
 use App\Http\Controllers\Tenant\HR\RecruitmentStageController;
 use App\Http\Controllers\Tenant\HR\TaxTableController;
+use App\Http\Controllers\Tenant\HR\WorkLocationController;
 use App\Http\Controllers\Tenant\HR\WorkScheduleController;
 use Illuminate\Support\Facades\Route;
 
@@ -76,6 +77,13 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::get('departments/{department}', [DepartmentController::class, 'show'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->whereNumber('department')->name('tenant.departments.show');
         Route::match(['put', 'patch'], 'departments/{department}', [DepartmentController::class, 'update'])->middleware('permission:hr.departments.manage')->whereNumber('department')->name('tenant.departments.update');
         Route::delete('departments/{department}', [DepartmentController::class, 'destroy'])->middleware('permission:hr.departments.manage')->whereNumber('department')->name('tenant.departments.destroy');
+
+        Route::get('work-locations/options', [WorkLocationController::class, 'options'])->middleware('permission:hr.view|hr.work_locations.view|hr.work_locations.manage')->name('tenant.work-locations.options');
+        Route::get('work-locations', [WorkLocationController::class, 'index'])->middleware('permission:hr.view|hr.work_locations.view|hr.work_locations.manage')->name('tenant.work-locations.index');
+        Route::post('work-locations', [WorkLocationController::class, 'store'])->middleware('permission:hr.work_locations.manage')->name('tenant.work-locations.store');
+        Route::get('work-locations/{work_location}', [WorkLocationController::class, 'show'])->middleware('permission:hr.view|hr.work_locations.view|hr.work_locations.manage')->whereNumber('work_location')->name('tenant.work-locations.show');
+        Route::match(['put', 'patch'], 'work-locations/{work_location}', [WorkLocationController::class, 'update'])->middleware('permission:hr.work_locations.manage')->whereNumber('work_location')->name('tenant.work-locations.update');
+        Route::delete('work-locations/{work_location}', [WorkLocationController::class, 'destroy'])->middleware('permission:hr.work_locations.manage')->whereNumber('work_location')->name('tenant.work-locations.destroy');
 
         Route::get('designations/options', [DesignationController::class, 'options'])->middleware('permission:hr.view|hr.designations.view|hr.designations.manage')->name('tenant.designations.options');
         Route::get('designations', [DesignationController::class, 'index'])->middleware('permission:hr.view|hr.designations.view|hr.designations.manage')->name('tenant.designations.index');

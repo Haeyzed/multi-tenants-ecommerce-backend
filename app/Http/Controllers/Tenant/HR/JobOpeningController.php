@@ -21,7 +21,7 @@ use Illuminate\Http\JsonResponse;
 /**
  * Recruitment job openings / listings.
  */
-#[Group('HR')]
+#[Group('HR / Job Listings')]
 class JobOpeningController extends Controller
 {
     public function __construct(private readonly JobOpeningService $openings) {}

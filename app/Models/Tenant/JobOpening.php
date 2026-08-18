@@ -33,6 +33,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $code
  * @property int|null $department_id
  * @property int|null $designation_id
+ * @property int|null $work_location_id
  * @property EmploymentType|null $employment_type
  * @property string|null $work_location
  * @property JobRemoteType|null $remote_type
@@ -67,6 +68,7 @@ class JobOpening extends Model implements HasMedia
         'code',
         'department_id',
         'designation_id',
+        'work_location_id',
         'employment_type',
         'work_location',
         'remote_type',
@@ -105,6 +107,7 @@ class JobOpening extends Model implements HasMedia
         return [
             'department_id' => 'integer',
             'designation_id' => 'integer',
+            'work_location_id' => 'integer',
             'employment_type' => EmploymentType::class,
             'remote_type' => JobRemoteType::class,
             'status' => JobOpeningStatus::class,
@@ -160,6 +163,14 @@ class JobOpening extends Model implements HasMedia
     }
 
     /**
+     * @return BelongsTo<WorkLocation, $this>
+     */
+    public function workLocation(): BelongsTo
+    {
+        return $this->belongsTo(WorkLocation::class);
+    }
+
+    /**
      * @return HasMany<JobApplication, $this>
      */
     public function applications(): HasMany
@@ -187,7 +198,7 @@ class JobOpening extends Model implements HasMedia
     public function scopePubliclyListed(Builder $query): Builder
     {
         return $query
-            ->where('status', JobOpeningStatus::Open)
+            ->whereIn('status', [JobOpeningStatus::Published, JobOpeningStatus::Open])
             ->where(function (Builder $query): void {
                 $query->whereNull('closes_at')
                     ->orWhereDate('closes_at', '>=', now()->toDateString());

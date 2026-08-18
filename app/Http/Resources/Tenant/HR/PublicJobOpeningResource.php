@@ -50,6 +50,9 @@ class PublicJobOpeningResource extends JsonResource
             'designation' => $this->whenLoaded('designation', fn () => $opening->designation === null ? null : [
                 'name' => $opening->designation->name,
             ]),
+            'work_location_record' => $this->whenLoaded('workLocation', fn () => $opening->workLocation === null ? null : [
+                'name' => $opening->workLocation->name,
+            ]),
             'seo' => $this->whenLoaded('seo', fn () => $opening->seo === null ? null : new SeoMetaResource($opening->seo)),
         ];
     }

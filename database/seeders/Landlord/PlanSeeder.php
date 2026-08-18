@@ -119,6 +119,8 @@ class PlanSeeder extends Seeder
                     ['feature' => 'pos_terminals', 'enabled' => true, 'limit' => 5],
                     ['feature' => 'hr', 'enabled' => true],
                     ['feature' => 'recruitment', 'enabled' => true],
+                    ['feature' => 'active_job_listings', 'enabled' => true, 'limit' => 10],
+                    ['feature' => 'applications_per_month', 'enabled' => true, 'limit' => 200],
                 ],
             ],
             [
@@ -151,6 +153,8 @@ class PlanSeeder extends Seeder
                     ['feature' => 'pos_terminals', 'enabled' => true, 'limit' => null],
                     ['feature' => 'hr', 'enabled' => true],
                     ['feature' => 'recruitment', 'enabled' => true],
+                    ['feature' => 'active_job_listings', 'enabled' => true, 'limit' => null],
+                    ['feature' => 'applications_per_month', 'enabled' => true, 'limit' => null],
                 ],
             ],
         ];

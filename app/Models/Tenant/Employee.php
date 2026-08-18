@@ -28,6 +28,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int|null $designation_id
  * @property int|null $manager_id
  * @property int|null $work_schedule_id
+ * @property int|null $work_location_id
  * @property string|null $job_title
  * @property string|null $employee_number
  * @property EmploymentStatus $employment_status
@@ -59,6 +60,7 @@ class Employee extends Model implements HasMedia
         'designation_id',
         'manager_id',
         'work_schedule_id',
+        'work_location_id',
         'job_title',
         'employee_number',
         'employment_status',
@@ -95,6 +97,7 @@ class Employee extends Model implements HasMedia
             'designation_id' => 'integer',
             'manager_id' => 'integer',
             'work_schedule_id' => 'integer',
+            'work_location_id' => 'integer',
             'employment_status' => EmploymentStatus::class,
             'employment_type' => EmploymentType::class,
             'hired_at' => 'date',
@@ -150,6 +153,16 @@ class Employee extends Model implements HasMedia
     public function workSchedule(): BelongsTo
     {
         return $this->belongsTo(WorkSchedule::class);
+    }
+
+    /**
+     * Optional assigned work location.
+     *
+     * @return BelongsTo<WorkLocation, $this>
+     */
+    public function workLocation(): BelongsTo
+    {
+        return $this->belongsTo(WorkLocation::class);
     }
 
     /**

@@ -22,6 +22,7 @@ class StoreEmployeeRequest extends BaseRequest
             'designation_id' => ['sometimes', 'nullable', 'integer', 'exists:designations,id'],
             'manager_id' => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
             'work_schedule_id' => ['sometimes', 'nullable', 'integer', 'exists:work_schedules,id'],
+            'work_location_id' => ['sometimes', 'nullable', 'integer', 'exists:work_locations,id'],
             'job_title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'employee_number' => ['sometimes', 'nullable', 'string', 'max:50', Rule::unique('employees', 'employee_number')],
             'employment_status' => ['sometimes', 'string', Rule::enum(EmploymentStatus::class)],

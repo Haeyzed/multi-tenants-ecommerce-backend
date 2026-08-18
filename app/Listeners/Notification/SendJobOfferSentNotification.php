@@ -23,7 +23,13 @@ class SendJobOfferSentNotification
         $this->notifier->notifyStaff('hr.offer.sent', $payload);
 
         if ($application?->candidate !== null) {
-            $this->notifier->notifyCandidate($application->candidate, 'hr.offer.sent', $payload);
+            $candidatePayload = $payload;
+
+            if ($event->publicToken !== null) {
+                $candidatePayload['offer_token'] = $event->publicToken;
+            }
+
+            $this->notifier->notifyCandidate($application->candidate, 'hr.offer.sent', $candidatePayload);
         }
     }
 }

@@ -7,6 +7,7 @@ namespace App\Services\Tenant\HR;
 use App\Enums\Tenant\HR\InterviewRecommendation;
 use App\Enums\Tenant\HR\InterviewStatus;
 use App\Enums\Tenant\HR\InterviewType;
+use App\Events\InterviewCompleted;
 use App\Events\InterviewScheduled;
 use App\Models\Tenant\Interview;
 use App\Models\Tenant\InterviewFeedback;
@@ -19,7 +20,10 @@ use Illuminate\Validation\ValidationException;
  */
 class InterviewService
 {
-    public function __construct(private readonly HrSettingsService $hrSettings) {}
+    public function __construct(
+        private readonly HrSettingsService $hrSettings,
+        private readonly RecruitmentActivityService $activities,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -43,6 +47,11 @@ class InterviewService
         ]);
 
         $this->syncInterviewers($interview, $data['interviewer_ids'] ?? []);
+
+        $this->activities->record($interview, 'scheduled', null, [
+            'job_application_id' => $application->id,
+            'status' => $interview->status->value,
+        ]);
 
         event(new InterviewScheduled($interview));
 
@@ -68,6 +77,8 @@ class InterviewService
         $interviewerIds = $data['interviewer_ids'] ?? null;
         unset($data['interviewer_ids']);
 
+        $previousStatus = $interview->status;
+
         if (isset($data['scheduled_at']) && $interview->status === InterviewStatus::Scheduled) {
             $data['status'] = $data['status'] ?? InterviewStatus::Rescheduled;
         }
@@ -79,7 +90,14 @@ class InterviewService
             $this->syncInterviewers($interview, $interviewerIds);
         }
 
-        return $interview->fresh(['application.candidate', 'interviewers', 'feedback']) ?? $interview;
+        $fresh = $interview->fresh(['application.candidate', 'interviewers', 'feedback']) ?? $interview;
+
+        if ($fresh->status === InterviewStatus::Completed && $previousStatus !== InterviewStatus::Completed) {
+            $this->activities->record($fresh, 'completed');
+            event(new InterviewCompleted($fresh));
+        }
+
+        return $fresh;
     }
 
     public function complete(Interview $interview): Interview
@@ -123,6 +141,11 @@ class InterviewService
                 'comments' => $data['comments'] ?? null,
             ],
         );
+
+        $this->activities->record($interview, 'feedback_submitted', $interviewer, [
+            'rating' => $feedback->rating,
+            'recommendation' => $feedback->recommendation?->value,
+        ]);
 
         return $feedback->load('interviewer');
     }

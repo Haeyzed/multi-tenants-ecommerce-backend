@@ -15,7 +15,7 @@ use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 
-#[Group('HR')]
+#[Group('HR / Offers')]
 class JobOfferController extends Controller
 {
     public function __construct(private readonly JobOfferService $offers) {}

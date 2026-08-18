@@ -25,7 +25,7 @@ use Illuminate\Http\JsonResponse;
 /**
  * Recruitment applications.
  */
-#[Group('HR')]
+#[Group('HR / Applications')]
 class JobApplicationController extends Controller
 {
     public function __construct(

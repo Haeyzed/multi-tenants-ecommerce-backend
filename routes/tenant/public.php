@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Tenant\Cms\PublicCmsController;
+use App\Http\Controllers\Tenant\HR\PublicJobOfferController;
 use App\Http\Controllers\Tenant\HR\PublicJobOpeningController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,4 +16,8 @@ Route::prefix('public')->name('tenant.public.')->group(function (): void {
     Route::get('jobs', [PublicJobOpeningController::class, 'index'])->name('jobs.index');
     Route::get('jobs/{slug}', [PublicJobOpeningController::class, 'show'])->name('jobs.show');
     Route::post('jobs/{slug}/applications', [PublicJobOpeningController::class, 'apply'])->middleware('throttle:10,1')->name('jobs.apply');
+
+    Route::get('offers/{token}', [PublicJobOfferController::class, 'show'])->middleware('throttle:20,1')->name('offers.show');
+    Route::post('offers/{token}/accept', [PublicJobOfferController::class, 'accept'])->middleware('throttle:10,1')->name('offers.accept');
+    Route::post('offers/{token}/reject', [PublicJobOfferController::class, 'reject'])->middleware('throttle:10,1')->name('offers.reject');
 });
