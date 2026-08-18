@@ -26,8 +26,13 @@ class DepartmentResource extends JsonResource
             'name' => $department->name,
             'code' => $department->code,
             'description' => $department->description,
+            'manager_id' => $department->manager_id,
             'is_active' => $department->is_active,
             'employees_count' => $this->when(isset($department->employees_count), $department->employees_count),
+            'manager' => $this->whenLoaded('manager', fn () => $department->manager === null ? null : [
+                'id' => $department->manager->id,
+                'employee_number' => $department->manager->employee_number,
+            ]),
             'created_at' => $department->created_at,
             'updated_at' => $department->updated_at,
             'deleted_at' => $department->deleted_at,

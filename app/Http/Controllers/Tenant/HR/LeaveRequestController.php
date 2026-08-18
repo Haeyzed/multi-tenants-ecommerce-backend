@@ -14,6 +14,7 @@ use App\Models\Tenant\LeaveRequest;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\LeaveRequestService;
 use App\Support\ApiResponseSchema;
+use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +23,7 @@ use Illuminate\Validation\ValidationException;
 /**
  * Tenant HR leave request endpoints.
  */
+#[Group('HR')]
 class LeaveRequestController extends Controller
 {
     public function __construct(private readonly LeaveRequestService $leaveRequestService) {}

@@ -19,6 +19,7 @@ use App\Services\Tenant\HR\AttendanceService;
 use App\Services\Tenant\HR\DepartmentService;
 use App\Services\Tenant\HR\DesignationService;
 use App\Services\Tenant\HR\EmployeeService;
+use App\Services\Tenant\HR\HrSettingsService;
 use App\Services\Tenant\HR\LeaveRequestService;
 use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
@@ -33,22 +34,32 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     $migrations = [
+        '2026_08_15_060001_create_commerce_settings_table.php',
         '2026_08_16_161019_create_departments_table.php',
         '2026_08_16_161032_create_employees_table.php',
         '2026_08_17_211947_create_designations_table.php',
         '2026_08_17_211951_add_designation_id_to_employees_table.php',
         '2026_08_17_211954_create_attendances_table.php',
         '2026_08_17_212000_create_leave_requests_table.php',
+        '2026_08_18_003141_create_leave_types_table.php',
+        '2026_08_18_003144_create_leave_balances_table.php',
+        '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php',
+        '2026_08_18_003148_add_manager_id_to_departments_table.php',
     ];
 
     foreach ($migrations as $file) {
         $table = match ($file) {
+            '2026_08_15_060001_create_commerce_settings_table.php' => 'commerce_settings',
             '2026_08_16_161019_create_departments_table.php' => 'departments',
             '2026_08_16_161032_create_employees_table.php' => 'employees',
             '2026_08_17_211947_create_designations_table.php' => 'designations',
             '2026_08_17_211951_add_designation_id_to_employees_table.php' => null,
             '2026_08_17_211954_create_attendances_table.php' => 'attendances',
             '2026_08_17_212000_create_leave_requests_table.php' => 'leave_requests',
+            '2026_08_18_003141_create_leave_types_table.php' => 'leave_types',
+            '2026_08_18_003144_create_leave_balances_table.php' => 'leave_balances',
+            '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php' => null,
+            '2026_08_18_003148_add_manager_id_to_departments_table.php' => null,
             default => null,
         };
 
@@ -57,6 +68,14 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_17_211951_add_designation_id_to_employees_table.php' && Schema::hasColumn('employees', 'designation_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php' && Schema::hasColumn('employees', 'manager_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_003148_add_manager_id_to_departments_table.php' && Schema::hasColumn('departments', 'manager_id')) {
             continue;
         }
 
@@ -190,6 +209,12 @@ test('terminated employees cannot return to active', function (): void {
 });
 
 test('attendance clock in and out is unique per day', function (): void {
+    app(HrSettingsService::class)->update([
+        'hr.working_days' => '1,2,3,4,5,6,7',
+        'hr.work_start_time' => '00:00',
+        'hr.late_tolerance_minutes' => 1440,
+    ]);
+
     $employee = Employee::factory()->create();
     $service = app(AttendanceService::class);
 
@@ -304,6 +329,9 @@ test('hr permissions isolate admin from customer', function (): void {
         ->and($manager->can('hr.employees.create'))->toBeTrue()
         ->and($manager->can('hr.attendance.manage'))->toBeTrue()
         ->and($manager->can('hr.leave.manage'))->toBeTrue()
+        ->and($manager->can('hr.leave.approve'))->toBeTrue()
+        ->and($manager->can('hr.payroll.approve'))->toBeTrue()
+        ->and($manager->can('hr.settings.update'))->toBeTrue()
         ->and($customer->can('viewAny', Department::class))->toBeFalse()
         ->and($customer->can('create', Designation::class))->toBeFalse()
         ->and($customer->can('create', Employee::class))->toBeFalse()

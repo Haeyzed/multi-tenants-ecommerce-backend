@@ -22,6 +22,7 @@ class UpdateDepartmentRequest extends BaseRequest
             'name' => ['sometimes', 'string', 'max:255'],
             'code' => ['sometimes', 'nullable', 'string', 'max:50', Rule::unique('departments', 'code')->ignore($department->id)],
             'description' => ['sometimes', 'nullable', 'string'],
+            'manager_id' => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

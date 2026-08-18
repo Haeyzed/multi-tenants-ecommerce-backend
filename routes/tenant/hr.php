@@ -6,43 +6,79 @@ use App\Http\Controllers\Tenant\HR\AttendanceController;
 use App\Http\Controllers\Tenant\HR\DepartmentController;
 use App\Http\Controllers\Tenant\HR\DesignationController;
 use App\Http\Controllers\Tenant\HR\EmployeeController;
+use App\Http\Controllers\Tenant\HR\EmployeeSalaryController;
+use App\Http\Controllers\Tenant\HR\HrSettingsController;
+use App\Http\Controllers\Tenant\HR\HrSummaryController;
+use App\Http\Controllers\Tenant\HR\LeaveBalanceController;
 use App\Http\Controllers\Tenant\HR\LeaveRequestController;
+use App\Http\Controllers\Tenant\HR\LeaveTypeController;
+use App\Http\Controllers\Tenant\HR\PayrollRunController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('departments/options', [DepartmentController::class, 'options'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->name('tenant.departments.options');
-Route::get('departments', [DepartmentController::class, 'index'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->name('tenant.departments.index');
-Route::post('departments', [DepartmentController::class, 'store'])->middleware('permission:hr.departments.manage')->name('tenant.departments.store');
-Route::get('departments/{department}', [DepartmentController::class, 'show'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->whereNumber('department')->name('tenant.departments.show');
-Route::match(['put', 'patch'], 'departments/{department}', [DepartmentController::class, 'update'])->middleware('permission:hr.departments.manage')->whereNumber('department')->name('tenant.departments.update');
-Route::delete('departments/{department}', [DepartmentController::class, 'destroy'])->middleware('permission:hr.departments.manage')->whereNumber('department')->name('tenant.departments.destroy');
+Route::middleware('feature:hr')->group(function (): void {
+    Route::get('hr/settings', [HrSettingsController::class, 'show'])->middleware('permission:hr.settings.view|hr.settings.update|hr.view')->name('tenant.hr.settings.show');
+    Route::match(['put', 'patch'], 'hr/settings', [HrSettingsController::class, 'update'])->middleware('permission:hr.settings.update')->name('tenant.hr.settings.update');
 
-Route::get('designations/options', [DesignationController::class, 'options'])->middleware('permission:hr.view|hr.designations.view|hr.designations.manage')->name('tenant.designations.options');
-Route::get('designations', [DesignationController::class, 'index'])->middleware('permission:hr.view|hr.designations.view|hr.designations.manage')->name('tenant.designations.index');
-Route::post('designations', [DesignationController::class, 'store'])->middleware('permission:hr.designations.manage')->name('tenant.designations.store');
-Route::get('designations/{designation}', [DesignationController::class, 'show'])->middleware('permission:hr.view|hr.designations.view|hr.designations.manage')->whereNumber('designation')->name('tenant.designations.show');
-Route::match(['put', 'patch'], 'designations/{designation}', [DesignationController::class, 'update'])->middleware('permission:hr.designations.manage')->whereNumber('designation')->name('tenant.designations.update');
-Route::delete('designations/{designation}', [DesignationController::class, 'destroy'])->middleware('permission:hr.designations.manage')->whereNumber('designation')->name('tenant.designations.destroy');
+    Route::middleware('hr.enabled')->group(function (): void {
+        Route::get('hr/summary', [HrSummaryController::class, 'show'])->middleware('permission:hr.view|hr.employees.view|hr.payroll.view')->name('tenant.hr.summary');
 
-Route::get('employees', [EmployeeController::class, 'index'])->middleware('permission:hr.employees.view|hr.view')->name('tenant.employees.index');
-Route::post('employees', [EmployeeController::class, 'store'])->middleware('permission:hr.employees.create')->name('tenant.employees.store');
-Route::get('employees/{employee}', [EmployeeController::class, 'show'])->middleware('permission:hr.employees.view|hr.view')->whereNumber('employee')->name('tenant.employees.show');
-Route::match(['put', 'patch'], 'employees/{employee}', [EmployeeController::class, 'update'])->middleware('permission:hr.employees.update')->whereNumber('employee')->name('tenant.employees.update');
-Route::delete('employees/{employee}', [EmployeeController::class, 'destroy'])->middleware('permission:hr.employees.delete')->whereNumber('employee')->name('tenant.employees.destroy');
-Route::get('employees/{employee}/documents', [EmployeeController::class, 'documents'])->middleware('permission:hr.employees.view|hr.view|hr.employees.update')->whereNumber('employee')->name('tenant.employees.documents.index');
-Route::post('employees/{employee}/documents', [EmployeeController::class, 'storeDocument'])->middleware('permission:hr.employees.update')->whereNumber('employee')->name('tenant.employees.documents.store');
-Route::delete('employees/{employee}/documents/{media}', [EmployeeController::class, 'destroyDocument'])->middleware('permission:hr.employees.update')->whereNumber('employee')->whereNumber('media')->name('tenant.employees.documents.destroy');
+        Route::get('departments/options', [DepartmentController::class, 'options'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->name('tenant.departments.options');
+        Route::get('departments', [DepartmentController::class, 'index'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->name('tenant.departments.index');
+        Route::post('departments', [DepartmentController::class, 'store'])->middleware('permission:hr.departments.manage')->name('tenant.departments.store');
+        Route::get('departments/{department}', [DepartmentController::class, 'show'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->whereNumber('department')->name('tenant.departments.show');
+        Route::match(['put', 'patch'], 'departments/{department}', [DepartmentController::class, 'update'])->middleware('permission:hr.departments.manage')->whereNumber('department')->name('tenant.departments.update');
+        Route::delete('departments/{department}', [DepartmentController::class, 'destroy'])->middleware('permission:hr.departments.manage')->whereNumber('department')->name('tenant.departments.destroy');
 
-Route::post('attendances/clock-in', [AttendanceController::class, 'clockIn'])->name('tenant.attendances.clock-in');
-Route::post('attendances/clock-out', [AttendanceController::class, 'clockOut'])->name('tenant.attendances.clock-out');
-Route::get('attendances', [AttendanceController::class, 'index'])->name('tenant.attendances.index');
-Route::post('attendances', [AttendanceController::class, 'store'])->middleware('permission:hr.attendance.manage')->name('tenant.attendances.store');
-Route::get('attendances/{attendance}', [AttendanceController::class, 'show'])->whereNumber('attendance')->name('tenant.attendances.show');
-Route::match(['put', 'patch'], 'attendances/{attendance}', [AttendanceController::class, 'update'])->middleware('permission:hr.attendance.manage')->whereNumber('attendance')->name('tenant.attendances.update');
-Route::delete('attendances/{attendance}', [AttendanceController::class, 'destroy'])->middleware('permission:hr.attendance.manage')->whereNumber('attendance')->name('tenant.attendances.destroy');
+        Route::get('designations/options', [DesignationController::class, 'options'])->middleware('permission:hr.view|hr.designations.view|hr.designations.manage')->name('tenant.designations.options');
+        Route::get('designations', [DesignationController::class, 'index'])->middleware('permission:hr.view|hr.designations.view|hr.designations.manage')->name('tenant.designations.index');
+        Route::post('designations', [DesignationController::class, 'store'])->middleware('permission:hr.designations.manage')->name('tenant.designations.store');
+        Route::get('designations/{designation}', [DesignationController::class, 'show'])->middleware('permission:hr.view|hr.designations.view|hr.designations.manage')->whereNumber('designation')->name('tenant.designations.show');
+        Route::match(['put', 'patch'], 'designations/{designation}', [DesignationController::class, 'update'])->middleware('permission:hr.designations.manage')->whereNumber('designation')->name('tenant.designations.update');
+        Route::delete('designations/{designation}', [DesignationController::class, 'destroy'])->middleware('permission:hr.designations.manage')->whereNumber('designation')->name('tenant.designations.destroy');
 
-Route::get('leave-requests', [LeaveRequestController::class, 'index'])->name('tenant.leave-requests.index');
-Route::post('leave-requests', [LeaveRequestController::class, 'store'])->name('tenant.leave-requests.store');
-Route::get('leave-requests/{leave_request}', [LeaveRequestController::class, 'show'])->whereNumber('leave_request')->name('tenant.leave-requests.show');
-Route::post('leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->middleware('permission:hr.leave.manage')->whereNumber('leave_request')->name('tenant.leave-requests.approve');
-Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->middleware('permission:hr.leave.manage')->whereNumber('leave_request')->name('tenant.leave-requests.reject');
-Route::post('leave-requests/{leave_request}/cancel', [LeaveRequestController::class, 'cancel'])->whereNumber('leave_request')->name('tenant.leave-requests.cancel');
+        Route::get('employees', [EmployeeController::class, 'index'])->middleware('permission:hr.employees.view|hr.view')->name('tenant.employees.index');
+        Route::post('employees', [EmployeeController::class, 'store'])->middleware('permission:hr.employees.create')->name('tenant.employees.store');
+        Route::get('employees/{employee}', [EmployeeController::class, 'show'])->whereNumber('employee')->name('tenant.employees.show');
+        Route::match(['put', 'patch'], 'employees/{employee}', [EmployeeController::class, 'update'])->middleware('permission:hr.employees.update')->whereNumber('employee')->name('tenant.employees.update');
+        Route::delete('employees/{employee}', [EmployeeController::class, 'destroy'])->middleware('permission:hr.employees.delete')->whereNumber('employee')->name('tenant.employees.destroy');
+        Route::get('employees/{employee}/documents', [EmployeeController::class, 'documents'])->whereNumber('employee')->name('tenant.employees.documents.index');
+        Route::post('employees/{employee}/documents', [EmployeeController::class, 'storeDocument'])->middleware('permission:hr.employees.update')->whereNumber('employee')->name('tenant.employees.documents.store');
+        Route::delete('employees/{employee}/documents/{media}', [EmployeeController::class, 'destroyDocument'])->middleware('permission:hr.employees.update')->whereNumber('employee')->whereNumber('media')->name('tenant.employees.documents.destroy');
+        Route::get('employees/{employee}/leave-balances', [LeaveBalanceController::class, 'index'])->whereNumber('employee')->name('tenant.employees.leave-balances.index');
+        Route::get('employees/{employee}/payslips', [PayrollRunController::class, 'employeeItems'])->whereNumber('employee')->name('tenant.employees.payslips.index');
+        Route::get('employees/{employee}/salary', [EmployeeSalaryController::class, 'show'])->whereNumber('employee')->name('tenant.employees.salary.show');
+        Route::match(['put', 'patch'], 'employees/{employee}/salary', [EmployeeSalaryController::class, 'upsert'])->middleware('permission:hr.payroll.manage')->whereNumber('employee')->name('tenant.employees.salary.upsert');
+
+        Route::post('attendances/clock-in', [AttendanceController::class, 'clockIn'])->name('tenant.attendances.clock-in');
+        Route::post('attendances/clock-out', [AttendanceController::class, 'clockOut'])->name('tenant.attendances.clock-out');
+        Route::get('attendances', [AttendanceController::class, 'index'])->name('tenant.attendances.index');
+        Route::post('attendances', [AttendanceController::class, 'store'])->middleware('permission:hr.attendance.manage')->name('tenant.attendances.store');
+        Route::get('attendances/{attendance}', [AttendanceController::class, 'show'])->whereNumber('attendance')->name('tenant.attendances.show');
+        Route::match(['put', 'patch'], 'attendances/{attendance}', [AttendanceController::class, 'update'])->middleware('permission:hr.attendance.manage')->whereNumber('attendance')->name('tenant.attendances.update');
+        Route::delete('attendances/{attendance}', [AttendanceController::class, 'destroy'])->middleware('permission:hr.attendance.manage')->whereNumber('attendance')->name('tenant.attendances.destroy');
+
+        Route::get('leave-types/options', [LeaveTypeController::class, 'options'])->name('tenant.leave-types.options');
+        Route::get('leave-types', [LeaveTypeController::class, 'index'])->name('tenant.leave-types.index');
+        Route::post('leave-types', [LeaveTypeController::class, 'store'])->middleware('permission:hr.leave.manage')->name('tenant.leave-types.store');
+        Route::get('leave-types/{leave_type}', [LeaveTypeController::class, 'show'])->whereNumber('leave_type')->name('tenant.leave-types.show');
+        Route::match(['put', 'patch'], 'leave-types/{leave_type}', [LeaveTypeController::class, 'update'])->middleware('permission:hr.leave.manage')->whereNumber('leave_type')->name('tenant.leave-types.update');
+        Route::delete('leave-types/{leave_type}', [LeaveTypeController::class, 'destroy'])->middleware('permission:hr.leave.manage')->whereNumber('leave_type')->name('tenant.leave-types.destroy');
+
+        Route::get('leave-requests', [LeaveRequestController::class, 'index'])->name('tenant.leave-requests.index');
+        Route::post('leave-requests', [LeaveRequestController::class, 'store'])->name('tenant.leave-requests.store');
+        Route::get('leave-requests/{leave_request}', [LeaveRequestController::class, 'show'])->whereNumber('leave_request')->name('tenant.leave-requests.show');
+        Route::post('leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->middleware('permission:hr.leave.manage|hr.leave.approve')->whereNumber('leave_request')->name('tenant.leave-requests.approve');
+        Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->middleware('permission:hr.leave.manage|hr.leave.approve')->whereNumber('leave_request')->name('tenant.leave-requests.reject');
+        Route::post('leave-requests/{leave_request}/cancel', [LeaveRequestController::class, 'cancel'])->whereNumber('leave_request')->name('tenant.leave-requests.cancel');
+
+        Route::get('payroll-runs', [PayrollRunController::class, 'index'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->name('tenant.payroll-runs.index');
+        Route::post('payroll-runs', [PayrollRunController::class, 'store'])->middleware('permission:hr.payroll.manage')->name('tenant.payroll-runs.store');
+        Route::get('payroll-runs/{payroll_run}', [PayrollRunController::class, 'show'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->whereNumber('payroll_run')->name('tenant.payroll-runs.show');
+        Route::post('payroll-runs/{payroll_run}/generate', [PayrollRunController::class, 'generate'])->middleware('permission:hr.payroll.manage')->whereNumber('payroll_run')->name('tenant.payroll-runs.generate');
+        Route::post('payroll-runs/{payroll_run}/process', [PayrollRunController::class, 'process'])->middleware('permission:hr.payroll.manage')->whereNumber('payroll_run')->name('tenant.payroll-runs.process');
+        Route::post('payroll-runs/{payroll_run}/approve', [PayrollRunController::class, 'approve'])->middleware('permission:hr.payroll.manage|hr.payroll.approve')->whereNumber('payroll_run')->name('tenant.payroll-runs.approve');
+        Route::post('payroll-runs/{payroll_run}/pay', [PayrollRunController::class, 'pay'])->middleware('permission:hr.payroll.manage')->whereNumber('payroll_run')->name('tenant.payroll-runs.pay');
+        Route::post('payroll-runs/{payroll_run}/cancel', [PayrollRunController::class, 'cancel'])->middleware('permission:hr.payroll.manage')->whereNumber('payroll_run')->name('tenant.payroll-runs.cancel');
+        Route::get('payroll-runs/{payroll_run}/items/{payroll_item}', [PayrollRunController::class, 'showItem'])->whereNumber('payroll_run')->whereNumber('payroll_item')->name('tenant.payroll-runs.items.show');
+    });
+});

@@ -86,6 +86,28 @@ class CommerceSettingService
             'cms.blog_enabled' => ['type' => 'bool', 'default' => true],
             'cms.pages_enabled' => ['type' => 'bool', 'default' => true],
         ],
+        'hr' => [
+            'hr.enabled' => ['type' => 'bool', 'default' => true],
+            'hr.employee_code_prefix' => ['type' => 'string', 'default' => 'EMP'],
+            'hr.default_employment_status' => ['type' => 'string', 'default' => 'active'],
+            'hr.attendance.enabled' => ['type' => 'bool', 'default' => true],
+            'hr.working_days' => ['type' => 'string', 'default' => '1,2,3,4,5'],
+            'hr.work_start_time' => ['type' => 'string', 'default' => '09:00'],
+            'hr.late_tolerance_minutes' => ['type' => 'int', 'default' => 15],
+            'hr.leave.enabled' => ['type' => 'bool', 'default' => true],
+            'hr.leave.approval_required' => ['type' => 'bool', 'default' => true],
+            'hr.leave.max_consecutive_days' => ['type' => 'int', 'default' => 0],
+            'hr.leave.year_start_month' => ['type' => 'int', 'default' => 1],
+            'hr.payroll.enabled' => ['type' => 'bool', 'default' => true],
+            'hr.payroll.frequency' => ['type' => 'string', 'default' => 'monthly'],
+            'hr.payroll.currency' => ['type' => 'string', 'default' => 'NGN'],
+            'hr.payroll.approval_required' => ['type' => 'bool', 'default' => false],
+            'hr.payroll.payment_day' => ['type' => 'int', 'default' => 25],
+            'hr.payroll.expense_account_id' => ['type' => 'nullable_int', 'default' => null],
+            'hr.payroll.payable_account_id' => ['type' => 'nullable_int', 'default' => null],
+            'hr.notifications.leave' => ['type' => 'bool', 'default' => true],
+            'hr.notifications.payroll' => ['type' => 'bool', 'default' => true],
+        ],
     ];
 
     /**

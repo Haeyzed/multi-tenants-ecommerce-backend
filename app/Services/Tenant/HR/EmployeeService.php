@@ -6,6 +6,7 @@ namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Events\EmployeeCreated;
+use App\Events\EmployeeStatusChanged;
 use App\Models\Tenant\Designation;
 use App\Models\Tenant\Employee;
 use App\Models\Tenant\User;
@@ -20,7 +21,10 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class EmployeeService
 {
-    public function __construct(private readonly MediaService $mediaService) {}
+    public function __construct(
+        private readonly MediaService $mediaService,
+        private readonly HrSettingsService $hrSettings,
+    ) {}
 
     /**
      * @param  array{
@@ -36,7 +40,7 @@ class EmployeeService
     public function list(array $params = []): LengthAwarePaginator
     {
         return Employee::query()
-            ->with(['user', 'department', 'designation'])
+            ->with(['user', 'department', 'designation', 'manager.user'])
             ->filter($params)
             ->applySort($params['sort'] ?? null)
             ->paginate($this->perPage($params));
@@ -47,9 +51,12 @@ class EmployeeService
      *     user_id: int,
      *     department_id?: int|null,
      *     designation_id?: int|null,
+     *     manager_id?: int|null,
      *     job_title?: string|null,
      *     employee_number?: string|null,
      *     employment_status?: EmploymentStatus|string|null,
+     *     employment_type?: string|null,
+     *     work_location?: string|null,
      *     hired_at?: string|null,
      *     notes?: string|null
      * }  $data
@@ -58,6 +65,8 @@ class EmployeeService
      */
     public function store(array $data): Employee
     {
+        $this->hrSettings->assertModuleEnabled();
+
         $user = User::query()->findOrFail($data['user_id']);
 
         if (Employee::query()->where('user_id', $user->id)->exists()) {
@@ -66,18 +75,23 @@ class EmployeeService
             ]);
         }
 
+        $this->assertManager($data['manager_id'] ?? null);
+
         $payload = $this->syncDesignationDepartment([
             'user_id' => $user->id,
             'department_id' => $data['department_id'] ?? null,
             'designation_id' => $data['designation_id'] ?? null,
+            'manager_id' => $data['manager_id'] ?? null,
             'job_title' => $data['job_title'] ?? null,
-            'employee_number' => $data['employee_number'] ?? null,
-            'employment_status' => $data['employment_status'] ?? EmploymentStatus::Active,
+            'employee_number' => $data['employee_number'] ?? $this->nextEmployeeNumber(),
+            'employment_status' => $data['employment_status'] ?? $this->hrSettings->defaultEmploymentStatus(),
+            'employment_type' => $data['employment_type'] ?? null,
+            'work_location' => $data['work_location'] ?? null,
             'hired_at' => $data['hired_at'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);
 
-        $employee = Employee::query()->create($payload)->load(['user', 'department', 'designation']);
+        $employee = Employee::query()->create($payload)->load(['user', 'department', 'designation', 'manager.user']);
 
         event(new EmployeeCreated($employee));
 
@@ -86,16 +100,19 @@ class EmployeeService
 
     public function show(Employee $employee): Employee
     {
-        return $employee->load(['user', 'department', 'designation']);
+        return $employee->load(['user', 'department', 'designation', 'manager.user']);
     }
 
     /**
      * @param  array{
      *     department_id?: int|null,
      *     designation_id?: int|null,
+     *     manager_id?: int|null,
      *     job_title?: string|null,
      *     employee_number?: string|null,
      *     employment_status?: EmploymentStatus|string,
+     *     employment_type?: string|null,
+     *     work_location?: string|null,
      *     hired_at?: string|null,
      *     notes?: string|null
      * }  $data
@@ -104,16 +121,41 @@ class EmployeeService
      */
     public function update(Employee $employee, array $data): Employee
     {
+        $this->hrSettings->assertModuleEnabled();
+
         unset($data['user_id']);
+
+        $previousStatus = $employee->employment_status;
+
+        if (array_key_exists('manager_id', $data)) {
+            $this->assertManager($data['manager_id'], $employee->id);
+        }
 
         if (array_key_exists('employment_status', $data) && $data['employment_status'] !== null) {
             $this->assertStatusTransition($employee, $data['employment_status']);
+            $target = $data['employment_status'] instanceof EmploymentStatus
+                ? $data['employment_status']
+                : EmploymentStatus::from($data['employment_status']);
+
+            if ($target->isTerminal() && $employee->terminated_at === null) {
+                $data['terminated_at'] = now()->toDateString();
+            }
+
+            if (! $target->isTerminal()) {
+                $data['terminated_at'] = null;
+            }
         }
 
         $employee->fill($this->syncDesignationDepartment($data, $employee));
         $employee->save();
 
-        return $employee->fresh(['user', 'department', 'designation']) ?? $employee;
+        $employee = $employee->fresh(['user', 'department', 'designation', 'manager.user']) ?? $employee;
+
+        if ($employee->employment_status !== $previousStatus) {
+            event(new EmployeeStatusChanged($employee, $previousStatus, $employee->employment_status));
+        }
+
+        return $employee;
     }
 
     public function destroy(Employee $employee): void
@@ -195,6 +237,47 @@ class EmployeeService
                 'employment_status' => ['This employment status transition is not allowed.'],
             ]);
         }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    protected function assertManager(mixed $managerId, ?int $employeeId = null): void
+    {
+        if ($managerId === null || $managerId === '') {
+            return;
+        }
+
+        $managerId = (int) $managerId;
+
+        if ($employeeId !== null && $managerId === $employeeId) {
+            throw ValidationException::withMessages([
+                'manager_id' => ['An employee cannot report to themselves.'],
+            ]);
+        }
+
+        if (! Employee::query()->whereKey($managerId)->exists()) {
+            throw ValidationException::withMessages([
+                'manager_id' => ['The selected manager is invalid.'],
+            ]);
+        }
+    }
+
+    protected function nextEmployeeNumber(): string
+    {
+        $prefix = $this->hrSettings->employeeCodePrefix();
+        $latest = Employee::withTrashed()
+            ->where('employee_number', 'like', $prefix.'-%')
+            ->orderByDesc('id')
+            ->value('employee_number');
+
+        $sequence = 1;
+
+        if (is_string($latest) && preg_match('/-(\d+)$/', $latest, $matches) === 1) {
+            $sequence = ((int) $matches[1]) + 1;
+        }
+
+        return $prefix.'-'.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
     }
 
     /**

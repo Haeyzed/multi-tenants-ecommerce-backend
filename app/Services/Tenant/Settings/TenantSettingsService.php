@@ -77,6 +77,12 @@ class TenantSettingsService
             return $this->storeSnapshot();
         }
 
+        if ($domain === 'hr') {
+            throw ValidationException::withMessages([
+                'domain' => ['HR settings are managed through the HR settings API.'],
+            ]);
+        }
+
         return $this->commerceSettings->getDomain($domain);
     }
 
@@ -92,6 +98,12 @@ class TenantSettingsService
             ]);
         }
 
+        if ($domain === 'hr') {
+            throw ValidationException::withMessages([
+                'domain' => ['HR settings are managed through the HR settings API.'],
+            ]);
+        }
+
         return $this->commerceSettings->updateDomain($domain, $values);
     }
 
@@ -100,7 +112,10 @@ class TenantSettingsService
      */
     public function domains(): array
     {
-        return ['store', ...$this->commerceSettings->domains()];
+        return ['store', ...array_values(array_filter(
+            $this->commerceSettings->domains(),
+            static fn (string $domain): bool => $domain !== 'hr',
+        ))];
     }
 
     protected function resolveProfile(): ?TenantProfile

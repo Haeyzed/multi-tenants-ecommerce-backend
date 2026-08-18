@@ -12,12 +12,14 @@ use App\Http\Resources\Tenant\HR\DesignationResource;
 use App\Models\Tenant\Designation;
 use App\Services\Tenant\HR\DesignationService;
 use App\Support\ApiResponseSchema;
+use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 
 /**
  * Tenant HR designation endpoints.
  */
+#[Group('HR')]
 class DesignationController extends Controller
 {
     public function __construct(private readonly DesignationService $designationService) {}

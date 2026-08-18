@@ -26,16 +26,20 @@ use App\Models\Tenant\Department;
 use App\Models\Tenant\Designation;
 use App\Models\Tenant\Driver;
 use App\Models\Tenant\Employee;
+use App\Models\Tenant\EmployeeSalary;
 use App\Models\Tenant\FlashSale;
 use App\Models\Tenant\GiftCard;
 use App\Models\Tenant\Inventory;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\JournalEntry;
 use App\Models\Tenant\LeaveRequest;
+use App\Models\Tenant\LeaveType;
 use App\Models\Tenant\LoyaltyAccount;
 use App\Models\Tenant\LoyaltyProgram;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderReturn;
+use App\Models\Tenant\PayrollItem;
+use App\Models\Tenant\PayrollRun;
 use App\Models\Tenant\PosSession;
 use App\Models\Tenant\PosTerminal;
 use App\Models\Tenant\Product;
@@ -78,17 +82,21 @@ use App\Policies\Tenant\DepartmentPolicy;
 use App\Policies\Tenant\DesignationPolicy;
 use App\Policies\Tenant\DriverPolicy;
 use App\Policies\Tenant\EmployeePolicy;
+use App\Policies\Tenant\EmployeeSalaryPolicy;
 use App\Policies\Tenant\FlashSalePolicy;
 use App\Policies\Tenant\GiftCardPolicy;
 use App\Policies\Tenant\InventoryPolicy;
 use App\Policies\Tenant\InvoicePolicy;
 use App\Policies\Tenant\JournalEntryPolicy;
 use App\Policies\Tenant\LeaveRequestPolicy;
+use App\Policies\Tenant\LeaveTypePolicy;
 use App\Policies\Tenant\LoyaltyAccountPolicy;
 use App\Policies\Tenant\LoyaltyProgramPolicy;
 use App\Policies\Tenant\OrderPolicy;
 use App\Policies\Tenant\OrderReturnPolicy;
 use App\Policies\Tenant\PagePolicy;
+use App\Policies\Tenant\PayrollItemPolicy;
+use App\Policies\Tenant\PayrollRunPolicy;
 use App\Policies\Tenant\PosSessionPolicy;
 use App\Policies\Tenant\PosTerminalPolicy;
 use App\Policies\Tenant\ProductAttributePolicy;
@@ -243,11 +251,35 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Department::class, DepartmentPolicy::class);
         Gate::policy(Designation::class, DesignationPolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
+        Gate::policy(EmployeeSalary::class, EmployeeSalaryPolicy::class);
         Gate::policy(Attendance::class, AttendancePolicy::class);
         Gate::policy(LeaveRequest::class, LeaveRequestPolicy::class);
+        Gate::policy(LeaveType::class, LeaveTypePolicy::class);
+        Gate::policy(PayrollRun::class, PayrollRunPolicy::class);
+        Gate::policy(PayrollItem::class, PayrollItemPolicy::class);
         Gate::policy(BlogCategory::class, BlogCategoryPolicy::class);
         Gate::policy(BlogPost::class, BlogPostPolicy::class);
         Gate::policy(Page::class, PagePolicy::class);
+
+        Gate::define('viewHrSettings', function ($user): bool {
+            return method_exists($user, 'can') && (
+                $user->can('hr.settings.view')
+                || $user->can('hr.settings.update')
+                || $user->can('hr.view')
+            );
+        });
+
+        Gate::define('updateHrSettings', function ($user): bool {
+            return method_exists($user, 'can') && $user->can('hr.settings.update');
+        });
+
+        Gate::define('viewHrSummary', function ($user): bool {
+            return method_exists($user, 'can') && (
+                $user->can('hr.view')
+                || $user->can('hr.employees.view')
+                || $user->can('hr.payroll.view')
+            );
+        });
 
         Gate::before(function ($user, string $ability): ?bool {
             if (method_exists($user, 'hasRole') && $user->hasRole('super-admin')) {

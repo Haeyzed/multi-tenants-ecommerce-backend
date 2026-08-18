@@ -82,6 +82,10 @@ class FeatureSeeder extends Seeder
             'name' => 'Drivers',
             'description' => 'Limit the number of delivery drivers per plan.',
         ],
+        'hr' => [
+            'name' => 'Human Resources',
+            'description' => 'Employee, attendance, leave, and payroll management.',
+        ],
     ];
 
     /**

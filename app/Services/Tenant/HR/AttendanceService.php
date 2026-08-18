@@ -8,6 +8,7 @@ use App\Enums\Tenant\HR\AttendanceStatus;
 use App\Models\Tenant\Attendance;
 use App\Models\Tenant\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -15,6 +16,8 @@ use Illuminate\Validation\ValidationException;
  */
 class AttendanceService
 {
+    public function __construct(private readonly HrSettingsService $hrSettings) {}
+
     /**
      * @param  array{
      *     employee_id?: int|null,
@@ -49,6 +52,8 @@ class AttendanceService
      */
     public function store(array $data): Attendance
     {
+        $this->hrSettings->assertAttendanceEnabled();
+
         $employee = Employee::query()->findOrFail($data['employee_id']);
         $workDate = $data['work_date'] ?? now()->toDateString();
 
@@ -83,6 +88,8 @@ class AttendanceService
      */
     public function update(Attendance $attendance, array $data): Attendance
     {
+        $this->hrSettings->assertAttendanceEnabled();
+
         unset($data['employee_id'], $data['work_date']);
 
         $attendance->fill($data);
@@ -93,6 +100,8 @@ class AttendanceService
 
     public function destroy(Attendance $attendance): void
     {
+        $this->hrSettings->assertAttendanceEnabled();
+
         $attendance->delete();
     }
 
@@ -103,7 +112,17 @@ class AttendanceService
      */
     public function clockIn(Employee $employee): Attendance
     {
-        $today = now()->toDateString();
+        $this->hrSettings->assertAttendanceEnabled();
+
+        $now = now();
+
+        if (! $this->hrSettings->isWorkingDate($now)) {
+            throw ValidationException::withMessages([
+                'employee_id' => ['Today is not a configured working day.'],
+            ]);
+        }
+
+        $today = $now->toDateString();
         $existing = Attendance::query()
             ->where('employee_id', $employee->id)
             ->whereDate('work_date', $today)
@@ -115,10 +134,12 @@ class AttendanceService
             ]);
         }
 
+        $status = $this->clockInStatus($now);
+
         if ($existing !== null) {
             $existing->fill([
-                'status' => AttendanceStatus::Present,
-                'checked_in_at' => now(),
+                'status' => $status,
+                'checked_in_at' => $now,
             ]);
             $existing->save();
 
@@ -128,8 +149,8 @@ class AttendanceService
         return Attendance::query()->create([
             'employee_id' => $employee->id,
             'work_date' => $today,
-            'status' => AttendanceStatus::Present,
-            'checked_in_at' => now(),
+            'status' => $status,
+            'checked_in_at' => $now,
         ])->load(['employee.user']);
     }
 
@@ -140,6 +161,8 @@ class AttendanceService
      */
     public function clockOut(Employee $employee): Attendance
     {
+        $this->hrSettings->assertAttendanceEnabled();
+
         $attendance = Attendance::query()
             ->where('employee_id', $employee->id)
             ->whereDate('work_date', now()->toDateString())
@@ -161,6 +184,14 @@ class AttendanceService
         $attendance->save();
 
         return $attendance->fresh(['employee.user']) ?? $attendance;
+    }
+
+    protected function clockInStatus(Carbon $now): AttendanceStatus
+    {
+        $start = Carbon::parse($now->toDateString().' '.$this->hrSettings->workStartTime());
+        $threshold = $start->copy()->addMinutes($this->hrSettings->lateToleranceMinutes());
+
+        return $now->gt($threshold) ? AttendanceStatus::Late : AttendanceStatus::Present;
     }
 
     /**

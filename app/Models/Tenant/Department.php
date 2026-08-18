@@ -8,6 +8,7 @@ use Database\Factories\Tenant\DepartmentFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $name
  * @property string|null $code
  * @property string|null $description
+ * @property int|null $manager_id
  * @property bool $is_active
  */
 class Department extends Model
@@ -32,6 +34,7 @@ class Department extends Model
         'name',
         'code',
         'description',
+        'manager_id',
         'is_active',
     ];
 
@@ -48,6 +51,7 @@ class Department extends Model
     protected function casts(): array
     {
         return [
+            'manager_id' => 'integer',
             'is_active' => 'boolean',
         ];
     }
@@ -70,6 +74,16 @@ class Department extends Model
     public function designations(): HasMany
     {
         return $this->hasMany(Designation::class);
+    }
+
+    /**
+     * Optional department manager (must be an employee).
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'manager_id');
     }
 
     /**

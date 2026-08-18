@@ -18,6 +18,7 @@ class StoreDepartmentRequest extends BaseRequest
             'name' => ['required', 'string', 'max:255'],
             'code' => ['sometimes', 'nullable', 'string', 'max:50', Rule::unique('departments', 'code')],
             'description' => ['sometimes', 'nullable', 'string'],
+            'manager_id' => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

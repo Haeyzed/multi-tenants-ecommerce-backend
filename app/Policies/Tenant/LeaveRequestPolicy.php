@@ -36,7 +36,7 @@ class LeaveRequestPolicy
 
     public function review(User $user, LeaveRequest $leaveRequest): bool
     {
-        return $user->can('hr.leave.manage');
+        return $user->can('hr.leave.approve') || $user->can('hr.leave.manage');
     }
 
     public function cancel(User $user, LeaveRequest $leaveRequest): bool

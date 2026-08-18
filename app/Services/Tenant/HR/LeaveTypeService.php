@@ -1,0 +1,177 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Tenant\HR;
+
+use App\Enums\Tenant\HR\LeaveType as LeaveTypeCode;
+use App\Models\Tenant\LeaveRequest;
+use App\Models\Tenant\LeaveType;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Tenant-configurable leave categories with seeded defaults.
+ */
+class LeaveTypeService
+{
+    /**
+     * @param  array{
+     *     search?: string|null,
+     *     is_active?: bool|null,
+     *     is_paid?: bool|null,
+     *     sort?: string|null,
+     *     per_page?: int|null
+     * }  $params
+     * @return LengthAwarePaginator<int, LeaveType>
+     */
+    public function list(array $params = []): LengthAwarePaginator
+    {
+        $this->ensureDefaults();
+
+        return LeaveType::query()
+            ->filter($params)
+            ->applySort($params['sort'] ?? null)
+            ->paginate($this->perPage($params));
+    }
+
+    /**
+     * @return Collection<int, array{label: string, value: string, id: int}>
+     */
+    public function options(): Collection
+    {
+        $this->ensureDefaults();
+
+        return LeaveType::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'code'])
+            ->map(fn (LeaveType $type): array => [
+                'label' => $type->name,
+                'value' => $type->code,
+                'id' => $type->id,
+            ])
+            ->values();
+    }
+
+    /**
+     * @param  array{
+     *     name: string,
+     *     code: string,
+     *     is_paid?: bool,
+     *     is_active?: bool,
+     *     default_days?: int,
+     *     description?: string|null
+     * }  $data
+     */
+    public function store(array $data): LeaveType
+    {
+        $this->ensureDefaults();
+
+        return LeaveType::query()->create([
+            'name' => $data['name'],
+            'code' => strtolower($data['code']),
+            'is_paid' => $data['is_paid'] ?? true,
+            'is_active' => $data['is_active'] ?? true,
+            'default_days' => $data['default_days'] ?? 0,
+            'description' => $data['description'] ?? null,
+        ]);
+    }
+
+    public function show(LeaveType $leaveType): LeaveType
+    {
+        return $leaveType;
+    }
+
+    /**
+     * @param  array{
+     *     name?: string,
+     *     code?: string,
+     *     is_paid?: bool,
+     *     is_active?: bool,
+     *     default_days?: int,
+     *     description?: string|null
+     * }  $data
+     */
+    public function update(LeaveType $leaveType, array $data): LeaveType
+    {
+        if (array_key_exists('code', $data) && is_string($data['code'])) {
+            $data['code'] = strtolower($data['code']);
+        }
+
+        $leaveType->fill($data);
+        $leaveType->save();
+
+        return $leaveType->fresh() ?? $leaveType;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function destroy(LeaveType $leaveType): void
+    {
+        if (LeaveRequest::query()->where('type', $leaveType->code)->exists()) {
+            throw ValidationException::withMessages([
+                'leave_type' => ['This leave type is in use and cannot be deleted. Deactivate it instead.'],
+            ]);
+        }
+
+        $leaveType->delete();
+    }
+
+    /**
+     * Resolve an active leave type by code, seeding defaults if needed.
+     *
+     * @throws ValidationException
+     */
+    public function findActiveByCode(string $code): LeaveType
+    {
+        $this->ensureDefaults();
+
+        $type = LeaveType::query()->where('code', strtolower($code))->first();
+
+        if ($type === null) {
+            throw ValidationException::withMessages([
+                'type' => ['The selected leave type is invalid.'],
+            ]);
+        }
+
+        if (! $type->is_active) {
+            throw ValidationException::withMessages([
+                'type' => ['The selected leave type is inactive.'],
+            ]);
+        }
+
+        return $type;
+    }
+
+    /**
+     * Seed Annual, Sick, Unpaid, and Other when the tenant has no leave types.
+     */
+    public function ensureDefaults(): void
+    {
+        if (LeaveType::query()->exists()) {
+            return;
+        }
+
+        $defaults = [
+            ['name' => 'Annual', 'code' => LeaveTypeCode::Annual->value, 'is_paid' => true, 'default_days' => 21],
+            ['name' => 'Sick', 'code' => LeaveTypeCode::Sick->value, 'is_paid' => true, 'default_days' => 10],
+            ['name' => 'Unpaid', 'code' => LeaveTypeCode::Unpaid->value, 'is_paid' => false, 'default_days' => 0],
+            ['name' => 'Other', 'code' => LeaveTypeCode::Other->value, 'is_paid' => true, 'default_days' => 0],
+        ];
+
+        foreach ($defaults as $default) {
+            LeaveType::query()->create($default);
+        }
+    }
+
+    /**
+     * @param  array{per_page?: int|null}  $params
+     */
+    protected function perPage(array $params): int
+    {
+        return max(1, min((int) ($params['per_page'] ?? 15), 100));
+    }
+}

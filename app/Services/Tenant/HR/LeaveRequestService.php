@@ -5,20 +5,27 @@ declare(strict_types=1);
 namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\LeaveStatus;
-use App\Enums\Tenant\HR\LeaveType;
 use App\Events\LeaveRequested;
 use App\Events\LeaveReviewed;
 use App\Models\Tenant\Employee;
+use App\Models\Tenant\LeaveBalance;
 use App\Models\Tenant\LeaveRequest;
+use App\Models\Tenant\LeaveType;
 use App\Models\Tenant\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Employee leave requests and review workflow.
+ * Employee leave requests, balances, and review workflow.
  */
 class LeaveRequestService
 {
+    public function __construct(
+        private readonly HrSettingsService $hrSettings,
+        private readonly LeaveTypeService $leaveTypeService,
+    ) {}
+
     /**
      * @param  array{
      *     employee_id?: int|null,
@@ -43,7 +50,7 @@ class LeaveRequestService
     /**
      * @param  array{
      *     employee_id: int,
-     *     type: LeaveType|string,
+     *     type: string,
      *     start_date: string,
      *     end_date: string,
      *     reason?: string|null
@@ -53,7 +60,10 @@ class LeaveRequestService
      */
     public function store(array $data): LeaveRequest
     {
+        $this->hrSettings->assertLeaveEnabled();
+
         $employee = Employee::query()->findOrFail($data['employee_id']);
+        $leaveType = $this->leaveTypeService->findActiveByCode((string) $data['type']);
 
         if ($data['end_date'] < $data['start_date']) {
             throw ValidationException::withMessages([
@@ -61,18 +71,36 @@ class LeaveRequestService
             ]);
         }
 
+        $days = $this->countWorkingDays($data['start_date'], $data['end_date']);
+        $maxConsecutive = $this->hrSettings->maxConsecutiveLeaveDays();
+
+        if ($maxConsecutive > 0 && $days > $maxConsecutive) {
+            throw ValidationException::withMessages([
+                'end_date' => ["Leave cannot exceed {$maxConsecutive} consecutive working days."],
+            ]);
+        }
+
         $this->assertNoApprovedOverlap($employee, $data['start_date'], $data['end_date']);
+        $this->assertBalanceAvailable($employee, $leaveType, $data['start_date'], $days);
+
+        $autoApprove = ! $this->hrSettings->leaveApprovalRequired();
 
         $leaveRequest = LeaveRequest::query()->create([
             'employee_id' => $employee->id,
-            'type' => $data['type'],
+            'type' => $leaveType->code,
             'start_date' => $data['start_date'],
             'end_date' => $data['end_date'],
-            'status' => LeaveStatus::Pending,
+            'status' => $autoApprove ? LeaveStatus::Approved : LeaveStatus::Pending,
             'reason' => $data['reason'] ?? null,
+            'reviewed_at' => $autoApprove ? now() : null,
         ])->load(['employee.user', 'reviewer']);
 
         event(new LeaveRequested($leaveRequest));
+
+        if ($autoApprove) {
+            $this->consumeBalance($employee, $leaveType, $data['start_date'], $days);
+            event(new LeaveReviewed($leaveRequest));
+        }
 
         return $leaveRequest;
     }
@@ -89,6 +117,8 @@ class LeaveRequestService
      */
     public function review(LeaveRequest $leaveRequest, LeaveStatus $status, User $reviewer, ?string $notes = null): LeaveRequest
     {
+        $this->hrSettings->assertLeaveEnabled();
+
         if ($leaveRequest->status !== LeaveStatus::Pending) {
             throw ValidationException::withMessages([
                 'status' => ['Only pending leave requests can be reviewed.'],
@@ -108,6 +138,14 @@ class LeaveRequestService
                 $leaveRequest->end_date->toDateString(),
                 $leaveRequest->id,
             );
+
+            $leaveType = $this->leaveTypeService->findActiveByCode($leaveRequest->type);
+            $days = $this->countWorkingDays(
+                $leaveRequest->start_date->toDateString(),
+                $leaveRequest->end_date->toDateString(),
+            );
+            $this->assertBalanceAvailable($leaveRequest->employee, $leaveType, $leaveRequest->start_date->toDateString(), $days);
+            $this->consumeBalance($leaveRequest->employee, $leaveType, $leaveRequest->start_date->toDateString(), $days);
         }
 
         $leaveRequest->fill([
@@ -132,6 +170,8 @@ class LeaveRequestService
      */
     public function cancel(LeaveRequest $leaveRequest): LeaveRequest
     {
+        $this->hrSettings->assertLeaveEnabled();
+
         if ($leaveRequest->status !== LeaveStatus::Pending) {
             throw ValidationException::withMessages([
                 'status' => ['Only pending leave requests can be cancelled.'],
@@ -142,6 +182,25 @@ class LeaveRequestService
         $leaveRequest->save();
 
         return $leaveRequest->fresh(['employee.user', 'reviewer']) ?? $leaveRequest;
+    }
+
+    /**
+     * @return list<LeaveBalance>
+     */
+    public function balancesFor(Employee $employee, ?int $year = null): array
+    {
+        $this->leaveTypeService->ensureDefaults();
+
+        $year ??= $this->hrSettings->leaveYearForDate(now());
+
+        $types = LeaveType::query()->where('is_active', true)->orderBy('name')->get();
+        $balances = [];
+
+        foreach ($types as $type) {
+            $balances[] = $this->balanceFor($employee, $type, $year)->load('leaveType');
+        }
+
+        return $balances;
     }
 
     /**
@@ -162,6 +221,69 @@ class LeaveRequestService
                 'start_date' => ['This leave period overlaps an already approved request.'],
             ]);
         }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    protected function assertBalanceAvailable(Employee $employee, LeaveType $leaveType, string $startDate, int $days): void
+    {
+        if ($leaveType->default_days <= 0) {
+            return;
+        }
+
+        $year = $this->hrSettings->leaveYearForDate(Carbon::parse($startDate));
+        $balance = $this->balanceFor($employee, $leaveType, $year);
+
+        if ($days > $balance->remaining()) {
+            throw ValidationException::withMessages([
+                'type' => ["Insufficient {$leaveType->name} leave balance ({$balance->remaining()} day(s) remaining)."],
+            ]);
+        }
+    }
+
+    protected function consumeBalance(Employee $employee, LeaveType $leaveType, string $startDate, int $days): void
+    {
+        if ($leaveType->default_days <= 0 || $days <= 0) {
+            return;
+        }
+
+        $year = $this->hrSettings->leaveYearForDate(Carbon::parse($startDate));
+        $balance = $this->balanceFor($employee, $leaveType, $year);
+        $balance->used += $days;
+        $balance->save();
+    }
+
+    protected function balanceFor(Employee $employee, LeaveType $leaveType, int $year): LeaveBalance
+    {
+        return LeaveBalance::query()->firstOrCreate(
+            [
+                'employee_id' => $employee->id,
+                'leave_type_id' => $leaveType->id,
+                'year' => $year,
+            ],
+            [
+                'entitled' => $leaveType->default_days,
+                'used' => 0,
+            ],
+        );
+    }
+
+    protected function countWorkingDays(string $startDate, string $endDate): int
+    {
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->startOfDay();
+        $count = 0;
+
+        while ($start->lte($end)) {
+            if ($this->hrSettings->isWorkingDate($start)) {
+                $count++;
+            }
+
+            $start->addDay();
+        }
+
+        return $count;
     }
 
     /**

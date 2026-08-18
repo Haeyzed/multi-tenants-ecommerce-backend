@@ -12,12 +12,14 @@ use App\Http\Resources\Tenant\HR\DepartmentResource;
 use App\Models\Tenant\Department;
 use App\Services\Tenant\HR\DepartmentService;
 use App\Support\ApiResponseSchema;
+use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 
 /**
  * Tenant HR department endpoints.
  */
+#[Group('HR')]
 class DepartmentController extends Controller
 {
     public function __construct(private readonly DepartmentService $departmentService) {}

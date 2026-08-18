@@ -14,6 +14,7 @@ use App\Http\Resources\Tenant\HR\EmployeeResource;
 use App\Models\Tenant\Employee;
 use App\Services\Tenant\HR\EmployeeService;
 use App\Support\ApiResponseSchema;
+use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
@@ -22,6 +23,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 /**
  * Tenant HR employee endpoints.
  */
+#[Group('HR')]
 class EmployeeController extends Controller
 {
     public function __construct(private readonly EmployeeService $employeeService) {}

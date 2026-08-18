@@ -6,12 +6,14 @@ namespace App\Models\Tenant;
 
 use App\Enums\Media\MediaCollection;
 use App\Enums\Tenant\HR\EmploymentStatus;
+use App\Enums\Tenant\HR\EmploymentType;
 use Database\Factories\Tenant\EmployeeFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Spatie\MediaLibrary\HasMedia;
@@ -24,10 +26,14 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int $user_id
  * @property int|null $department_id
  * @property int|null $designation_id
+ * @property int|null $manager_id
  * @property string|null $job_title
  * @property string|null $employee_number
  * @property EmploymentStatus $employment_status
+ * @property EmploymentType|null $employment_type
+ * @property string|null $work_location
  * @property Carbon|null $hired_at
+ * @property Carbon|null $terminated_at
  * @property string|null $notes
  */
 class Employee extends Model implements HasMedia
@@ -42,10 +48,14 @@ class Employee extends Model implements HasMedia
         'user_id',
         'department_id',
         'designation_id',
+        'manager_id',
         'job_title',
         'employee_number',
         'employment_status',
+        'employment_type',
+        'work_location',
         'hired_at',
+        'terminated_at',
         'notes',
     ];
 
@@ -65,8 +75,11 @@ class Employee extends Model implements HasMedia
             'user_id' => 'integer',
             'department_id' => 'integer',
             'designation_id' => 'integer',
+            'manager_id' => 'integer',
             'employment_status' => EmploymentStatus::class,
+            'employment_type' => EmploymentType::class,
             'hired_at' => 'date',
+            'terminated_at' => 'date',
         ];
     }
 
@@ -101,6 +114,26 @@ class Employee extends Model implements HasMedia
     }
 
     /**
+     * Reporting manager.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'manager_id');
+    }
+
+    /**
+     * Direct reports.
+     *
+     * @return HasMany<Employee, $this>
+     */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(Employee::class, 'manager_id');
+    }
+
+    /**
      * Daily attendance records.
      *
      * @return HasMany<Attendance, $this>
@@ -121,6 +154,36 @@ class Employee extends Model implements HasMedia
     }
 
     /**
+     * Current salary configuration.
+     *
+     * @return HasOne<EmployeeSalary, $this>
+     */
+    public function salary(): HasOne
+    {
+        return $this->hasOne(EmployeeSalary::class);
+    }
+
+    /**
+     * Payslips across payroll runs.
+     *
+     * @return HasMany<PayrollItem, $this>
+     */
+    public function payrollItems(): HasMany
+    {
+        return $this->hasMany(PayrollItem::class);
+    }
+
+    /**
+     * Leave balances by type and year.
+     *
+     * @return HasMany<LeaveBalance, $this>
+     */
+    public function leaveBalances(): HasMany
+    {
+        return $this->hasMany(LeaveBalance::class);
+    }
+
+    /**
      * Register HR document media for the employee profile.
      */
     public function registerMediaCollections(): void
@@ -138,7 +201,9 @@ class Employee extends Model implements HasMedia
      *     search?: string|null,
      *     department_id?: int|null,
      *     designation_id?: int|null,
-     *     employment_status?: string|null
+     *     manager_id?: int|null,
+     *     employment_status?: string|null,
+     *     employment_type?: string|null
      * }  $params
      * @return Builder<Employee>
      */
@@ -169,8 +234,14 @@ class Employee extends Model implements HasMedia
             ->when($params['designation_id'] ?? null, function (Builder $query, int $designationId): void {
                 $query->where('designation_id', $designationId);
             })
+            ->when($params['manager_id'] ?? null, function (Builder $query, int $managerId): void {
+                $query->where('manager_id', $managerId);
+            })
             ->when($params['employment_status'] ?? null, function (Builder $query, string $status): void {
                 $query->where('employment_status', $status);
+            })
+            ->when($params['employment_type'] ?? null, function (Builder $query, string $type): void {
+                $query->where('employment_type', $type);
             });
     }
 

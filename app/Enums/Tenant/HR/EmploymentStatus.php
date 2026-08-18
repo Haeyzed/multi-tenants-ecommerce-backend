@@ -11,8 +11,10 @@ enum EmploymentStatus: string
 {
     case Active = 'active';
     case Inactive = 'inactive';
-    case Terminated = 'terminated';
     case OnLeave = 'on_leave';
+    case Suspended = 'suspended';
+    case Terminated = 'terminated';
+    case Resigned = 'resigned';
 
     /**
      * Statuses this employment status may move to.
@@ -22,11 +24,20 @@ enum EmploymentStatus: string
     public function allowedTransitions(): array
     {
         return match ($this) {
-            self::Active => [self::Inactive, self::Terminated, self::OnLeave],
-            self::Inactive => [self::Active, self::Terminated],
-            self::OnLeave => [self::Active, self::Terminated],
-            self::Terminated => [],
+            self::Active => [self::Inactive, self::OnLeave, self::Suspended, self::Terminated, self::Resigned],
+            self::Inactive => [self::Active, self::Terminated, self::Resigned],
+            self::OnLeave => [self::Active, self::Terminated, self::Resigned],
+            self::Suspended => [self::Active, self::Terminated, self::Resigned],
+            self::Terminated, self::Resigned => [],
         };
+    }
+
+    /**
+     * Whether this status ends employment.
+     */
+    public function isTerminal(): bool
+    {
+        return in_array($this, [self::Terminated, self::Resigned], true);
     }
 
     /**

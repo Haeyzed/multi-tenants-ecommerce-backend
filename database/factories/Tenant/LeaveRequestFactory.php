@@ -29,7 +29,7 @@ class LeaveRequestFactory extends Factory
 
         return [
             'employee_id' => Employee::factory(),
-            'type' => LeaveType::Annual,
+            'type' => LeaveType::Annual->value,
             'start_date' => $start->toDateString(),
             'end_date' => $start->copy()->addDays(2)->toDateString(),
             'status' => LeaveStatus::Pending,

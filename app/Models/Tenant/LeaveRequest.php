@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models\Tenant;
 
 use App\Enums\Tenant\HR\LeaveStatus;
-use App\Enums\Tenant\HR\LeaveType;
 use Database\Factories\Tenant\LeaveRequestFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +18,7 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int $employee_id
- * @property LeaveType $type
+ * @property string $type
  * @property Carbon $start_date
  * @property Carbon $end_date
  * @property LeaveStatus $status
@@ -62,7 +61,7 @@ class LeaveRequest extends Model
     {
         return [
             'employee_id' => 'integer',
-            'type' => LeaveType::class,
+            'type' => 'string',
             'start_date' => 'date',
             'end_date' => 'date',
             'status' => LeaveStatus::class,

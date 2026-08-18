@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureActiveSubscription;
 use App\Http\Middleware\EnsureFeature;
+use App\Http\Middleware\EnsureHrEnabled;
 use App\Http\Middleware\EnsureMarketplaceEnabled;
 use App\Http\Middleware\SetCustomerGuard;
 use App\Http\Middleware\SetDriverGuard;
@@ -66,6 +67,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription.active' => EnsureActiveSubscription::class,
             'feature' => EnsureFeature::class,
             'marketplace.enabled' => EnsureMarketplaceEnabled::class,
+            'hr.enabled' => EnsureHrEnabled::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
