@@ -61,6 +61,9 @@ beforeEach(function (): void {
         '2026_08_18_134122_create_tax_table_bands_table.php',
         '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php',
         '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php',
+        '2026_08_18_145936_add_weekly_overtime_columns_to_overtime_policies_table.php',
+        '2026_08_18_145939_add_clock_source_and_location_to_attendances_table.php',
+        '2026_08_18_145941_add_statutory_identifiers_and_payslip_columns.php',
     ];
 
     foreach ($migrations as $file) {
@@ -86,6 +89,9 @@ beforeEach(function (): void {
             '2026_08_18_134122_create_tax_table_bands_table.php' => 'tax_table_bands',
             '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php' => null,
             '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php' => null,
+            '2026_08_18_145936_add_weekly_overtime_columns_to_overtime_policies_table.php' => null,
+            '2026_08_18_145939_add_clock_source_and_location_to_attendances_table.php' => null,
+            '2026_08_18_145941_add_statutory_identifiers_and_payslip_columns.php' => null,
             default => null,
         };
 
@@ -114,6 +120,18 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php' && Schema::hasColumn('employees', 'bank_name')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_145936_add_weekly_overtime_columns_to_overtime_policies_table.php' && Schema::hasColumn('overtime_policies', 'weekly_threshold_minutes')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_145939_add_clock_source_and_location_to_attendances_table.php' && Schema::hasColumn('attendances', 'clock_source')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_145941_add_statutory_identifiers_and_payslip_columns.php' && Schema::hasColumn('employees', 'pension_pin')) {
             continue;
         }
 

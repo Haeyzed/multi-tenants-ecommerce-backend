@@ -52,6 +52,9 @@ beforeEach(function (): void {
         '2026_08_18_134118_create_tax_tables_table.php',
         '2026_08_18_134122_create_tax_table_bands_table.php',
         '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php',
+        '2026_08_18_145936_add_weekly_overtime_columns_to_overtime_policies_table.php',
+        '2026_08_18_145943_create_job_openings_table.php',
+        '2026_08_18_145947_create_performance_cycles_table.php',
     ];
 
     foreach ($migrations as $file) {
@@ -79,6 +82,9 @@ beforeEach(function (): void {
             '2026_08_18_134118_create_tax_tables_table.php' => 'tax_tables',
             '2026_08_18_134122_create_tax_table_bands_table.php' => 'tax_table_bands',
             '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php' => null,
+            '2026_08_18_145936_add_weekly_overtime_columns_to_overtime_policies_table.php' => null,
+            '2026_08_18_145943_create_job_openings_table.php' => 'job_openings',
+            '2026_08_18_145947_create_performance_cycles_table.php' => 'performance_cycles',
             default => null,
         };
 
@@ -103,6 +109,10 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php' && Schema::hasColumn('employees', 'work_schedule_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_145936_add_weekly_overtime_columns_to_overtime_policies_table.php' && Schema::hasColumn('overtime_policies', 'weekly_threshold_minutes')) {
             continue;
         }
 
@@ -334,6 +344,10 @@ test('hr report and workforce routes are registered behind the hr feature', func
     $pdf = app('router')->getRoutes()->getByName('tenant.payroll-runs.items.pdf');
     $register = app('router')->getRoutes()->getByName('tenant.payroll-runs.payment-register');
     $history = app('router')->getRoutes()->getByName('tenant.employees.salary.revisions');
+    $jobs = app('router')->getRoutes()->getByName('tenant.job-openings.index');
+    $reviews = app('router')->getRoutes()->getByName('tenant.performance-reviews.index');
+    $statutory = app('router')->getRoutes()->getByName('tenant.hr.reports.statutory');
+    $nibss = app('router')->getRoutes()->getByName('tenant.payroll-runs.nibss.submit');
 
     expect($attendance)->not->toBeNull()
         ->and(implode(',', $attendance->gatherMiddleware()))->toContain('feature:hr')
@@ -344,7 +358,11 @@ test('hr report and workforce routes are registered behind the hr feature', func
         ->and($taxes)->not->toBeNull()
         ->and($pdf)->not->toBeNull()
         ->and($register)->not->toBeNull()
-        ->and($history)->not->toBeNull();
+        ->and($history)->not->toBeNull()
+        ->and($jobs)->not->toBeNull()
+        ->and($reviews)->not->toBeNull()
+        ->and($statutory)->not->toBeNull()
+        ->and($nibss)->not->toBeNull();
 });
 
 test('managers can view hr reports while customers cannot', function (): void {

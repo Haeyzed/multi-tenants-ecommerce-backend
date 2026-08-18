@@ -92,4 +92,71 @@ class OvertimeEngine
 
         return min(1440, $overtime);
     }
+
+    public function weeklyThresholdMinutes(?Employee $employee): int
+    {
+        $policy = $this->policyFor($employee);
+
+        if ($policy !== null && $policy->weekly_threshold_minutes > 0) {
+            return $policy->weekly_threshold_minutes;
+        }
+
+        return $this->hrSettings->isWeeklyOvertimeEnabled()
+            ? $this->hrSettings->weeklyOvertimeThresholdMinutes()
+            : 0;
+    }
+
+    public function weeklyRatePercent(?Employee $employee): int
+    {
+        $policy = $this->policyFor($employee);
+
+        return $policy !== null && $policy->weekly_rate_percent > 0
+            ? $policy->weekly_rate_percent
+            : $this->hrSettings->weeklyOvertimeRatePercent();
+    }
+
+    /**
+     * Weekly overtime minutes in a pay period that were not already counted as daily overtime.
+     */
+    public function weeklyOvertimeMinutes(Employee $employee, string $periodStart, string $periodEnd): int
+    {
+        $threshold = $this->weeklyThresholdMinutes($employee);
+
+        if ($threshold <= 0) {
+            return 0;
+        }
+
+        $records = Attendance::query()
+            ->where('employee_id', $employee->id)
+            ->whereDate('work_date', '>=', $periodStart)
+            ->whereDate('work_date', '<=', $periodEnd)
+            ->whereNotNull('checked_in_at')
+            ->whereNotNull('checked_out_at')
+            ->get();
+
+        $weeks = [];
+
+        foreach ($records as $record) {
+            $date = $record->work_date instanceof Carbon
+                ? $record->work_date->copy()
+                : Carbon::parse((string) $record->work_date);
+            $key = $date->isoWeekYear().'-'.$date->isoWeek();
+            $worked = (int) max(0, $record->checked_in_at->diffInMinutes($record->checked_out_at));
+
+            $weeks[$key] ??= ['worked' => 0, 'daily' => 0];
+            $weeks[$key]['worked'] += $worked;
+            $weeks[$key]['daily'] += (int) $record->overtime_minutes;
+        }
+
+        $extra = 0;
+
+        foreach ($weeks as $week) {
+            $extra += max(0, $week['worked'] - $threshold - $week['daily']);
+        }
+
+        $roundTo = max(1, $this->policyFor($employee)?->round_to_minutes ?? 1);
+        $extra = (int) (intdiv($extra + (int) floor($roundTo / 2), $roundTo) * $roundTo);
+
+        return min(10080, $extra);
+    }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\HR\IndexHrReportRequest;
 use App\Services\Tenant\HR\HrCsvExporter;
 use App\Services\Tenant\HR\HrReportService;
+use App\Services\Tenant\HR\StatutoryReturnService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,7 @@ class HrReportController extends Controller
     public function __construct(
         private readonly HrReportService $reports,
         private readonly HrCsvExporter $csv,
+        private readonly StatutoryReturnService $statutory,
     ) {}
 
     #[Response(status: 200, description: 'Attendance report.', type: 'array{success: true, message: string, data: array<string, mixed>, meta: null, errors: null}')]
@@ -72,6 +74,16 @@ class HrReportController extends Controller
         $payload = $this->reports->headcount($request->validated());
 
         return $this->respond($request, $payload, 'headcount-report.csv', 'Headcount report retrieved successfully.');
+    }
+
+    #[Response(status: 200, description: 'Statutory filing schedule.', type: 'array{success: true, message: string, data: array<string, mixed>, meta: null, errors: null}')]
+    public function statutory(IndexHrReportRequest $request): JsonResponse|StreamedResponse
+    {
+        $this->authorize('viewHrReports');
+
+        $payload = $this->statutory->generateOrFail($request->validated());
+
+        return $this->respond($request, $payload, 'statutory-return.csv', 'Statutory return retrieved successfully.');
     }
 
     /**

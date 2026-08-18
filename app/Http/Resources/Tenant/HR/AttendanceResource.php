@@ -30,6 +30,11 @@ class AttendanceResource extends JsonResource
             'checked_out_at' => $attendance->checked_out_at,
             'overtime_minutes' => $attendance->overtime_minutes,
             'overtime_rate_percent' => $attendance->overtime_rate_percent,
+            'clock_source' => $attendance->clock_source,
+            'latitude' => $attendance->latitude,
+            'longitude' => $attendance->longitude,
+            'accuracy_meters' => $attendance->accuracy_meters,
+            'device_id' => $attendance->device_id,
             'notes' => $attendance->notes,
             'employee' => $this->whenLoaded('employee', fn () => $attendance->employee === null ? null : [
                 'id' => $attendance->employee->id,

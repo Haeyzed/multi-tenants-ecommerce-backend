@@ -38,6 +38,9 @@ class PayrollRunResource extends JsonResource
             'processed_by' => $run->processed_by,
             'paid_by' => $run->paid_by,
             'notes' => $run->notes,
+            'nibss_reference' => $run->nibss_reference,
+            'nibss_status' => $run->nibss_status,
+            'nibss_submitted_at' => $run->nibss_submitted_at,
             'items' => PayrollItemResource::collection($this->whenLoaded('items')),
             'payroll_period' => $this->whenLoaded('payrollPeriod', fn () => $run->payrollPeriod === null ? null : [
                 'id' => $run->payrollPeriod->id,

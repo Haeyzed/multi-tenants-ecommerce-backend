@@ -41,6 +41,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $account_number
  * @property string|null $account_name
  * @property string|null $tax_id
+ * @property string|null $pension_pin
+ * @property string|null $nhf_number
+ * @property string|null $nsitf_number
  */
 class Employee extends Model implements HasMedia
 {
@@ -69,6 +72,9 @@ class Employee extends Model implements HasMedia
         'account_number',
         'account_name',
         'tax_id',
+        'pension_pin',
+        'nhf_number',
+        'nsitf_number',
     ];
 
     /**

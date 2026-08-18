@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $holiday_rate_percent
  * @property int $daily_threshold_minutes
  * @property int $max_daily_minutes
+ * @property int $weekly_threshold_minutes
+ * @property int $weekly_rate_percent
  * @property int $round_to_minutes
  */
 class OvertimePolicy extends Model
@@ -38,6 +40,8 @@ class OvertimePolicy extends Model
         'holiday_rate_percent',
         'daily_threshold_minutes',
         'max_daily_minutes',
+        'weekly_threshold_minutes',
+        'weekly_rate_percent',
         'round_to_minutes',
     ];
 
@@ -52,6 +56,8 @@ class OvertimePolicy extends Model
         'holiday_rate_percent' => 200,
         'daily_threshold_minutes' => 0,
         'max_daily_minutes' => 0,
+        'weekly_threshold_minutes' => 0,
+        'weekly_rate_percent' => 150,
         'round_to_minutes' => 1,
     ];
 
@@ -68,6 +74,8 @@ class OvertimePolicy extends Model
             'holiday_rate_percent' => 'integer',
             'daily_threshold_minutes' => 'integer',
             'max_daily_minutes' => 'integer',
+            'weekly_threshold_minutes' => 'integer',
+            'weekly_rate_percent' => 'integer',
             'round_to_minutes' => 'integer',
         ];
     }

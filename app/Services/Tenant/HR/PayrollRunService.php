@@ -47,6 +47,8 @@ class PayrollRunService
         private readonly WorkCalendarService $calendar,
         private readonly OvertimeEngine $overtime,
         private readonly PayeCalculatorService $paye,
+        private readonly StatutoryContributionService $statutory,
+        private readonly NibssPayrollProcessor $nibss,
     ) {}
 
     /**
@@ -297,6 +299,10 @@ class PayrollRunService
                 $this->postToAccounting($payrollRun, $options);
             }
 
+            if ($this->shouldSubmitNibss()) {
+                $this->nibss->submit($payrollRun);
+            }
+
             $payrollRun = $this->show($payrollRun);
             event(new PayrollPaid($payrollRun));
 
@@ -436,7 +442,27 @@ class PayrollRunService
             $componentLines[] = [$component, $componentAmount];
         }
 
-        $payeAmount = $this->statutoryPaye($grossPay);
+        $statutory = $this->statutory->forPayslip($baseSalary, $grossPay);
+        $pensionAmount = $statutory['pension'];
+        $nhfAmount = $statutory['nhf'];
+
+        if (bccomp($pensionAmount, '0', 2) > 0) {
+            $deductionTotal = Money::add($deductionTotal, $pensionAmount);
+        }
+
+        if (bccomp($nhfAmount, '0', 2) > 0) {
+            $deductionTotal = Money::add($deductionTotal, $nhfAmount);
+        }
+
+        $taxable = Money::sub($grossPay, $pensionAmount);
+        $taxable = Money::sub($taxable, $nhfAmount);
+
+        if (bccomp($taxable, '0', 2) < 0) {
+            $taxable = '0.00';
+        }
+
+        [$priorYtdGross, $priorYtdPaye, $priorCount] = $this->priorYearToDate($employee, $payrollRun);
+        $payeAmount = $this->statutoryPaye($taxable, $priorYtdGross, $priorYtdPaye, $priorCount + 1);
 
         if (bccomp($payeAmount, '0', 2) > 0) {
             $deductionTotal = Money::add($deductionTotal, $payeAmount);
@@ -456,6 +482,10 @@ class PayrollRunService
             'gross_pay' => $grossPay,
             'deduction_total' => $deductionTotal,
             'net_pay' => $netPay,
+            'ytd_gross' => Money::add($priorYtdGross, $grossPay),
+            'ytd_paye' => Money::add($priorYtdPaye, $payeAmount),
+            'employer_pension' => $statutory['employer_pension'],
+            'employer_nsitf' => $statutory['employer_nsitf'],
             'working_days' => $workingDays,
             'scheduled_days' => $scheduledDays,
             'absent_days' => $absentDays,
@@ -493,6 +523,14 @@ class PayrollRunService
 
         if (bccomp($unpaidLeaveDeduction, '0', 2) > 0) {
             $this->createLine($item, PayrollLineType::Deduction, 'unpaid_leave', 'Unpaid leave deduction', $unpaidLeaveDeduction);
+        }
+
+        if (bccomp($pensionAmount, '0', 2) > 0) {
+            $this->createLine($item, PayrollLineType::Deduction, 'pension', 'Pension', $pensionAmount);
+        }
+
+        if (bccomp($nhfAmount, '0', 2) > 0) {
+            $this->createLine($item, PayrollLineType::Deduction, 'nhf', 'NHF', $nhfAmount);
         }
 
         if (bccomp($payeAmount, '0', 2) > 0) {
@@ -686,10 +724,64 @@ class PayrollRunService
             $pay = Money::add($pay, Money::percent(Money::mul($hourlyRate, $hours), (string) $rate));
         }
 
+        $weeklyMinutes = $this->overtime->weeklyOvertimeMinutes($employee, $periodStart, $periodEnd);
+
+        if ($weeklyMinutes > 0) {
+            $minutes += $weeklyMinutes;
+            $weeklyHours = Money::div((string) $weeklyMinutes, '60');
+            $weeklyRate = $this->overtime->weeklyRatePercent($employee);
+            $pay = Money::add($pay, Money::percent(Money::mul($hourlyRate, $weeklyHours), (string) $weeklyRate));
+        }
+
         return [$minutes, $pay];
     }
 
-    protected function statutoryPaye(string $grossPay): string
+    /**
+     * @return array{0: string, 1: string, 2: int}
+     */
+    protected function priorYearToDate(Employee $employee, PayrollRun $payrollRun): array
+    {
+        $yearStart = $this->taxYearStart($payrollRun->period_end);
+
+        $items = PayrollItem::query()
+            ->with('lines')
+            ->where('employee_id', $employee->id)
+            ->whereHas('payrollRun', function ($query) use ($payrollRun, $yearStart): void {
+                $query->whereKeyNot($payrollRun->id)
+                    ->where('status', '!=', PayrollRunStatus::Cancelled)
+                    ->whereDate('period_end', '>=', $yearStart->toDateString())
+                    ->whereDate('period_end', '<', $payrollRun->period_start->toDateString());
+            })
+            ->get();
+
+        $gross = '0.00';
+        $paye = '0.00';
+
+        foreach ($items as $item) {
+            $gross = Money::add($gross, (string) $item->gross_pay);
+            $line = $item->lines->firstWhere('code', 'paye');
+
+            if ($line !== null) {
+                $paye = Money::add($paye, (string) $line->amount);
+            }
+        }
+
+        return [$gross, $paye, $items->count()];
+    }
+
+    protected function taxYearStart(Carbon $periodEnd): Carbon
+    {
+        $month = $this->hrSettings->payrollTaxYearStartMonth();
+        $start = $periodEnd->copy()->month($month)->startOfMonth();
+
+        if ($start->gt($periodEnd)) {
+            $start->subYear();
+        }
+
+        return $start;
+    }
+
+    protected function statutoryPaye(string $taxablePay, string $priorYtdGross, string $priorYtdPaye, int $periodsElapsed): string
     {
         if (! $this->hrSettings->isPayrollTaxEnabled()) {
             return '0.00';
@@ -701,7 +793,29 @@ class PayrollRunService
             return '0.00';
         }
 
-        return $this->paye->periodTax($grossPay, $this->hrSettings->payrollFrequency(), $table);
+        $frequency = $this->hrSettings->payrollFrequency();
+
+        if ($this->hrSettings->isPayrollTaxYtdEnabled()) {
+            return $this->paye->cumulativePeriodTax(
+                $taxablePay,
+                $priorYtdGross,
+                $priorYtdPaye,
+                $frequency,
+                $table,
+                $periodsElapsed,
+            );
+        }
+
+        return $this->paye->periodTax($taxablePay, $frequency, $table);
+    }
+
+    protected function shouldSubmitNibss(): bool
+    {
+        return $this->hrSettings->isNibssEnabled()
+            && $this->hrSettings->nibssBaseUrl() !== null
+            && $this->hrSettings->nibssApiKey() !== null
+            && $this->hrSettings->nibssOriginatorAccount() !== null
+            && $this->hrSettings->nibssOriginatorBankCode() !== null;
     }
 
     protected function resolveComponentAmount(EmployeeSalaryComponent $component, string $baseSalary): string

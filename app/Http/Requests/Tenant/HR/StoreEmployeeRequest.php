@@ -34,6 +34,9 @@ class StoreEmployeeRequest extends BaseRequest
             'account_number' => ['sometimes', 'nullable', 'string', 'max:32'],
             'account_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'tax_id' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'pension_pin' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'nhf_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'nsitf_number' => ['sometimes', 'nullable', 'string', 'max:50'],
         ];
     }
 }

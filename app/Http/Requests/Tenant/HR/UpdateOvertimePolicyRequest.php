@@ -28,6 +28,8 @@ class UpdateOvertimePolicyRequest extends BaseRequest
             'holiday_rate_percent' => ['sometimes', 'integer', 'min:100', 'max:400'],
             'daily_threshold_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],
             'max_daily_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],
+            'weekly_threshold_minutes' => ['sometimes', 'integer', 'min:0', 'max:10080'],
+            'weekly_rate_percent' => ['sometimes', 'integer', 'min:100', 'max:400'],
             'round_to_minutes' => ['sometimes', 'integer', 'min:1', 'max:60'],
         ];
     }

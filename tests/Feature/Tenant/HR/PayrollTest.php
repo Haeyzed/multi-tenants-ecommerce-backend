@@ -75,6 +75,10 @@ beforeEach(function (): void {
         '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php',
         '2026_08_18_142501_add_payslip_snapshot_columns_to_payroll_items_table.php',
         '2026_08_18_142504_create_employee_salary_revisions_table.php',
+        '2026_08_18_145936_add_weekly_overtime_columns_to_overtime_policies_table.php',
+        '2026_08_18_145939_add_clock_source_and_location_to_attendances_table.php',
+        '2026_08_18_145941_add_statutory_identifiers_and_payslip_columns.php',
+        '2026_08_18_145952_add_nibss_disbursement_columns_to_payroll_runs_table.php',
     ];
 
     foreach ($migrations as $file) {
@@ -111,6 +115,10 @@ beforeEach(function (): void {
             '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php' => null,
             '2026_08_18_142501_add_payslip_snapshot_columns_to_payroll_items_table.php' => null,
             '2026_08_18_142504_create_employee_salary_revisions_table.php' => 'employee_salary_revisions',
+            '2026_08_18_145936_add_weekly_overtime_columns_to_overtime_policies_table.php' => null,
+            '2026_08_18_145939_add_clock_source_and_location_to_attendances_table.php' => null,
+            '2026_08_18_145941_add_statutory_identifiers_and_payslip_columns.php' => null,
+            '2026_08_18_145952_add_nibss_disbursement_columns_to_payroll_runs_table.php' => null,
             default => null,
         };
 
@@ -147,6 +155,22 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_142501_add_payslip_snapshot_columns_to_payroll_items_table.php' && Schema::hasColumn('payroll_items', 'scheduled_days')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_145936_add_weekly_overtime_columns_to_overtime_policies_table.php' && Schema::hasColumn('overtime_policies', 'weekly_threshold_minutes')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_145939_add_clock_source_and_location_to_attendances_table.php' && Schema::hasColumn('attendances', 'clock_source')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_145941_add_statutory_identifiers_and_payslip_columns.php' && Schema::hasColumn('payroll_items', 'ytd_gross')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_145952_add_nibss_disbursement_columns_to_payroll_runs_table.php' && Schema::hasColumn('payroll_runs', 'nibss_reference')) {
             continue;
         }
 

@@ -11,12 +11,16 @@ use App\Http\Controllers\Tenant\HR\EmploymentRecordController;
 use App\Http\Controllers\Tenant\HR\HrReportController;
 use App\Http\Controllers\Tenant\HR\HrSettingsController;
 use App\Http\Controllers\Tenant\HR\HrSummaryController;
+use App\Http\Controllers\Tenant\HR\JobApplicationController;
+use App\Http\Controllers\Tenant\HR\JobOpeningController;
 use App\Http\Controllers\Tenant\HR\LeaveBalanceController;
 use App\Http\Controllers\Tenant\HR\LeaveRequestController;
 use App\Http\Controllers\Tenant\HR\LeaveTypeController;
 use App\Http\Controllers\Tenant\HR\OvertimePolicyController;
 use App\Http\Controllers\Tenant\HR\PayrollPeriodController;
 use App\Http\Controllers\Tenant\HR\PayrollRunController;
+use App\Http\Controllers\Tenant\HR\PerformanceCycleController;
+use App\Http\Controllers\Tenant\HR\PerformanceReviewController;
 use App\Http\Controllers\Tenant\HR\PublicHolidayController;
 use App\Http\Controllers\Tenant\HR\TaxTableController;
 use App\Http\Controllers\Tenant\HR\WorkScheduleController;
@@ -33,6 +37,7 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::get('hr/reports/payroll', [HrReportController::class, 'payroll'])->middleware('permission:hr.reports.view|hr.view|hr.payroll.view')->name('tenant.hr.reports.payroll');
         Route::get('hr/reports/overtime', [HrReportController::class, 'overtime'])->middleware('permission:hr.reports.view|hr.view|hr.attendance.view|hr.payroll.view')->name('tenant.hr.reports.overtime');
         Route::get('hr/reports/headcount', [HrReportController::class, 'headcount'])->middleware('permission:hr.reports.view|hr.view|hr.employees.view')->name('tenant.hr.reports.headcount');
+        Route::get('hr/reports/statutory', [HrReportController::class, 'statutory'])->middleware('permission:hr.reports.view|hr.view|hr.payroll.view')->name('tenant.hr.reports.statutory');
 
         Route::get('work-schedules/options', [WorkScheduleController::class, 'options'])->name('tenant.work-schedules.options');
         Route::get('work-schedules', [WorkScheduleController::class, 'index'])->name('tenant.work-schedules.index');
@@ -124,5 +129,31 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::get('payroll-runs/{payroll_run}/items/{payroll_item}', [PayrollRunController::class, 'showItem'])->whereNumber('payroll_run')->whereNumber('payroll_item')->name('tenant.payroll-runs.items.show');
         Route::get('payroll-runs/{payroll_run}/items/{payroll_item}/pdf', [PayrollRunController::class, 'downloadItem'])->whereNumber('payroll_run')->whereNumber('payroll_item')->name('tenant.payroll-runs.items.pdf');
         Route::get('payroll-runs/{payroll_run}/payment-register', [PayrollRunController::class, 'paymentRegister'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->whereNumber('payroll_run')->name('tenant.payroll-runs.payment-register');
+        Route::get('payroll-runs/{payroll_run}/nibss', [PayrollRunController::class, 'nibssFile'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->whereNumber('payroll_run')->name('tenant.payroll-runs.nibss.file');
+        Route::post('payroll-runs/{payroll_run}/nibss', [PayrollRunController::class, 'nibssSubmit'])->middleware('permission:hr.payroll.manage')->whereNumber('payroll_run')->name('tenant.payroll-runs.nibss.submit');
+
+        Route::get('job-openings', [JobOpeningController::class, 'index'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->name('tenant.job-openings.index');
+        Route::post('job-openings', [JobOpeningController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.job-openings.store');
+        Route::get('job-openings/{job_opening}', [JobOpeningController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('job_opening')->name('tenant.job-openings.show');
+        Route::match(['put', 'patch'], 'job-openings/{job_opening}', [JobOpeningController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_opening')->name('tenant.job-openings.update');
+        Route::delete('job-openings/{job_opening}', [JobOpeningController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_opening')->name('tenant.job-openings.destroy');
+
+        Route::get('job-applications', [JobApplicationController::class, 'index'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->name('tenant.job-applications.index');
+        Route::post('job-applications', [JobApplicationController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.job-applications.store');
+        Route::get('job-applications/{job_application}', [JobApplicationController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('job_application')->name('tenant.job-applications.show');
+        Route::match(['put', 'patch'], 'job-applications/{job_application}', [JobApplicationController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_application')->name('tenant.job-applications.update');
+        Route::delete('job-applications/{job_application}', [JobApplicationController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_application')->name('tenant.job-applications.destroy');
+
+        Route::get('performance-cycles', [PerformanceCycleController::class, 'index'])->middleware('permission:hr.performance.view|hr.performance.manage|hr.view')->name('tenant.performance-cycles.index');
+        Route::post('performance-cycles', [PerformanceCycleController::class, 'store'])->middleware('permission:hr.performance.manage')->name('tenant.performance-cycles.store');
+        Route::get('performance-cycles/{performance_cycle}', [PerformanceCycleController::class, 'show'])->middleware('permission:hr.performance.view|hr.performance.manage|hr.view')->whereNumber('performance_cycle')->name('tenant.performance-cycles.show');
+        Route::match(['put', 'patch'], 'performance-cycles/{performance_cycle}', [PerformanceCycleController::class, 'update'])->middleware('permission:hr.performance.manage')->whereNumber('performance_cycle')->name('tenant.performance-cycles.update');
+        Route::delete('performance-cycles/{performance_cycle}', [PerformanceCycleController::class, 'destroy'])->middleware('permission:hr.performance.manage')->whereNumber('performance_cycle')->name('tenant.performance-cycles.destroy');
+
+        Route::get('performance-reviews', [PerformanceReviewController::class, 'index'])->middleware('permission:hr.performance.view|hr.performance.manage|hr.view|hr.employees.view')->name('tenant.performance-reviews.index');
+        Route::post('performance-reviews', [PerformanceReviewController::class, 'store'])->middleware('permission:hr.performance.manage')->name('tenant.performance-reviews.store');
+        Route::get('performance-reviews/{performance_review}', [PerformanceReviewController::class, 'show'])->whereNumber('performance_review')->name('tenant.performance-reviews.show');
+        Route::match(['put', 'patch'], 'performance-reviews/{performance_review}', [PerformanceReviewController::class, 'update'])->middleware('permission:hr.performance.manage')->whereNumber('performance_review')->name('tenant.performance-reviews.update');
+        Route::delete('performance-reviews/{performance_review}', [PerformanceReviewController::class, 'destroy'])->middleware('permission:hr.performance.manage')->whereNumber('performance_review')->name('tenant.performance-reviews.destroy');
     });
 });

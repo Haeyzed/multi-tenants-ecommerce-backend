@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant;
 
+use App\Enums\Tenant\HR\AttendanceClockSource;
 use App\Enums\Tenant\HR\AttendanceStatus;
 use Database\Factories\Tenant\AttendanceFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,6 +24,12 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $checked_out_at
  * @property int $overtime_minutes
  * @property int $overtime_rate_percent
+ * @property AttendanceClockSource $clock_source
+ * @property float|null $latitude
+ * @property float|null $longitude
+ * @property int|null $accuracy_meters
+ * @property string|null $device_id
+ * @property string|null $biometric_hash
  * @property string|null $notes
  */
 class Attendance extends Model
@@ -41,6 +48,12 @@ class Attendance extends Model
         'checked_out_at',
         'overtime_minutes',
         'overtime_rate_percent',
+        'clock_source',
+        'latitude',
+        'longitude',
+        'accuracy_meters',
+        'device_id',
+        'biometric_hash',
         'notes',
     ];
 
@@ -51,6 +64,7 @@ class Attendance extends Model
         'status' => 'present',
         'overtime_minutes' => 0,
         'overtime_rate_percent' => 0,
+        'clock_source' => 'web',
     ];
 
     /**
@@ -66,6 +80,10 @@ class Attendance extends Model
             'checked_out_at' => 'datetime',
             'overtime_minutes' => 'integer',
             'overtime_rate_percent' => 'integer',
+            'clock_source' => AttendanceClockSource::class,
+            'latitude' => 'float',
+            'longitude' => 'float',
+            'accuracy_meters' => 'integer',
         ];
     }
 

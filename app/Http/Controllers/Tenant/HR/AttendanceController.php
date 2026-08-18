@@ -101,6 +101,7 @@ class AttendanceController extends Controller
             $this->resolveEmployee(
                 isset($request->validated()['employee_id']) ? (int) $request->validated('employee_id') : null,
             ),
+            $request->safe()->except('employee_id'),
         );
 
         return $this->success(
@@ -118,6 +119,7 @@ class AttendanceController extends Controller
             $this->resolveEmployee(
                 isset($request->validated()['employee_id']) ? (int) $request->validated('employee_id') : null,
             ),
+            $request->safe()->except('employee_id'),
         );
 
         return $this->success(

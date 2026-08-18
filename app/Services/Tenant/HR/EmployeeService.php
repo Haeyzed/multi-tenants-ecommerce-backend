@@ -103,6 +103,9 @@ class EmployeeService
             'account_number' => $data['account_number'] ?? null,
             'account_name' => $data['account_name'] ?? null,
             'tax_id' => $data['tax_id'] ?? null,
+            'pension_pin' => $data['pension_pin'] ?? null,
+            'nhf_number' => $data['nhf_number'] ?? null,
+            'nsitf_number' => $data['nsitf_number'] ?? null,
         ]);
 
         $employee = Employee::query()->create($payload)->load(['user', 'department', 'designation', 'manager.user', 'workSchedule']);

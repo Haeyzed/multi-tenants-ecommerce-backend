@@ -40,6 +40,27 @@ class PayeCalculatorService
         return Money::div($annualTax, (string) $periods);
     }
 
+    /**
+     * Cumulative PAYE: tax-to-date on year-to-date income minus tax already withheld.
+     */
+    public function cumulativePeriodTax(
+        string $periodGross,
+        string $priorYtdGross,
+        string $priorYtdPaye,
+        PayFrequency $frequency,
+        TaxTable $table,
+        int $periodsElapsed,
+    ): string {
+        $elapsed = max(1, $periodsElapsed);
+        $periods = $this->periodsPerYear($frequency);
+        $ytdGross = Money::add($priorYtdGross, $periodGross);
+        $projectedAnnual = bcdiv(bcmul($ytdGross, (string) $periods, 4), (string) $elapsed, 2);
+        $taxToDate = bcdiv(bcmul($this->annualTax($projectedAnnual, $table), (string) $elapsed, 4), (string) $periods, 2);
+        $due = Money::sub($taxToDate, $priorYtdPaye);
+
+        return bccomp($due, '0', 2) < 0 ? '0.00' : $due;
+    }
+
     public function annualTax(string $annualGross, TaxTable $table): string
     {
         $percentRelief = Money::percent($annualGross, (string) $table->relief_percent);

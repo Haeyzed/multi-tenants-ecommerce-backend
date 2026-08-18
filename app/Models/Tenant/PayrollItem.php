@@ -52,6 +52,10 @@ class PayrollItem extends Model
         'overtime_minutes',
         'scheduled_days',
         'notes',
+        'ytd_gross',
+        'ytd_paye',
+        'employer_pension',
+        'employer_nsitf',
         'bank_name',
         'bank_code',
         'account_number',
@@ -68,6 +72,10 @@ class PayrollItem extends Model
         'unpaid_leave_days' => 0,
         'overtime_minutes' => 0,
         'scheduled_days' => 0,
+        'ytd_gross' => '0.00',
+        'ytd_paye' => '0.00',
+        'employer_pension' => '0.00',
+        'employer_nsitf' => '0.00',
     ];
 
     /**

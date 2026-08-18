@@ -203,6 +203,83 @@ class HrSettingsService
         return $id === null ? null : (int) $id;
     }
 
+    public function isPayrollTaxYtdEnabled(): bool
+    {
+        return $this->isPayrollTaxEnabled() && (bool) $this->value('hr.payroll.tax_ytd_enabled');
+    }
+
+    public function payrollTaxYearStartMonth(): int
+    {
+        $month = (int) $this->value('hr.payroll.tax_year_start_month');
+
+        return ($month >= 1 && $month <= 12) ? $month : 1;
+    }
+
+    public function isPensionEnabled(): bool
+    {
+        return $this->isPayrollEnabled() && (bool) $this->value('hr.payroll.pension_enabled');
+    }
+
+    public function pensionEmployeePercent(): string
+    {
+        return $this->percentSetting('hr.payroll.pension_employee_percent', '8.00');
+    }
+
+    public function pensionEmployerPercent(): string
+    {
+        return $this->percentSetting('hr.payroll.pension_employer_percent', '10.00');
+    }
+
+    public function isNhfEnabled(): bool
+    {
+        return $this->isPayrollEnabled() && (bool) $this->value('hr.payroll.nhf_enabled');
+    }
+
+    public function nhfPercent(): string
+    {
+        return $this->percentSetting('hr.payroll.nhf_percent', '2.50');
+    }
+
+    public function isNsitfEnabled(): bool
+    {
+        return $this->isPayrollEnabled() && (bool) $this->value('hr.payroll.nsitf_enabled');
+    }
+
+    public function nsitfPercent(): string
+    {
+        return $this->percentSetting('hr.payroll.nsitf_percent', '1.00');
+    }
+
+    public function isNibssEnabled(): bool
+    {
+        return $this->isPayrollEnabled() && (bool) $this->value('hr.payroll.nibss.enabled');
+    }
+
+    public function nibssBaseUrl(): ?string
+    {
+        return $this->nullableString('hr.payroll.nibss.base_url');
+    }
+
+    public function nibssApiKey(): ?string
+    {
+        return $this->nullableString('hr.payroll.nibss.api_key');
+    }
+
+    public function nibssInstitutionCode(): ?string
+    {
+        return $this->nullableString('hr.payroll.nibss.institution_code');
+    }
+
+    public function nibssOriginatorAccount(): ?string
+    {
+        return $this->nullableString('hr.payroll.nibss.originator_account');
+    }
+
+    public function nibssOriginatorBankCode(): ?string
+    {
+        return $this->nullableString('hr.payroll.nibss.originator_bank_code');
+    }
+
     public function isOvertimeEnabled(): bool
     {
         return $this->isAttendanceEnabled() && (bool) $this->value('hr.overtime.enabled');
@@ -213,6 +290,62 @@ class HrSettingsService
         $rate = (int) $this->value('hr.overtime.rate_percent');
 
         return $rate > 0 ? $rate : 150;
+    }
+
+    public function isWeeklyOvertimeEnabled(): bool
+    {
+        return $this->isOvertimeEnabled() && (bool) $this->value('hr.overtime.weekly_enabled');
+    }
+
+    public function weeklyOvertimeThresholdMinutes(): int
+    {
+        return max(0, (int) $this->value('hr.overtime.weekly_threshold_minutes'));
+    }
+
+    public function weeklyOvertimeRatePercent(): int
+    {
+        $rate = (int) $this->value('hr.overtime.weekly_rate_percent');
+
+        return $rate > 0 ? $rate : 150;
+    }
+
+    public function gpsRequired(): bool
+    {
+        return $this->isAttendanceEnabled() && (bool) $this->value('hr.attendance.gps_required');
+    }
+
+    public function geofenceLatitude(): ?float
+    {
+        $value = $this->value('hr.attendance.geofence_latitude');
+
+        return $value === null || $value === '' ? null : (float) $value;
+    }
+
+    public function geofenceLongitude(): ?float
+    {
+        $value = $this->value('hr.attendance.geofence_longitude');
+
+        return $value === null || $value === '' ? null : (float) $value;
+    }
+
+    public function geofenceRadiusMeters(): int
+    {
+        return max(0, (int) $this->value('hr.attendance.geofence_radius_meters'));
+    }
+
+    public function biometricRequired(): bool
+    {
+        return $this->isAttendanceEnabled() && (bool) $this->value('hr.attendance.biometric_required');
+    }
+
+    public function isRecruitmentEnabled(): bool
+    {
+        return $this->isEnabled() && (bool) $this->value('hr.recruitment.enabled');
+    }
+
+    public function isPerformanceEnabled(): bool
+    {
+        return $this->isEnabled() && (bool) $this->value('hr.performance.enabled');
     }
 
     public function workingHoursPerDay(): int
@@ -294,6 +427,54 @@ class HrSettingsService
                 'payroll' => ['Payroll is disabled in HR settings.'],
             ]);
         }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function assertRecruitmentEnabled(): void
+    {
+        $this->assertModuleEnabled();
+
+        if (! $this->isRecruitmentEnabled()) {
+            throw ValidationException::withMessages([
+                'recruitment' => ['Recruitment is disabled in HR settings.'],
+            ]);
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function assertPerformanceEnabled(): void
+    {
+        $this->assertModuleEnabled();
+
+        if (! $this->isPerformanceEnabled()) {
+            throw ValidationException::withMessages([
+                'performance' => ['Performance reviews are disabled in HR settings.'],
+            ]);
+        }
+    }
+
+    protected function percentSetting(string $key, string $fallback): string
+    {
+        $value = $this->value($key);
+
+        if ($value === null || $value === '' || ! is_numeric($value)) {
+            return $fallback;
+        }
+
+        $normalized = number_format((float) $value, 2, '.', '');
+
+        return bccomp($normalized, '0', 2) < 0 ? $fallback : $normalized;
+    }
+
+    protected function nullableString(string $key): ?string
+    {
+        $value = trim((string) ($this->value($key) ?? ''));
+
+        return $value === '' ? null : $value;
     }
 
     protected function value(string $key): mixed

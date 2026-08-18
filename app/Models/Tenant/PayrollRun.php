@@ -58,6 +58,9 @@ class PayrollRun extends Model
         'processed_by',
         'paid_by',
         'notes',
+        'nibss_reference',
+        'nibss_status',
+        'nibss_submitted_at',
     ];
 
     /**
@@ -87,6 +90,7 @@ class PayrollRun extends Model
             'paid_at' => 'datetime',
             'processed_by' => 'integer',
             'paid_by' => 'integer',
+            'nibss_submitted_at' => 'datetime',
         ];
     }
 

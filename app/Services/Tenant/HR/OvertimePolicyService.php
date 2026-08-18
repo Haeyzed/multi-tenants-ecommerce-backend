@@ -59,6 +59,8 @@ class OvertimePolicyService
             'holiday_rate_percent' => $data['holiday_rate_percent'] ?? 200,
             'daily_threshold_minutes' => $data['daily_threshold_minutes'] ?? 0,
             'max_daily_minutes' => $data['max_daily_minutes'] ?? 0,
+            'weekly_threshold_minutes' => $data['weekly_threshold_minutes'] ?? 0,
+            'weekly_rate_percent' => $data['weekly_rate_percent'] ?? 150,
             'round_to_minutes' => $data['round_to_minutes'] ?? 1,
         ]);
 

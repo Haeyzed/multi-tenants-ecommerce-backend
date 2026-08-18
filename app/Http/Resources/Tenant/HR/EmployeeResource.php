@@ -41,6 +41,9 @@ class EmployeeResource extends JsonResource
             'account_number' => $employee->account_number,
             'account_name' => $employee->account_name,
             'tax_id' => $employee->tax_id,
+            'pension_pin' => $employee->pension_pin,
+            'nhf_number' => $employee->nhf_number,
+            'nsitf_number' => $employee->nsitf_number,
             'user' => $this->whenLoaded('user', fn () => [
                 'id' => $employee->user->id,
                 'first_name' => $employee->user->first_name,

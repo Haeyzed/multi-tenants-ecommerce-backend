@@ -20,6 +20,7 @@ class IndexHrReportRequest extends BaseRequest
             'department_id' => ['sometimes', 'nullable', 'integer', 'exists:departments,id'],
             'employee_id' => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
             'format' => ['sometimes', 'nullable', 'string', 'in:json,csv'],
+            'kind' => ['sometimes', 'nullable', 'string', 'in:paye,pension,nhf,nsitf,combined'],
         ];
     }
 

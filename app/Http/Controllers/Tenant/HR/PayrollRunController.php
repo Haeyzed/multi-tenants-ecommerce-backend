@@ -15,6 +15,7 @@ use App\Models\Tenant\PayrollItem;
 use App\Models\Tenant\PayrollRun;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\HrCsvExporter;
+use App\Services\Tenant\HR\NibssPayrollProcessor;
 use App\Services\Tenant\HR\PayrollRunService;
 use App\Services\Tenant\HR\PayslipPdfService;
 use App\Support\ApiResponseSchema;
@@ -36,6 +37,7 @@ class PayrollRunController extends Controller
         private readonly PayrollRunService $payrollRunService,
         private readonly PayslipPdfService $payslips,
         private readonly HrCsvExporter $csv,
+        private readonly NibssPayrollProcessor $nibss,
     ) {}
 
     #[Response(status: 200, description: 'Paginated payroll runs.', type: 'array{success: true, message: string, data: PayrollRunResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
@@ -166,6 +168,23 @@ class PayrollRunController extends Controller
         }
 
         return $this->success($rows, 'Payment register retrieved successfully.');
+    }
+
+    public function nibssFile(PayrollRun $payroll_run): StreamedResponse
+    {
+        $this->authorize('view', $payroll_run);
+
+        return $this->nibss->download($payroll_run);
+    }
+
+    public function nibssSubmit(PayrollRun $payroll_run): JsonResponse
+    {
+        $this->authorize('pay', $payroll_run);
+
+        return $this->success(
+            new PayrollRunResource($this->nibss->submit($payroll_run)),
+            'NIBSS disbursement submitted successfully.',
+        );
     }
 
     #[Response(status: 200, description: 'Employee payslips.', type: 'array{success: true, message: string, data: PayrollItemResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]

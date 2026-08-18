@@ -52,6 +52,8 @@
         <tr><td>Scheduled days</td><td>{{ $item->scheduled_days }}</td></tr>
         <tr><td>Worked days</td><td>{{ $item->working_days }}</td></tr>
         <tr><td>Gross</td><td>{{ $run?->currency ?? '' }} {{ number_format((float) $item->gross_pay, 2) }}</td></tr>
+        <tr><td>YTD gross</td><td>{{ $run?->currency ?? '' }} {{ number_format((float) $item->ytd_gross, 2) }}</td></tr>
+        <tr><td>YTD PAYE</td><td>{{ $run?->currency ?? '' }} {{ number_format((float) $item->ytd_paye, 2) }}</td></tr>
         <tr><td>Deductions</td><td>{{ $run?->currency ?? '' }} {{ number_format((float) $item->deduction_total, 2) }}</td></tr>
         <tr class="total"><td>Net pay</td><td>{{ $run?->currency ?? '' }} {{ number_format((float) $item->net_pay, 2) }}</td></tr>
     </table>

@@ -32,6 +32,8 @@ class OvertimePolicyResource extends JsonResource
             'holiday_rate_percent' => $policy->holiday_rate_percent,
             'daily_threshold_minutes' => $policy->daily_threshold_minutes,
             'max_daily_minutes' => $policy->max_daily_minutes,
+            'weekly_threshold_minutes' => $policy->weekly_threshold_minutes,
+            'weekly_rate_percent' => $policy->weekly_rate_percent,
             'round_to_minutes' => $policy->round_to_minutes,
             'created_at' => $policy->created_at,
             'updated_at' => $policy->updated_at,
