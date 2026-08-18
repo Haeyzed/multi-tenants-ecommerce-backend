@@ -30,6 +30,30 @@ class JobOpeningFactory extends Factory
             'openings_count' => 1,
             'description' => fake()->optional()->sentence(),
             'closes_at' => now()->addMonth()->toDateString(),
+            'published_at' => now(),
         ];
+    }
+
+    public function draft(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => JobOpeningStatus::Draft,
+            'published_at' => null,
+        ]);
+    }
+
+    public function paused(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => JobOpeningStatus::Paused,
+        ]);
+    }
+
+    public function closed(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => JobOpeningStatus::Closed,
+            'closed_at' => now(),
+        ]);
     }
 }

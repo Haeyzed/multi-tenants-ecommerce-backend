@@ -86,6 +86,16 @@ class HrReportController extends Controller
         return $this->respond($request, $payload, 'statutory-return.csv', 'Statutory return retrieved successfully.');
     }
 
+    #[Response(status: 200, description: 'Recruitment report.', type: 'array{success: true, message: string, data: array<string, mixed>, meta: null, errors: null}')]
+    public function recruitment(IndexHrReportRequest $request): JsonResponse|StreamedResponse
+    {
+        $this->authorize('viewHrReports');
+
+        $payload = $this->reports->recruitment($request->validated());
+
+        return $this->respond($request, $payload, 'recruitment-report.csv', 'Recruitment report retrieved successfully.');
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      */

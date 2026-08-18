@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -52,6 +53,16 @@ class User extends Authenticatable implements HasMedia
     public function employee(): HasOne
     {
         return $this->hasOne(Employee::class);
+    }
+
+    /**
+     * Interviews this staff user is assigned to.
+     *
+     * @return BelongsToMany<Interview, $this>
+     */
+    public function interviews(): BelongsToMany
+    {
+        return $this->belongsToMany(Interview::class, 'interview_interviewers')->withTimestamps();
     }
 
     /**

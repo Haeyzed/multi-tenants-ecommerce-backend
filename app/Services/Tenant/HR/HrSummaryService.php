@@ -5,15 +5,23 @@ declare(strict_types=1);
 namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\EmploymentStatus;
+use App\Enums\Tenant\HR\JobApplicationStatus;
+use App\Enums\Tenant\HR\JobOpeningStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
 use App\Enums\Tenant\HR\PayrollPeriodStatus;
 use App\Enums\Tenant\HR\PayrollRunStatus;
 use App\Models\Tenant\Attendance;
+use App\Models\Tenant\Candidate;
 use App\Models\Tenant\Department;
 use App\Models\Tenant\Employee;
+use App\Models\Tenant\Interview;
+use App\Models\Tenant\JobApplication;
+use App\Models\Tenant\JobOffer;
+use App\Models\Tenant\JobOpening;
 use App\Models\Tenant\LeaveRequest;
 use App\Models\Tenant\PayrollPeriod;
 use App\Models\Tenant\PayrollRun;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Lightweight HR dashboard totals.
@@ -57,6 +65,37 @@ class HrSummaryService
                 'current_period' => $currentPeriod,
                 'open_periods' => PayrollPeriod::query()->where('status', PayrollPeriodStatus::Open)->count(),
             ],
+            'recruitment' => $this->recruitmentSummary(),
+        ];
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    protected function recruitmentSummary(): array
+    {
+        $empty = [
+            'open_jobs' => 0,
+            'applications' => 0,
+            'candidates' => 0,
+            'interviews' => 0,
+            'offers' => 0,
+            'hires' => 0,
+            'rejected_applications' => 0,
+        ];
+
+        if (! Schema::hasTable('job_openings') || ! Schema::hasTable('job_applications')) {
+            return $empty;
+        }
+
+        return [
+            'open_jobs' => JobOpening::query()->where('status', JobOpeningStatus::Open)->count(),
+            'applications' => JobApplication::query()->count(),
+            'candidates' => Schema::hasTable('candidates') ? Candidate::query()->count() : 0,
+            'interviews' => Schema::hasTable('interviews') ? Interview::query()->count() : 0,
+            'offers' => Schema::hasTable('job_offers') ? JobOffer::query()->count() : 0,
+            'hires' => JobApplication::query()->where('status', JobApplicationStatus::Hired)->count(),
+            'rejected_applications' => JobApplication::query()->where('status', JobApplicationStatus::Rejected)->count(),
         ];
     }
 }

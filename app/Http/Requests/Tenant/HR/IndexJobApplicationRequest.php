@@ -19,6 +19,8 @@ class IndexJobApplicationRequest extends BaseRequest
             'search' => ['sometimes', 'nullable', 'string', 'max:255'],
             'status' => ['sometimes', 'nullable', 'string', Rule::enum(JobApplicationStatus::class)],
             'job_opening_id' => ['sometimes', 'nullable', 'integer', 'exists:job_openings,id'],
+            'candidate_id' => ['sometimes', 'nullable', 'integer', 'exists:candidates,id'],
+            'recruitment_stage_id' => ['sometimes', 'nullable', 'integer', 'exists:recruitment_stages,id'],
             'sort' => ['sometimes', 'string', 'max:64'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ];

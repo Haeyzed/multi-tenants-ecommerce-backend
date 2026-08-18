@@ -86,6 +86,10 @@ class FeatureSeeder extends Seeder
             'name' => 'Human Resources',
             'description' => 'Employee, attendance, leave, and payroll management.',
         ],
+        'recruitment' => [
+            'name' => 'Recruitment',
+            'description' => 'Job listings, candidates, interviews, offers, and hiring.',
+        ],
     ];
 
     /**

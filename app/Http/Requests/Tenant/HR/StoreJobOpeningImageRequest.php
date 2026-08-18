@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests\Tenant\HR;
+
+use App\Http\Requests\BaseRequest;
+
+class StoreJobOpeningImageRequest extends BaseRequest
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        return [
+            'file' => [
+                'required',
+                'file',
+                'max:'.(int) config('media.upload_limits.image', 10240),
+                'mimetypes:'.implode(',', config('media.mimes.image', [])),
+            ],
+        ];
+    }
+}

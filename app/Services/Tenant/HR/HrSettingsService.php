@@ -6,6 +6,8 @@ namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Enums\Tenant\HR\PayFrequency;
+use App\Models\Landlord\Tenant;
+use App\Services\Landlord\Feature\FeatureAccessService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
@@ -22,6 +24,7 @@ class HrSettingsService
      */
     public function __construct(
         private readonly CommerceSettingService $commerceSettings,
+        private readonly FeatureAccessService $features,
         private array $settings = [],
     ) {}
 
@@ -340,7 +343,41 @@ class HrSettingsService
 
     public function isRecruitmentEnabled(): bool
     {
-        return $this->isEnabled() && (bool) $this->value('hr.recruitment.enabled');
+        return $this->isEnabled()
+            && (bool) $this->value('hr.recruitment.enabled')
+            && $this->planAllowsRecruitment();
+    }
+
+    public function isPublicJobListingsEnabled(): bool
+    {
+        return $this->isRecruitmentEnabled() && (bool) $this->value('hr.recruitment.public_listings_enabled');
+    }
+
+    public function isPublicJobApplicationsEnabled(): bool
+    {
+        return $this->isPublicJobListingsEnabled() && (bool) $this->value('hr.recruitment.public_applications_enabled');
+    }
+
+    public function offerApprovalRequired(): bool
+    {
+        return (bool) $this->value('hr.recruitment.offer_approval_required');
+    }
+
+    public function interviewRequiredBeforeOffer(): bool
+    {
+        return (bool) $this->value('hr.recruitment.interview_required_before_offer');
+    }
+
+    public function defaultHireRole(): string
+    {
+        $role = trim((string) $this->value('hr.recruitment.default_hire_role'));
+
+        return $role !== '' ? $role : 'employee';
+    }
+
+    public function notifyRecruitment(): bool
+    {
+        return (bool) $this->value('hr.notifications.recruitment');
     }
 
     public function isPerformanceEnabled(): bool
@@ -446,6 +483,34 @@ class HrSettingsService
     /**
      * @throws ValidationException
      */
+    public function assertPublicJobListingsEnabled(): void
+    {
+        $this->assertRecruitmentEnabled();
+
+        if (! $this->isPublicJobListingsEnabled()) {
+            throw ValidationException::withMessages([
+                'recruitment' => ['Public job listings are disabled in HR settings.'],
+            ]);
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function assertPublicJobApplicationsEnabled(): void
+    {
+        $this->assertPublicJobListingsEnabled();
+
+        if (! $this->isPublicJobApplicationsEnabled()) {
+            throw ValidationException::withMessages([
+                'recruitment' => ['Public job applications are disabled in HR settings.'],
+            ]);
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
     public function assertPerformanceEnabled(): void
     {
         $this->assertModuleEnabled();
@@ -475,6 +540,27 @@ class HrSettingsService
         $value = trim((string) ($this->value($key) ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    protected function planAllowsRecruitment(): bool
+    {
+        $tenant = tenant();
+
+        if (! $tenant instanceof Tenant || $tenant->activeSubscription() === null) {
+            return true;
+        }
+
+        if ($this->features->has($tenant, 'recruitment')) {
+            return true;
+        }
+
+        $slugs = $this->features->featuresForTenant($tenant)->pluck('slug');
+
+        if (! $slugs->contains('recruitment')) {
+            return $this->features->has($tenant, 'hr') || $slugs->isEmpty();
+        }
+
+        return false;
     }
 
     protected function value(string $key): mixed

@@ -183,6 +183,26 @@ class Employee extends Model implements HasMedia
     }
 
     /**
+     * Candidate record this employee was hired from, if any.
+     *
+     * @return HasOne<Candidate, $this>
+     */
+    public function candidate(): HasOne
+    {
+        return $this->hasOne(Candidate::class);
+    }
+
+    /**
+     * Applications that hired this employee.
+     *
+     * @return HasMany<JobApplication, $this>
+     */
+    public function hiredApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class, 'hired_employee_id');
+    }
+
+    /**
      * Current salary configuration.
      *
      * @return HasOne<EmployeeSalary, $this>

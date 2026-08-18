@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Tenant\HR;
 
+use App\Enums\Tenant\HR\ApplicationSource;
 use App\Enums\Tenant\HR\JobApplicationStatus;
 use App\Http\Requests\BaseRequest;
 use Illuminate\Validation\Rule;
@@ -21,10 +22,13 @@ class StoreJobApplicationRequest extends BaseRequest
             'last_name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
+            'source' => ['sometimes', 'nullable', 'string', Rule::enum(ApplicationSource::class)],
             'status' => ['sometimes', 'string', Rule::enum(JobApplicationStatus::class)],
             'cover_letter' => ['sometimes', 'nullable', 'string'],
             'notes' => ['sometimes', 'nullable', 'string'],
-            'hired_employee_id' => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'portfolio_url' => ['sometimes', 'nullable', 'url', 'max:255'],
+            'linkedin_url' => ['sometimes', 'nullable', 'url', 'max:255'],
         ];
     }
 }

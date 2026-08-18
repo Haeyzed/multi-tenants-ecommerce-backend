@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Tenant\HR\AttendanceController;
+use App\Http\Controllers\Tenant\HR\CandidateController;
 use App\Http\Controllers\Tenant\HR\DepartmentController;
 use App\Http\Controllers\Tenant\HR\DesignationController;
 use App\Http\Controllers\Tenant\HR\EmployeeController;
@@ -11,7 +12,9 @@ use App\Http\Controllers\Tenant\HR\EmploymentRecordController;
 use App\Http\Controllers\Tenant\HR\HrReportController;
 use App\Http\Controllers\Tenant\HR\HrSettingsController;
 use App\Http\Controllers\Tenant\HR\HrSummaryController;
+use App\Http\Controllers\Tenant\HR\InterviewController;
 use App\Http\Controllers\Tenant\HR\JobApplicationController;
+use App\Http\Controllers\Tenant\HR\JobOfferController;
 use App\Http\Controllers\Tenant\HR\JobOpeningController;
 use App\Http\Controllers\Tenant\HR\LeaveBalanceController;
 use App\Http\Controllers\Tenant\HR\LeaveRequestController;
@@ -22,6 +25,7 @@ use App\Http\Controllers\Tenant\HR\PayrollRunController;
 use App\Http\Controllers\Tenant\HR\PerformanceCycleController;
 use App\Http\Controllers\Tenant\HR\PerformanceReviewController;
 use App\Http\Controllers\Tenant\HR\PublicHolidayController;
+use App\Http\Controllers\Tenant\HR\RecruitmentStageController;
 use App\Http\Controllers\Tenant\HR\TaxTableController;
 use App\Http\Controllers\Tenant\HR\WorkScheduleController;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +42,7 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::get('hr/reports/overtime', [HrReportController::class, 'overtime'])->middleware('permission:hr.reports.view|hr.view|hr.attendance.view|hr.payroll.view')->name('tenant.hr.reports.overtime');
         Route::get('hr/reports/headcount', [HrReportController::class, 'headcount'])->middleware('permission:hr.reports.view|hr.view|hr.employees.view')->name('tenant.hr.reports.headcount');
         Route::get('hr/reports/statutory', [HrReportController::class, 'statutory'])->middleware('permission:hr.reports.view|hr.view|hr.payroll.view')->name('tenant.hr.reports.statutory');
+        Route::get('hr/reports/recruitment', [HrReportController::class, 'recruitment'])->middleware('permission:hr.reports.view|hr.view|hr.recruitment.view|hr.recruitment.manage')->name('tenant.hr.reports.recruitment');
 
         Route::get('work-schedules/options', [WorkScheduleController::class, 'options'])->name('tenant.work-schedules.options');
         Route::get('work-schedules', [WorkScheduleController::class, 'index'])->name('tenant.work-schedules.index');
@@ -137,12 +142,49 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::get('job-openings/{job_opening}', [JobOpeningController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('job_opening')->name('tenant.job-openings.show');
         Route::match(['put', 'patch'], 'job-openings/{job_opening}', [JobOpeningController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_opening')->name('tenant.job-openings.update');
         Route::delete('job-openings/{job_opening}', [JobOpeningController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_opening')->name('tenant.job-openings.destroy');
+        Route::post('job-openings/{job_opening}/publish', [JobOpeningController::class, 'publish'])->middleware('permission:hr.recruitment.publish|hr.recruitment.manage')->whereNumber('job_opening')->name('tenant.job-openings.publish');
+        Route::post('job-openings/{job_opening}/pause', [JobOpeningController::class, 'pause'])->middleware('permission:hr.recruitment.publish|hr.recruitment.manage')->whereNumber('job_opening')->name('tenant.job-openings.pause');
+        Route::post('job-openings/{job_opening}/close', [JobOpeningController::class, 'close'])->middleware('permission:hr.recruitment.publish|hr.recruitment.manage')->whereNumber('job_opening')->name('tenant.job-openings.close');
+        Route::post('job-openings/{job_opening}/cancel', [JobOpeningController::class, 'cancel'])->middleware('permission:hr.recruitment.publish|hr.recruitment.manage')->whereNumber('job_opening')->name('tenant.job-openings.cancel');
+        Route::post('job-openings/{job_opening}/image', [JobOpeningController::class, 'image'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_opening')->name('tenant.job-openings.image');
+
+        Route::get('candidates', [CandidateController::class, 'index'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->name('tenant.candidates.index');
+        Route::post('candidates', [CandidateController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.candidates.store');
+        Route::get('candidates/{candidate}', [CandidateController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('candidate')->name('tenant.candidates.show');
+        Route::match(['put', 'patch'], 'candidates/{candidate}', [CandidateController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('candidate')->name('tenant.candidates.update');
+        Route::post('candidates/{candidate}/resume', [CandidateController::class, 'resume'])->middleware('permission:hr.recruitment.manage')->whereNumber('candidate')->name('tenant.candidates.resume');
+        Route::delete('candidates/{candidate}', [CandidateController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('candidate')->name('tenant.candidates.destroy');
+
+        Route::get('recruitment-stages', [RecruitmentStageController::class, 'index'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->name('tenant.recruitment-stages.index');
+        Route::post('recruitment-stages', [RecruitmentStageController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.recruitment-stages.store');
+        Route::get('recruitment-stages/{recruitment_stage}', [RecruitmentStageController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('recruitment_stage')->name('tenant.recruitment-stages.show');
+        Route::match(['put', 'patch'], 'recruitment-stages/{recruitment_stage}', [RecruitmentStageController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('recruitment_stage')->name('tenant.recruitment-stages.update');
+        Route::delete('recruitment-stages/{recruitment_stage}', [RecruitmentStageController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('recruitment_stage')->name('tenant.recruitment-stages.destroy');
 
         Route::get('job-applications', [JobApplicationController::class, 'index'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->name('tenant.job-applications.index');
         Route::post('job-applications', [JobApplicationController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.job-applications.store');
         Route::get('job-applications/{job_application}', [JobApplicationController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('job_application')->name('tenant.job-applications.show');
         Route::match(['put', 'patch'], 'job-applications/{job_application}', [JobApplicationController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_application')->name('tenant.job-applications.update');
+        Route::post('job-applications/{job_application}/stage', [JobApplicationController::class, 'moveStage'])->middleware('permission:hr.recruitment.stage|hr.recruitment.manage')->whereNumber('job_application')->name('tenant.job-applications.stage');
+        Route::post('job-applications/{job_application}/hire', [JobApplicationController::class, 'hire'])->middleware('permission:hr.recruitment.hire|hr.recruitment.manage')->whereNumber('job_application')->name('tenant.job-applications.hire');
         Route::delete('job-applications/{job_application}', [JobApplicationController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_application')->name('tenant.job-applications.destroy');
+
+        Route::post('interviews', [InterviewController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.interviews.store');
+        Route::get('interviews/{interview}', [InterviewController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('interview')->name('tenant.interviews.show');
+        Route::match(['put', 'patch'], 'interviews/{interview}', [InterviewController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.update');
+        Route::post('interviews/{interview}/complete', [InterviewController::class, 'complete'])->middleware('permission:hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.complete');
+        Route::post('interviews/{interview}/cancel', [InterviewController::class, 'cancel'])->middleware('permission:hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.cancel');
+        Route::post('interviews/{interview}/feedback', [InterviewController::class, 'feedback'])->middleware('permission:hr.recruitment.feedback|hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.feedback');
+        Route::delete('interviews/{interview}', [InterviewController::class, 'destroy'])->middleware('permission:hr.recruitment.manage')->whereNumber('interview')->name('tenant.interviews.destroy');
+
+        Route::post('job-offers', [JobOfferController::class, 'store'])->middleware('permission:hr.recruitment.manage')->name('tenant.job-offers.store');
+        Route::get('job-offers/{job_offer}', [JobOfferController::class, 'show'])->middleware('permission:hr.recruitment.view|hr.recruitment.manage|hr.view')->whereNumber('job_offer')->name('tenant.job-offers.show');
+        Route::match(['put', 'patch'], 'job-offers/{job_offer}', [JobOfferController::class, 'update'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_offer')->name('tenant.job-offers.update');
+        Route::post('job-offers/{job_offer}/approve', [JobOfferController::class, 'approve'])->middleware('permission:hr.recruitment.offers.approve|hr.recruitment.manage')->whereNumber('job_offer')->name('tenant.job-offers.approve');
+        Route::post('job-offers/{job_offer}/send', [JobOfferController::class, 'send'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_offer')->name('tenant.job-offers.send');
+        Route::post('job-offers/{job_offer}/accept', [JobOfferController::class, 'accept'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_offer')->name('tenant.job-offers.accept');
+        Route::post('job-offers/{job_offer}/reject', [JobOfferController::class, 'reject'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_offer')->name('tenant.job-offers.reject');
+        Route::post('job-offers/{job_offer}/withdraw', [JobOfferController::class, 'withdraw'])->middleware('permission:hr.recruitment.manage')->whereNumber('job_offer')->name('tenant.job-offers.withdraw');
 
         Route::get('performance-cycles', [PerformanceCycleController::class, 'index'])->middleware('permission:hr.performance.view|hr.performance.manage|hr.view')->name('tenant.performance-cycles.index');
         Route::post('performance-cycles', [PerformanceCycleController::class, 'store'])->middleware('permission:hr.performance.manage')->name('tenant.performance-cycles.store');

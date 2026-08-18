@@ -16,14 +16,10 @@ class UpdateJobApplicationRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['sometimes', 'string', 'max:100'],
-            'last_name' => ['sometimes', 'string', 'max:100'],
-            'email' => ['sometimes', 'email', 'max:255'],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
-            'status' => ['sometimes', 'string', Rule::enum(JobApplicationStatus::class)],
             'cover_letter' => ['sometimes', 'nullable', 'string'],
             'notes' => ['sometimes', 'nullable', 'string'],
-            'hired_employee_id' => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
+            'status' => ['sometimes', 'string', Rule::enum(JobApplicationStatus::class)],
+            'recruitment_stage_id' => ['sometimes', 'integer', 'exists:recruitment_stages,id'],
         ];
     }
 }

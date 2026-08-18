@@ -74,11 +74,17 @@ class UpdateHrSettingsRequest extends BaseRequest
             'hr\.attendance\.geofence_radius_meters' => ['sometimes', 'integer', 'min:0', 'max:50000'],
             'hr\.attendance\.biometric_required' => ['sometimes', 'boolean'],
             'hr\.recruitment\.enabled' => ['sometimes', 'boolean'],
+            'hr\.recruitment\.public_listings_enabled' => ['sometimes', 'boolean'],
+            'hr\.recruitment\.public_applications_enabled' => ['sometimes', 'boolean'],
+            'hr\.recruitment\.offer_approval_required' => ['sometimes', 'boolean'],
+            'hr\.recruitment\.interview_required_before_offer' => ['sometimes', 'boolean'],
+            'hr\.recruitment\.default_hire_role' => ['sometimes', 'string', 'max:64'],
             'hr\.performance\.enabled' => ['sometimes', 'boolean'],
             'hr\.leave\.carry_over_enabled' => ['sometimes', 'boolean'],
             'hr\.leave\.carry_over_max_days' => ['sometimes', 'integer', 'min:0', 'max:365'],
             'hr\.notifications\.leave' => ['sometimes', 'boolean'],
             'hr\.notifications\.payroll' => ['sometimes', 'boolean'],
+            'hr\.notifications\.recruitment' => ['sometimes', 'boolean'],
         ];
     }
 

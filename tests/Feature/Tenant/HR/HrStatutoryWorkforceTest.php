@@ -6,6 +6,7 @@ use App\Enums\Tenant\HR\JobApplicationStatus;
 use App\Enums\Tenant\HR\JobOpeningStatus;
 use App\Enums\Tenant\HR\PayrollRunStatus;
 use App\Enums\Tenant\HR\PerformanceReviewStatus;
+use App\Events\JobApplicationReceived;
 use App\Events\PayrollPaid;
 use App\Events\PayrollProcessed;
 use App\Events\PayslipAvailable;
@@ -73,6 +74,11 @@ beforeEach(function (): void {
         '2026_08_18_145947_create_performance_cycles_table.php',
         '2026_08_18_145949_create_performance_reviews_table.php',
         '2026_08_18_145952_add_nibss_disbursement_columns_to_payroll_runs_table.php',
+        '2026_08_18_154933_create_candidates_table.php',
+        '2026_08_18_154935_create_recruitment_stages_table.php',
+        '2026_08_18_154937_add_ats_columns_to_job_openings_table.php',
+        '2026_08_18_154939_add_candidate_and_stage_to_job_applications_table.php',
+        '2026_08_18_154943_create_application_stage_histories_table.php',
     ];
 
     foreach ($migrations as $file) {
@@ -101,6 +107,9 @@ beforeEach(function (): void {
             '2026_08_18_145945_create_job_applications_table.php' => 'job_applications',
             '2026_08_18_145947_create_performance_cycles_table.php' => 'performance_cycles',
             '2026_08_18_145949_create_performance_reviews_table.php' => 'performance_reviews',
+            '2026_08_18_154933_create_candidates_table.php' => 'candidates',
+            '2026_08_18_154935_create_recruitment_stages_table.php' => 'recruitment_stages',
+            '2026_08_18_154943_create_application_stage_histories_table.php' => 'application_stage_histories',
             default => null,
         };
 
@@ -145,6 +154,14 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_145952_add_nibss_disbursement_columns_to_payroll_runs_table.php' && Schema::hasColumn('payroll_runs', 'nibss_reference')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_154937_add_ats_columns_to_job_openings_table.php' && Schema::hasColumn('job_openings', 'slug')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_154939_add_candidate_and_stage_to_job_applications_table.php' && Schema::hasColumn('job_applications', 'candidate_id')) {
             continue;
         }
 
@@ -347,6 +364,7 @@ test('nibss processor posts bulk credits for a paid run', function (): void {
 });
 
 test('recruitment openings accept applications only while open', function (): void {
+    Event::fake([JobApplicationReceived::class]);
     $opening = app(JobOpeningService::class)->store([
         'title' => 'Store lead',
         'status' => JobOpeningStatus::Draft,

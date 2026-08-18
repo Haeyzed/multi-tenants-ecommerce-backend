@@ -136,11 +136,17 @@ class CommerceSettingService
             'hr.attendance.geofence_radius_meters' => ['type' => 'int', 'default' => 0],
             'hr.attendance.biometric_required' => ['type' => 'bool', 'default' => false],
             'hr.recruitment.enabled' => ['type' => 'bool', 'default' => true],
+            'hr.recruitment.public_listings_enabled' => ['type' => 'bool', 'default' => true],
+            'hr.recruitment.public_applications_enabled' => ['type' => 'bool', 'default' => true],
+            'hr.recruitment.offer_approval_required' => ['type' => 'bool', 'default' => false],
+            'hr.recruitment.interview_required_before_offer' => ['type' => 'bool', 'default' => false],
+            'hr.recruitment.default_hire_role' => ['type' => 'string', 'default' => 'employee'],
             'hr.performance.enabled' => ['type' => 'bool', 'default' => true],
             'hr.leave.carry_over_enabled' => ['type' => 'bool', 'default' => false],
             'hr.leave.carry_over_max_days' => ['type' => 'int', 'default' => 5],
             'hr.notifications.leave' => ['type' => 'bool', 'default' => true],
             'hr.notifications.payroll' => ['type' => 'bool', 'default' => true],
+            'hr.notifications.recruitment' => ['type' => 'bool', 'default' => true],
         ],
     ];
 

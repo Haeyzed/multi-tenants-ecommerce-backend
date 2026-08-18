@@ -6,10 +6,14 @@ namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\AttendanceStatus;
 use App\Enums\Tenant\HR\EmploymentStatus;
+use App\Enums\Tenant\HR\JobApplicationStatus;
+use App\Enums\Tenant\HR\JobOpeningStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
 use App\Enums\Tenant\HR\PayrollRunStatus;
 use App\Models\Tenant\Attendance;
 use App\Models\Tenant\Employee;
+use App\Models\Tenant\JobApplication;
+use App\Models\Tenant\JobOpening;
 use App\Models\Tenant\LeaveRequest;
 use App\Models\Tenant\PayrollItem;
 use App\Models\Tenant\PayrollItemLine;
@@ -276,6 +280,74 @@ class HrReportService
                 'status' => $status,
                 'count' => $count,
             ])->values()->all(),
+        ];
+    }
+
+    /**
+     * @param  array{from?: string|null, to?: string|null}  $params
+     * @return array<string, mixed>
+     */
+    public function recruitment(array $params = []): array
+    {
+        [$from, $to] = $this->window($params);
+
+        $applications = JobApplication::query()
+            ->with('jobOpening:id,title')
+            ->whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->get();
+
+        $byJob = $applications
+            ->groupBy('job_opening_id')
+            ->map(fn ($group, $openingId): array => [
+                'job_opening_id' => (int) $openingId,
+                'title' => $group->first()?->jobOpening?->title,
+                'count' => $group->count(),
+            ])
+            ->values()
+            ->all();
+
+        $byStage = $applications
+            ->groupBy(fn (JobApplication $application): string => $application->status->value)
+            ->map(fn ($group, $status): array => [
+                'status' => $status,
+                'count' => $group->count(),
+            ])
+            ->values()
+            ->all();
+
+        $bySource = $applications
+            ->groupBy(fn (JobApplication $application): string => $application->source?->value ?? 'unknown')
+            ->map(fn ($group, $source): array => [
+                'source' => $source,
+                'count' => $group->count(),
+            ])
+            ->values()
+            ->all();
+
+        $hires = $applications->where('status', JobApplicationStatus::Hired);
+        $timeToHireDays = $hires
+            ->map(function (JobApplication $application): ?int {
+                if ($application->applied_at === null || $application->updated_at === null) {
+                    return null;
+                }
+
+                return (int) $application->applied_at->diffInDays($application->updated_at);
+            })
+            ->filter()
+            ->avg();
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'open_positions' => JobOpening::query()->where('status', JobOpeningStatus::Open)->count(),
+            'applications' => $applications->count(),
+            'hires' => $hires->count(),
+            'average_time_to_hire_days' => $timeToHireDays !== null ? round((float) $timeToHireDays, 1) : null,
+            'by_job' => $byJob,
+            'by_stage' => $byStage,
+            'by_source' => $bySource,
+            'rows' => $byJob,
         ];
     }
 

@@ -238,6 +238,11 @@ class RoleSeeder extends Seeder
             'hr.reports.view',
             'hr.recruitment.view',
             'hr.recruitment.manage',
+            'hr.recruitment.publish',
+            'hr.recruitment.stage',
+            'hr.recruitment.feedback',
+            'hr.recruitment.offers.approve',
+            'hr.recruitment.hire',
             'hr.performance.view',
             'hr.performance.manage',
             'cms.view',
@@ -246,6 +251,7 @@ class RoleSeeder extends Seeder
         ]);
 
         Role::findOrCreate('customer', self::GUARD);
+        Role::findOrCreate('employee', self::GUARD);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

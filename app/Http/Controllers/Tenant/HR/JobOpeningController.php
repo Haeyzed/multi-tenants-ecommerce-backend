@@ -6,8 +6,10 @@ namespace App\Http\Controllers\Tenant\HR;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\HR\IndexJobOpeningRequest;
+use App\Http\Requests\Tenant\HR\StoreJobOpeningImageRequest;
 use App\Http\Requests\Tenant\HR\StoreJobOpeningRequest;
 use App\Http\Requests\Tenant\HR\UpdateJobOpeningRequest;
+use App\Http\Resources\Media\MediaResource;
 use App\Http\Resources\Tenant\HR\JobOpeningResource;
 use App\Models\Tenant\JobOpening;
 use App\Services\Tenant\HR\JobOpeningService;
@@ -17,7 +19,7 @@ use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 
 /**
- * Recruitment job openings.
+ * Recruitment job openings / listings.
  */
 #[Group('HR')]
 class JobOpeningController extends Controller
@@ -68,6 +70,61 @@ class JobOpeningController extends Controller
         return $this->updated(
             new JobOpeningResource($this->openings->update($job_opening, $request->validated())),
             'Job opening updated successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Published job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
+    public function publish(JobOpening $job_opening): JsonResponse
+    {
+        $this->authorize('publish', $job_opening);
+
+        return $this->updated(
+            new JobOpeningResource($this->openings->publish($job_opening)),
+            'Job opening published successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Paused job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
+    public function pause(JobOpening $job_opening): JsonResponse
+    {
+        $this->authorize('publish', $job_opening);
+
+        return $this->updated(
+            new JobOpeningResource($this->openings->pause($job_opening)),
+            'Job opening paused successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Closed job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
+    public function close(JobOpening $job_opening): JsonResponse
+    {
+        $this->authorize('publish', $job_opening);
+
+        return $this->updated(
+            new JobOpeningResource($this->openings->close($job_opening)),
+            'Job opening closed successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Cancelled job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
+    public function cancel(JobOpening $job_opening): JsonResponse
+    {
+        $this->authorize('publish', $job_opening);
+
+        return $this->updated(
+            new JobOpeningResource($this->openings->cancel($job_opening)),
+            'Job opening cancelled successfully.',
+        );
+    }
+
+    #[Response(status: 201, description: 'Job listing image.', type: 'array{success: true, message: string, data: MediaResource, meta: null, errors: null}')]
+    public function image(StoreJobOpeningImageRequest $request, JobOpening $job_opening): JsonResponse
+    {
+        $this->authorize('update', $job_opening);
+
+        return $this->created(
+            new MediaResource($this->openings->addImage($job_opening, $request->file('file'))),
+            'Job opening image uploaded successfully.',
         );
     }
 

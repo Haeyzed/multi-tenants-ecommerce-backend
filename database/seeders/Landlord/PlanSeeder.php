@@ -54,6 +54,7 @@ class PlanSeeder extends Seeder
                     ['feature' => 'pos', 'enabled' => false],
                     ['feature' => 'pos_terminals', 'enabled' => false],
                     ['feature' => 'hr', 'enabled' => false],
+                    ['feature' => 'recruitment', 'enabled' => false],
                 ],
             ],
             [
@@ -85,6 +86,7 @@ class PlanSeeder extends Seeder
                     ['feature' => 'pos', 'enabled' => false],
                     ['feature' => 'pos_terminals', 'enabled' => false],
                     ['feature' => 'hr', 'enabled' => false],
+                    ['feature' => 'recruitment', 'enabled' => false],
                 ],
             ],
             [
@@ -116,6 +118,7 @@ class PlanSeeder extends Seeder
                     ['feature' => 'pos', 'enabled' => true],
                     ['feature' => 'pos_terminals', 'enabled' => true, 'limit' => 5],
                     ['feature' => 'hr', 'enabled' => true],
+                    ['feature' => 'recruitment', 'enabled' => true],
                 ],
             ],
             [
@@ -147,6 +150,7 @@ class PlanSeeder extends Seeder
                     ['feature' => 'pos', 'enabled' => true],
                     ['feature' => 'pos_terminals', 'enabled' => true, 'limit' => null],
                     ['feature' => 'hr', 'enabled' => true],
+                    ['feature' => 'recruitment', 'enabled' => true],
                 ],
             ],
         ];

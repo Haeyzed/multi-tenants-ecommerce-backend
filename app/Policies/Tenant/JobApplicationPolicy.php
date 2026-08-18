@@ -38,4 +38,14 @@ class JobApplicationPolicy
     {
         return $this->create($user);
     }
+
+    public function moveStage(User $user, JobApplication $application): bool
+    {
+        return $user->can('hr.recruitment.stage') || $user->can('hr.recruitment.manage');
+    }
+
+    public function hire(User $user, JobApplication $application): bool
+    {
+        return $user->can('hr.recruitment.hire') || $user->can('hr.recruitment.manage');
+    }
 }

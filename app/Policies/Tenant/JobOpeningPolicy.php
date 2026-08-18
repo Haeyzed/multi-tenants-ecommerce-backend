@@ -34,6 +34,11 @@ class JobOpeningPolicy
         return $this->create($user);
     }
 
+    public function publish(User $user, JobOpening $opening): bool
+    {
+        return $user->can('hr.recruitment.publish') || $user->can('hr.recruitment.manage');
+    }
+
     public function delete(User $user, JobOpening $opening): bool
     {
         return $this->create($user);
