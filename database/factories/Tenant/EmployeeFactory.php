@@ -34,7 +34,7 @@ class EmployeeFactory extends Factory
                 ? fake()->unique()->bothify('EMP-####')
                 : null,
             'employment_status' => EmploymentStatus::Active,
-            'hired_at' => fake()->optional()->date(),
+            'hired_at' => null,
             'notes' => fake()->optional()->sentence(),
         ];
     }

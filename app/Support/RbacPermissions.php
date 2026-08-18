@@ -274,6 +274,7 @@ final class RbacPermissions
         'hr.payroll.approve',
         'hr.settings.view',
         'hr.settings.update',
+        'hr.reports.view',
         'cms.view',
         'cms.manage',
         'cms.publish',

@@ -8,13 +8,18 @@ use App\Http\Controllers\Tenant\HR\DesignationController;
 use App\Http\Controllers\Tenant\HR\EmployeeController;
 use App\Http\Controllers\Tenant\HR\EmployeeSalaryController;
 use App\Http\Controllers\Tenant\HR\EmploymentRecordController;
+use App\Http\Controllers\Tenant\HR\HrReportController;
 use App\Http\Controllers\Tenant\HR\HrSettingsController;
 use App\Http\Controllers\Tenant\HR\HrSummaryController;
 use App\Http\Controllers\Tenant\HR\LeaveBalanceController;
 use App\Http\Controllers\Tenant\HR\LeaveRequestController;
 use App\Http\Controllers\Tenant\HR\LeaveTypeController;
+use App\Http\Controllers\Tenant\HR\OvertimePolicyController;
 use App\Http\Controllers\Tenant\HR\PayrollPeriodController;
 use App\Http\Controllers\Tenant\HR\PayrollRunController;
+use App\Http\Controllers\Tenant\HR\PublicHolidayController;
+use App\Http\Controllers\Tenant\HR\TaxTableController;
+use App\Http\Controllers\Tenant\HR\WorkScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('feature:hr')->group(function (): void {
@@ -23,6 +28,37 @@ Route::middleware('feature:hr')->group(function (): void {
 
     Route::middleware('hr.enabled')->group(function (): void {
         Route::get('hr/summary', [HrSummaryController::class, 'show'])->middleware('permission:hr.view|hr.employees.view|hr.payroll.view')->name('tenant.hr.summary');
+        Route::get('hr/reports/attendance', [HrReportController::class, 'attendance'])->middleware('permission:hr.reports.view|hr.view|hr.attendance.view')->name('tenant.hr.reports.attendance');
+        Route::get('hr/reports/leave', [HrReportController::class, 'leave'])->middleware('permission:hr.reports.view|hr.view|hr.leave.view')->name('tenant.hr.reports.leave');
+        Route::get('hr/reports/payroll', [HrReportController::class, 'payroll'])->middleware('permission:hr.reports.view|hr.view|hr.payroll.view')->name('tenant.hr.reports.payroll');
+        Route::get('hr/reports/overtime', [HrReportController::class, 'overtime'])->middleware('permission:hr.reports.view|hr.view|hr.attendance.view|hr.payroll.view')->name('tenant.hr.reports.overtime');
+        Route::get('hr/reports/headcount', [HrReportController::class, 'headcount'])->middleware('permission:hr.reports.view|hr.view|hr.employees.view')->name('tenant.hr.reports.headcount');
+
+        Route::get('work-schedules/options', [WorkScheduleController::class, 'options'])->name('tenant.work-schedules.options');
+        Route::get('work-schedules', [WorkScheduleController::class, 'index'])->name('tenant.work-schedules.index');
+        Route::post('work-schedules', [WorkScheduleController::class, 'store'])->name('tenant.work-schedules.store');
+        Route::get('work-schedules/{work_schedule}', [WorkScheduleController::class, 'show'])->whereNumber('work_schedule')->name('tenant.work-schedules.show');
+        Route::match(['put', 'patch'], 'work-schedules/{work_schedule}', [WorkScheduleController::class, 'update'])->whereNumber('work_schedule')->name('tenant.work-schedules.update');
+        Route::delete('work-schedules/{work_schedule}', [WorkScheduleController::class, 'destroy'])->whereNumber('work_schedule')->name('tenant.work-schedules.destroy');
+
+        Route::get('overtime-policies/options', [OvertimePolicyController::class, 'options'])->name('tenant.overtime-policies.options');
+        Route::get('overtime-policies', [OvertimePolicyController::class, 'index'])->name('tenant.overtime-policies.index');
+        Route::post('overtime-policies', [OvertimePolicyController::class, 'store'])->name('tenant.overtime-policies.store');
+        Route::get('overtime-policies/{overtime_policy}', [OvertimePolicyController::class, 'show'])->whereNumber('overtime_policy')->name('tenant.overtime-policies.show');
+        Route::match(['put', 'patch'], 'overtime-policies/{overtime_policy}', [OvertimePolicyController::class, 'update'])->whereNumber('overtime_policy')->name('tenant.overtime-policies.update');
+        Route::delete('overtime-policies/{overtime_policy}', [OvertimePolicyController::class, 'destroy'])->whereNumber('overtime_policy')->name('tenant.overtime-policies.destroy');
+
+        Route::get('public-holidays', [PublicHolidayController::class, 'index'])->name('tenant.public-holidays.index');
+        Route::post('public-holidays', [PublicHolidayController::class, 'store'])->name('tenant.public-holidays.store');
+        Route::get('public-holidays/{public_holiday}', [PublicHolidayController::class, 'show'])->whereNumber('public_holiday')->name('tenant.public-holidays.show');
+        Route::match(['put', 'patch'], 'public-holidays/{public_holiday}', [PublicHolidayController::class, 'update'])->whereNumber('public_holiday')->name('tenant.public-holidays.update');
+        Route::delete('public-holidays/{public_holiday}', [PublicHolidayController::class, 'destroy'])->whereNumber('public_holiday')->name('tenant.public-holidays.destroy');
+
+        Route::get('tax-tables', [TaxTableController::class, 'index'])->name('tenant.tax-tables.index');
+        Route::post('tax-tables', [TaxTableController::class, 'store'])->name('tenant.tax-tables.store');
+        Route::get('tax-tables/{tax_table}', [TaxTableController::class, 'show'])->whereNumber('tax_table')->name('tenant.tax-tables.show');
+        Route::match(['put', 'patch'], 'tax-tables/{tax_table}', [TaxTableController::class, 'update'])->whereNumber('tax_table')->name('tenant.tax-tables.update');
+        Route::delete('tax-tables/{tax_table}', [TaxTableController::class, 'destroy'])->whereNumber('tax_table')->name('tenant.tax-tables.destroy');
 
         Route::get('departments/options', [DepartmentController::class, 'options'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->name('tenant.departments.options');
         Route::get('departments', [DepartmentController::class, 'index'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->name('tenant.departments.index');
@@ -50,6 +86,7 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::get('employees/{employee}/employment-records', [EmploymentRecordController::class, 'index'])->whereNumber('employee')->name('tenant.employees.employment-records.index');
         Route::get('employees/{employee}/payslips', [PayrollRunController::class, 'employeeItems'])->whereNumber('employee')->name('tenant.employees.payslips.index');
         Route::get('employees/{employee}/salary', [EmployeeSalaryController::class, 'show'])->whereNumber('employee')->name('tenant.employees.salary.show');
+        Route::get('employees/{employee}/salary/revisions', [EmployeeSalaryController::class, 'history'])->whereNumber('employee')->name('tenant.employees.salary.revisions');
         Route::match(['put', 'patch'], 'employees/{employee}/salary', [EmployeeSalaryController::class, 'upsert'])->middleware('permission:hr.payroll.manage')->whereNumber('employee')->name('tenant.employees.salary.upsert');
 
         Route::post('attendances/clock-in', [AttendanceController::class, 'clockIn'])->name('tenant.attendances.clock-in');
@@ -85,5 +122,7 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::post('payroll-runs/{payroll_run}/pay', [PayrollRunController::class, 'pay'])->middleware('permission:hr.payroll.manage')->whereNumber('payroll_run')->name('tenant.payroll-runs.pay');
         Route::post('payroll-runs/{payroll_run}/cancel', [PayrollRunController::class, 'cancel'])->middleware('permission:hr.payroll.manage')->whereNumber('payroll_run')->name('tenant.payroll-runs.cancel');
         Route::get('payroll-runs/{payroll_run}/items/{payroll_item}', [PayrollRunController::class, 'showItem'])->whereNumber('payroll_run')->whereNumber('payroll_item')->name('tenant.payroll-runs.items.show');
+        Route::get('payroll-runs/{payroll_run}/items/{payroll_item}/pdf', [PayrollRunController::class, 'downloadItem'])->whereNumber('payroll_run')->whereNumber('payroll_item')->name('tenant.payroll-runs.items.pdf');
+        Route::get('payroll-runs/{payroll_run}/payment-register', [PayrollRunController::class, 'paymentRegister'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->whereNumber('payroll_run')->name('tenant.payroll-runs.payment-register');
     });
 });

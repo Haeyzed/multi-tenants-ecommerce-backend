@@ -24,6 +24,7 @@ class LeaveRequestService
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly LeaveTypeService $leaveTypeService,
+        private readonly WorkCalendarService $calendar,
     ) {}
 
     /**
@@ -71,7 +72,7 @@ class LeaveRequestService
             ]);
         }
 
-        $days = $this->countWorkingDays($data['start_date'], $data['end_date']);
+        $days = $this->countWorkingDays($data['start_date'], $data['end_date'], $employee);
         $maxConsecutive = $this->hrSettings->maxConsecutiveLeaveDays();
 
         if ($maxConsecutive > 0 && $days > $maxConsecutive) {
@@ -143,6 +144,7 @@ class LeaveRequestService
             $days = $this->countWorkingDays(
                 $leaveRequest->start_date->toDateString(),
                 $leaveRequest->end_date->toDateString(),
+                $leaveRequest->employee,
             );
             $this->assertBalanceAvailable($leaveRequest->employee, $leaveType, $leaveRequest->start_date->toDateString(), $days);
             $this->consumeBalance($leaveRequest->employee, $leaveType, $leaveRequest->start_date->toDateString(), $days);
@@ -304,14 +306,14 @@ class LeaveRequestService
         return $remaining;
     }
 
-    protected function countWorkingDays(string $startDate, string $endDate): int
+    protected function countWorkingDays(string $startDate, string $endDate, ?Employee $employee = null): int
     {
         $start = Carbon::parse($startDate)->startOfDay();
         $end = Carbon::parse($endDate)->startOfDay();
         $count = 0;
 
         while ($start->lte($end)) {
-            if ($this->hrSettings->isWorkingDate($start)) {
+            if ($this->calendar->isWorkingDate($employee, $start) && ! $this->calendar->isPublicHoliday($start)) {
                 $count++;
             }
 

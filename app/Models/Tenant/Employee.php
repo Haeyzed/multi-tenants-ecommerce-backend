@@ -27,6 +27,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int|null $department_id
  * @property int|null $designation_id
  * @property int|null $manager_id
+ * @property int|null $work_schedule_id
  * @property string|null $job_title
  * @property string|null $employee_number
  * @property EmploymentStatus $employment_status
@@ -35,6 +36,11 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property Carbon|null $hired_at
  * @property Carbon|null $terminated_at
  * @property string|null $notes
+ * @property string|null $bank_name
+ * @property string|null $bank_code
+ * @property string|null $account_number
+ * @property string|null $account_name
+ * @property string|null $tax_id
  */
 class Employee extends Model implements HasMedia
 {
@@ -49,6 +55,7 @@ class Employee extends Model implements HasMedia
         'department_id',
         'designation_id',
         'manager_id',
+        'work_schedule_id',
         'job_title',
         'employee_number',
         'employment_status',
@@ -57,6 +64,11 @@ class Employee extends Model implements HasMedia
         'hired_at',
         'terminated_at',
         'notes',
+        'bank_name',
+        'bank_code',
+        'account_number',
+        'account_name',
+        'tax_id',
     ];
 
     /**
@@ -76,6 +88,7 @@ class Employee extends Model implements HasMedia
             'department_id' => 'integer',
             'designation_id' => 'integer',
             'manager_id' => 'integer',
+            'work_schedule_id' => 'integer',
             'employment_status' => EmploymentStatus::class,
             'employment_type' => EmploymentType::class,
             'hired_at' => 'date',
@@ -121,6 +134,16 @@ class Employee extends Model implements HasMedia
     public function manager(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'manager_id');
+    }
+
+    /**
+     * Optional assigned work schedule.
+     *
+     * @return BelongsTo<WorkSchedule, $this>
+     */
+    public function workSchedule(): BelongsTo
+    {
+        return $this->belongsTo(WorkSchedule::class);
     }
 
     /**
@@ -191,6 +214,16 @@ class Employee extends Model implements HasMedia
     public function employmentRecords(): HasMany
     {
         return $this->hasMany(EmploymentRecord::class);
+    }
+
+    /**
+     * Previous salary configurations.
+     *
+     * @return HasMany<EmployeeSalaryRevision, $this>
+     */
+    public function salaryRevisions(): HasMany
+    {
+        return $this->hasMany(EmployeeSalaryRevision::class)->orderByDesc('effective_to')->orderByDesc('id');
     }
 
     /**

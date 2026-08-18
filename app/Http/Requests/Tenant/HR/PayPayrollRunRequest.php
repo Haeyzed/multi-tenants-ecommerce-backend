@@ -20,6 +20,8 @@ class PayPayrollRunRequest extends BaseRequest
             'post_to_accounting' => ['sometimes', 'boolean'],
             'expense_account_id' => ['sometimes', 'nullable', 'integer', 'exists:accounts,id'],
             'payable_account_id' => ['sometimes', 'nullable', 'integer', 'exists:accounts,id'],
+            'tax_payable_account_id' => ['sometimes', 'nullable', 'integer', 'exists:accounts,id'],
+            'deduction_payable_account_id' => ['sometimes', 'nullable', 'integer', 'exists:accounts,id'],
         ];
     }
 }

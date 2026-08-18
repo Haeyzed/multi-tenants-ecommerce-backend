@@ -44,6 +44,9 @@ class PayrollRunService
         private readonly JournalEntryService $journalEntryService,
         private readonly HrSettingsService $hrSettings,
         private readonly LeaveTypeService $leaveTypeService,
+        private readonly WorkCalendarService $calendar,
+        private readonly OvertimeEngine $overtime,
+        private readonly PayeCalculatorService $paye,
     ) {}
 
     /**
@@ -136,21 +139,46 @@ class PayrollRunService
                 $item->delete();
             });
 
+            $periodStart = $payrollRun->period_start->toDateString();
+            $periodEnd = $payrollRun->period_end->toDateString();
+
             $employees = Employee::query()
-                ->with('salary.components')
-                ->whereIn('employment_status', [
-                    EmploymentStatus::Active,
-                    EmploymentStatus::OnLeave,
-                ])
+                ->with(['salary.components', 'workSchedule.days', 'workSchedule.overtimePolicy'])
                 ->whereHas('salary')
+                ->where(function ($query) use ($periodStart, $periodEnd): void {
+                    $query->where(function ($query) use ($periodEnd): void {
+                        $query->whereIn('employment_status', [
+                            EmploymentStatus::Active,
+                            EmploymentStatus::OnLeave,
+                        ])->where(function ($query) use ($periodEnd): void {
+                            $query->whereNull('hired_at')->orWhereDate('hired_at', '<=', $periodEnd);
+                        });
+                    })->orWhere(function ($query) use ($periodStart, $periodEnd): void {
+                        $query->whereIn('employment_status', [
+                            EmploymentStatus::Terminated,
+                            EmploymentStatus::Resigned,
+                        ])
+                            ->whereDate('terminated_at', '>=', $periodStart)
+                            ->where(function ($query) use ($periodEnd): void {
+                                $query->whereNull('hired_at')->orWhereDate('hired_at', '<=', $periodEnd);
+                            });
+                    });
+                })
                 ->get();
 
             $grossTotal = '0.00';
             $deductionTotal = '0.00';
             $netTotal = '0.00';
+            $itemCount = 0;
 
             foreach ($employees as $employee) {
                 $item = $this->buildItem($payrollRun, $employee);
+
+                if ($item === null) {
+                    continue;
+                }
+
+                $itemCount++;
                 $grossTotal = Money::add($grossTotal, $item->gross_pay);
                 $deductionTotal = Money::add($deductionTotal, $item->deduction_total);
                 $netTotal = Money::add($netTotal, $item->net_pay);
@@ -160,7 +188,7 @@ class PayrollRunService
                 'gross_total' => $grossTotal,
                 'deduction_total' => $deductionTotal,
                 'net_total' => $netTotal,
-                'employee_count' => $employees->count(),
+                'employee_count' => $itemCount,
             ]);
             $payrollRun->save();
 
@@ -240,7 +268,9 @@ class PayrollRunService
      * @param  array{
      *     post_to_accounting?: bool|null,
      *     expense_account_id?: int|null,
-     *     payable_account_id?: int|null
+     *     payable_account_id?: int|null,
+     *     tax_payable_account_id?: int|null,
+     *     deduction_payable_account_id?: int|null
      * }  $options
      *
      * @throws ValidationException
@@ -347,26 +377,33 @@ class PayrollRunService
         }
     }
 
-    protected function buildItem(PayrollRun $payrollRun, Employee $employee): PayrollItem
+    protected function buildItem(PayrollRun $payrollRun, Employee $employee): ?PayrollItem
     {
         $salary = $employee->salary;
-        $baseSalary = Money::add((string) $salary->base_salary, '0');
+        $contractSalary = Money::add((string) $salary->base_salary, '0');
         $periodStart = $payrollRun->period_start->toDateString();
         $periodEnd = $payrollRun->period_end->toDateString();
+        $window = $this->employmentWindow($employee, $periodStart, $periodEnd);
 
-        $workingDays = $this->countWorkingDays($periodStart, $periodEnd);
-        $absentDays = $this->countAbsentDays($employee, $periodStart, $periodEnd);
-        $unpaidLeaveDays = $this->countUnpaidLeaveDays($employee, $periodStart, $periodEnd);
-        $overtimeMinutes = $this->countOvertimeMinutes($employee, $periodStart, $periodEnd);
+        if ($window === null) {
+            return null;
+        }
 
-        $dailyRate = $workingDays > 0
-            ? Money::div($baseSalary, (string) $workingDays)
-            : '0.00';
-        $hourlyRate = Money::div($dailyRate, (string) $this->hrSettings->workingHoursPerDay());
-        $overtimeHours = Money::div((string) $overtimeMinutes, '60');
-        $overtimePay = $this->hrSettings->isOvertimeEnabled()
-            ? Money::percent(Money::mul($hourlyRate, $overtimeHours), (string) $this->hrSettings->overtimeRatePercent())
-            : '0.00';
+        [$employedStart, $employedEnd] = $window;
+        $scheduledDays = $this->countWorkingDays($periodStart, $periodEnd, $employee);
+        $workingDays = $this->countWorkingDays($employedStart, $employedEnd, $employee);
+
+        if ($workingDays <= 0 || $scheduledDays <= 0) {
+            return null;
+        }
+
+        $dailyRate = Money::div($contractSalary, (string) $scheduledDays);
+        $baseSalary = $workingDays === $scheduledDays
+            ? $contractSalary
+            : Money::mul($dailyRate, (string) $workingDays);
+        $absentDays = $this->countAbsentDays($employee, $employedStart, $employedEnd);
+        $unpaidLeaveDays = $this->countUnpaidLeaveDays($employee, $employedStart, $employedEnd);
+        [$overtimeMinutes, $overtimePay] = $this->overtimeForPeriod($employee, $employedStart, $employedEnd, $contractSalary, $scheduledDays);
 
         $absenceDeduction = Money::mul($dailyRate, (string) $absentDays);
         $unpaidLeaveDeduction = Money::mul($dailyRate, (string) $unpaidLeaveDays);
@@ -389,10 +426,20 @@ class PayrollRunService
                 continue;
             }
 
+            if ($this->hrSettings->isPayrollTaxEnabled() && $component->is_tax) {
+                continue;
+            }
+
             $base = $component->is_tax ? $grossPay : $baseSalary;
             $componentAmount = $this->resolveComponentAmount($component, $base);
             $deductionTotal = Money::add($deductionTotal, $componentAmount);
             $componentLines[] = [$component, $componentAmount];
+        }
+
+        $payeAmount = $this->statutoryPaye($grossPay);
+
+        if (bccomp($payeAmount, '0', 2) > 0) {
+            $deductionTotal = Money::add($deductionTotal, $payeAmount);
         }
 
         $netPay = Money::sub($grossPay, $deductionTotal);
@@ -410,9 +457,14 @@ class PayrollRunService
             'deduction_total' => $deductionTotal,
             'net_pay' => $netPay,
             'working_days' => $workingDays,
+            'scheduled_days' => $scheduledDays,
             'absent_days' => $absentDays,
             'unpaid_leave_days' => $unpaidLeaveDays,
             'overtime_minutes' => $overtimeMinutes,
+            'bank_name' => $employee->bank_name,
+            'bank_code' => $employee->bank_code,
+            'account_number' => $employee->account_number,
+            'account_name' => $employee->account_name,
         ]);
 
         $this->createLine($item, PayrollLineType::Earning, 'base_salary', 'Base salary', $baseSalary);
@@ -443,6 +495,10 @@ class PayrollRunService
             $this->createLine($item, PayrollLineType::Deduction, 'unpaid_leave', 'Unpaid leave deduction', $unpaidLeaveDeduction);
         }
 
+        if (bccomp($payeAmount, '0', 2) > 0) {
+            $this->createLine($item, PayrollLineType::Deduction, 'paye', 'PAYE', $payeAmount);
+        }
+
         return $item->load('lines');
     }
 
@@ -461,14 +517,80 @@ class PayrollRunService
         ]);
     }
 
-    protected function countWorkingDays(string $startDate, string $endDate): int
+    /**
+     * @return array{0: string, 1: string}|null
+     */
+    protected function employmentWindow(Employee $employee, string $periodStart, string $periodEnd): ?array
+    {
+        $start = $periodStart;
+
+        if ($employee->hired_at !== null) {
+            $hired = $employee->hired_at->toDateString();
+
+            if ($hired > $periodEnd) {
+                return null;
+            }
+
+            if ($hired > $start) {
+                $start = $hired;
+            }
+        }
+
+        $end = $periodEnd;
+
+        if ($employee->terminated_at !== null) {
+            $terminated = $employee->terminated_at->toDateString();
+
+            if ($terminated < $periodStart) {
+                return null;
+            }
+
+            if ($terminated < $end) {
+                $end = $terminated;
+            }
+        }
+
+        if ($end < $start) {
+            return null;
+        }
+
+        return [$start, $end];
+    }
+
+    /**
+     * Bank payment register for a payroll run.
+     *
+     * @return list<array<string, scalar|null>>
+     */
+    public function paymentRegister(PayrollRun $payrollRun): array
+    {
+        $payrollRun->loadMissing(['items.employee.user']);
+
+        return $payrollRun->items->map(function (PayrollItem $item) use ($payrollRun): array {
+            $name = trim(($item->employee?->user?->first_name ?? '').' '.($item->employee?->user?->last_name ?? ''));
+
+            return [
+                'employee_id' => $item->employee_id,
+                'employee_number' => $item->employee?->employee_number,
+                'name' => $name,
+                'bank_name' => $item->bank_name,
+                'bank_code' => $item->bank_code,
+                'account_number' => $item->account_number,
+                'account_name' => $item->account_name,
+                'net_pay' => $item->net_pay,
+                'currency' => $payrollRun->currency,
+            ];
+        })->values()->all();
+    }
+
+    protected function countWorkingDays(string $startDate, string $endDate, ?Employee $employee = null): int
     {
         $start = Carbon::parse($startDate)->startOfDay();
         $end = Carbon::parse($endDate)->startOfDay();
         $count = 0;
 
         while ($start->lte($end)) {
-            if ($this->hrSettings->isWorkingDate($start)) {
+            if ($this->calendar->isWorkingDate($employee, $start)) {
                 $count++;
             }
 
@@ -486,7 +608,7 @@ class PayrollRunService
             ->whereDate('work_date', '>=', $periodStart)
             ->whereDate('work_date', '<=', $periodEnd)
             ->get()
-            ->filter(fn (Attendance $attendance): bool => $this->hrSettings->isWorkingDate($attendance->work_date))
+            ->filter(fn (Attendance $attendance): bool => $this->calendar->isWorkingDate($employee, $attendance->work_date))
             ->count();
     }
 
@@ -517,7 +639,7 @@ class PayrollRunService
             $end = Carbon::parse(min($request->end_date->toDateString(), $periodEnd));
 
             while ($start->lte($end)) {
-                if ($this->hrSettings->isWorkingDate($start)) {
+                if ($this->calendar->isWorkingDate($employee, $start)) {
                     $days++;
                 }
 
@@ -528,17 +650,58 @@ class PayrollRunService
         return $days;
     }
 
-    protected function countOvertimeMinutes(Employee $employee, string $periodStart, string $periodEnd): int
+    /**
+     * @return array{0: int, 1: string}
+     */
+    protected function overtimeForPeriod(Employee $employee, string $periodStart, string $periodEnd, string $baseSalary, int $workingDays): array
     {
         if (! $this->hrSettings->isOvertimeEnabled()) {
-            return 0;
+            return [0, '0.00'];
         }
 
-        return (int) Attendance::query()
+        $records = Attendance::query()
             ->where('employee_id', $employee->id)
             ->whereDate('work_date', '>=', $periodStart)
             ->whereDate('work_date', '<=', $periodEnd)
-            ->sum('overtime_minutes');
+            ->where('overtime_minutes', '>', 0)
+            ->get();
+
+        $dailyRate = $workingDays > 0
+            ? Money::div($baseSalary, (string) $workingDays)
+            : '0.00';
+        $hourlyRate = Money::div($dailyRate, (string) $this->hrSettings->workingHoursPerDay());
+        $minutes = 0;
+        $pay = '0.00';
+
+        foreach ($records as $record) {
+            $recordMinutes = (int) $record->overtime_minutes;
+            $minutes += $recordMinutes;
+            $hours = Money::div((string) $recordMinutes, '60');
+            $rate = (int) $record->overtime_rate_percent;
+
+            if ($rate <= 0) {
+                $rate = $this->overtime->ratePercent($employee, $record->work_date);
+            }
+
+            $pay = Money::add($pay, Money::percent(Money::mul($hourlyRate, $hours), (string) $rate));
+        }
+
+        return [$minutes, $pay];
+    }
+
+    protected function statutoryPaye(string $grossPay): string
+    {
+        if (! $this->hrSettings->isPayrollTaxEnabled()) {
+            return '0.00';
+        }
+
+        $table = $this->paye->activeTable($this->hrSettings->payrollTaxTableId());
+
+        if ($table === null || $table->bands->isEmpty()) {
+            return '0.00';
+        }
+
+        return $this->paye->periodTax($grossPay, $this->hrSettings->payrollFrequency(), $table);
     }
 
     protected function resolveComponentAmount(EmployeeSalaryComponent $component, string $baseSalary): string
@@ -554,7 +717,9 @@ class PayrollRunService
      * @param  array{
      *     post_to_accounting?: bool|null,
      *     expense_account_id?: int|null,
-     *     payable_account_id?: int|null
+     *     payable_account_id?: int|null,
+     *     tax_payable_account_id?: int|null,
+     *     deduction_payable_account_id?: int|null
      * }  $options
      */
     protected function shouldPostToAccounting(array $options): bool
@@ -715,7 +880,9 @@ class PayrollRunService
     /**
      * @param  array{
      *     expense_account_id?: int|null,
-     *     payable_account_id?: int|null
+     *     payable_account_id?: int|null,
+     *     tax_payable_account_id?: int|null,
+     *     deduction_payable_account_id?: int|null
      * }  $options
      *
      * @throws ValidationException
@@ -724,6 +891,8 @@ class PayrollRunService
     {
         $expenseAccountId = (int) ($options['expense_account_id'] ?? $this->hrSettings->payrollExpenseAccountId() ?? 0);
         $payableAccountId = (int) ($options['payable_account_id'] ?? $this->hrSettings->payrollPayableAccountId() ?? 0);
+        $taxPayableAccountId = (int) ($options['tax_payable_account_id'] ?? $this->hrSettings->payrollTaxPayableAccountId() ?? 0);
+        $deductionPayableAccountId = (int) ($options['deduction_payable_account_id'] ?? $this->hrSettings->payrollDeductionPayableAccountId() ?? 0);
 
         if ($expenseAccountId <= 0 || $payableAccountId <= 0) {
             throw ValidationException::withMessages([
@@ -734,10 +903,78 @@ class PayrollRunService
         Account::query()->whereKey($expenseAccountId)->where('is_active', true)->firstOrFail();
         Account::query()->whereKey($payableAccountId)->where('is_active', true)->firstOrFail();
 
-        $amount = Money::add((string) $payrollRun->net_total, '0');
+        $gross = Money::add((string) $payrollRun->gross_total, '0');
 
-        if (bccomp($amount, '0', 2) <= 0) {
+        if (bccomp($gross, '0', 2) <= 0) {
             return;
+        }
+
+        $payrollRun->loadMissing('items.lines');
+        $paye = '0.00';
+
+        foreach ($payrollRun->items as $item) {
+            foreach ($item->lines as $line) {
+                if ($line->code === 'paye') {
+                    $paye = Money::add($paye, (string) $line->amount);
+                }
+            }
+        }
+
+        $otherDeductions = Money::sub((string) $payrollRun->deduction_total, $paye);
+
+        if (bccomp($otherDeductions, '0', 2) < 0) {
+            $otherDeductions = '0.00';
+        }
+
+        $net = Money::add((string) $payrollRun->net_total, '0');
+        $lines = [
+            [
+                'account_id' => $expenseAccountId,
+                'debit' => $gross,
+                'credit' => '0.00',
+                'description' => 'Payroll expense',
+            ],
+        ];
+
+        if (bccomp($paye, '0', 2) > 0) {
+            if ($taxPayableAccountId <= 0) {
+                throw ValidationException::withMessages([
+                    'tax_payable_account_id' => ['A tax payable account is required when PAYE is withheld.'],
+                ]);
+            }
+
+            Account::query()->whereKey($taxPayableAccountId)->where('is_active', true)->firstOrFail();
+            $lines[] = [
+                'account_id' => $taxPayableAccountId,
+                'debit' => '0.00',
+                'credit' => $paye,
+                'description' => 'PAYE payable',
+            ];
+        }
+
+        $netCredit = $net;
+
+        if (bccomp($otherDeductions, '0', 2) > 0) {
+            if ($deductionPayableAccountId > 0) {
+                Account::query()->whereKey($deductionPayableAccountId)->where('is_active', true)->firstOrFail();
+                $lines[] = [
+                    'account_id' => $deductionPayableAccountId,
+                    'debit' => '0.00',
+                    'credit' => $otherDeductions,
+                    'description' => 'Payroll deductions payable',
+                ];
+            } else {
+                $netCredit = Money::add($netCredit, $otherDeductions);
+            }
+        }
+
+        if (bccomp($netCredit, '0', 2) > 0) {
+            $lines[] = [
+                'account_id' => $payableAccountId,
+                'debit' => '0.00',
+                'credit' => $netCredit,
+                'description' => 'Payroll payable',
+            ];
         }
 
         $this->journalEntryService->postUnique(
@@ -747,20 +984,7 @@ class PayrollRunService
                 reference: $payrollRun->reference,
                 description: 'Payroll '.$payrollRun->reference.' ('.$payrollRun->period_start->toDateString().' to '.$payrollRun->period_end->toDateString().')',
                 entryDate: $payrollRun->period_end->toDateString(),
-                lines: [
-                    [
-                        'account_id' => $expenseAccountId,
-                        'debit' => $amount,
-                        'credit' => '0.00',
-                        'description' => 'Payroll expense',
-                    ],
-                    [
-                        'account_id' => $payableAccountId,
-                        'debit' => '0.00',
-                        'credit' => $amount,
-                        'description' => 'Payroll payable',
-                    ],
-                ],
+                lines: $lines,
                 source: $payrollRun,
                 entryType: 'payroll',
             ),

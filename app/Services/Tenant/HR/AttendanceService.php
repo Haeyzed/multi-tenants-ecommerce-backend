@@ -16,7 +16,11 @@ use Illuminate\Validation\ValidationException;
  */
 class AttendanceService
 {
-    public function __construct(private readonly HrSettingsService $hrSettings) {}
+    public function __construct(
+        private readonly HrSettingsService $hrSettings,
+        private readonly WorkCalendarService $calendar,
+        private readonly OvertimeEngine $overtime,
+    ) {}
 
     /**
      * @param  array{
@@ -70,6 +74,7 @@ class AttendanceService
             'checked_in_at' => $data['checked_in_at'] ?? null,
             'checked_out_at' => $data['checked_out_at'] ?? null,
             'overtime_minutes' => $data['overtime_minutes'] ?? 0,
+            'overtime_rate_percent' => $data['overtime_rate_percent'] ?? 0,
             'notes' => $data['notes'] ?? null,
         ])->load(['employee.user']);
     }
@@ -117,7 +122,7 @@ class AttendanceService
 
         $now = now();
 
-        if (! $this->hrSettings->isWorkingDate($now)) {
+        if (! $this->calendar->isWorkingDate($employee, $now)) {
             throw ValidationException::withMessages([
                 'employee_id' => ['Today is not a configured working day.'],
             ]);
@@ -135,7 +140,7 @@ class AttendanceService
             ]);
         }
 
-        $status = $this->clockInStatus($now);
+        $status = $this->clockInStatus($employee, $now);
 
         if ($existing !== null) {
             $existing->fill([
@@ -184,7 +189,8 @@ class AttendanceService
         $attendance->checked_out_at = now();
 
         if ($this->hrSettings->isOvertimeEnabled() && (int) $attendance->overtime_minutes === 0) {
-            $attendance->overtime_minutes = $this->overtimeMinutesFromClock($attendance);
+            $attendance->overtime_minutes = $this->overtime->overtimeMinutes($employee, $attendance);
+            $attendance->overtime_rate_percent = $this->overtime->ratePercent($employee, $attendance->work_date);
         }
 
         $attendance->save();
@@ -192,24 +198,12 @@ class AttendanceService
         return $attendance->fresh(['employee.user']) ?? $attendance;
     }
 
-    protected function clockInStatus(Carbon $now): AttendanceStatus
+    protected function clockInStatus(Employee $employee, Carbon $now): AttendanceStatus
     {
-        $start = Carbon::parse($now->toDateString().' '.$this->hrSettings->workStartTime());
+        $start = Carbon::parse($now->toDateString().' '.$this->calendar->startTime($employee, $now));
         $threshold = $start->copy()->addMinutes($this->hrSettings->lateToleranceMinutes());
 
         return $now->gt($threshold) ? AttendanceStatus::Late : AttendanceStatus::Present;
-    }
-
-    protected function overtimeMinutesFromClock(Attendance $attendance): int
-    {
-        if ($attendance->checked_in_at === null || $attendance->checked_out_at === null) {
-            return 0;
-        }
-
-        $workedMinutes = max(0, $attendance->checked_in_at->diffInMinutes($attendance->checked_out_at));
-        $standardMinutes = $this->hrSettings->workingHoursPerDay() * 60;
-
-        return (int) max(0, $workedMinutes - $standardMinutes);
     }
 
     /**

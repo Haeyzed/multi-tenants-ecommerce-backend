@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\Tenant\Accounting\AccountType;
 use App\Enums\Tenant\Accounting\JournalEntryStatus;
 use App\Enums\Tenant\HR\AttendanceStatus;
+use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
 use App\Enums\Tenant\HR\LeaveType;
 use App\Enums\Tenant\HR\PayrollLineType;
@@ -17,6 +18,7 @@ use App\Models\Tenant\Account;
 use App\Models\Tenant\Attendance;
 use App\Models\Tenant\Employee;
 use App\Models\Tenant\EmployeeSalary;
+use App\Models\Tenant\EmployeeSalaryRevision;
 use App\Models\Tenant\JournalEntry;
 use App\Models\Tenant\LeaveRequest;
 use App\Models\Tenant\PayrollItem;
@@ -24,7 +26,11 @@ use App\Models\Tenant\PayrollRun;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\EmployeeSalaryService;
 use App\Services\Tenant\HR\HrSettingsService;
+use App\Services\Tenant\HR\OvertimePolicyService;
 use App\Services\Tenant\HR\PayrollRunService;
+use App\Services\Tenant\HR\PayslipPdfService;
+use App\Services\Tenant\HR\TaxTableService;
+use App\Services\Tenant\HR\WorkScheduleService;
 use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,6 +65,16 @@ beforeEach(function (): void {
         '2026_08_18_014813_create_payroll_periods_table.php',
         '2026_08_18_014816_add_payroll_period_id_to_payroll_runs_table.php',
         '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php',
+        '2026_08_18_134108_create_work_schedules_table.php',
+        '2026_08_18_134110_create_work_schedule_days_table.php',
+        '2026_08_18_134113_create_overtime_policies_table.php',
+        '2026_08_18_134116_create_public_holidays_table.php',
+        '2026_08_18_134118_create_tax_tables_table.php',
+        '2026_08_18_134122_create_tax_table_bands_table.php',
+        '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php',
+        '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php',
+        '2026_08_18_142501_add_payslip_snapshot_columns_to_payroll_items_table.php',
+        '2026_08_18_142504_create_employee_salary_revisions_table.php',
     ];
 
     foreach ($migrations as $file) {
@@ -85,6 +101,16 @@ beforeEach(function (): void {
             '2026_08_18_014813_create_payroll_periods_table.php' => 'payroll_periods',
             '2026_08_18_014816_add_payroll_period_id_to_payroll_runs_table.php' => null,
             '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' => null,
+            '2026_08_18_134108_create_work_schedules_table.php' => 'work_schedules',
+            '2026_08_18_134110_create_work_schedule_days_table.php' => 'work_schedule_days',
+            '2026_08_18_134113_create_overtime_policies_table.php' => 'overtime_policies',
+            '2026_08_18_134116_create_public_holidays_table.php' => 'public_holidays',
+            '2026_08_18_134118_create_tax_tables_table.php' => 'tax_tables',
+            '2026_08_18_134122_create_tax_table_bands_table.php' => 'tax_table_bands',
+            '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php' => null,
+            '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php' => null,
+            '2026_08_18_142501_add_payslip_snapshot_columns_to_payroll_items_table.php' => null,
+            '2026_08_18_142504_create_employee_salary_revisions_table.php' => 'employee_salary_revisions',
             default => null,
         };
 
@@ -109,6 +135,18 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' && Schema::hasColumn('attendances', 'overtime_minutes')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php' && Schema::hasColumn('employees', 'work_schedule_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php' && Schema::hasColumn('employees', 'bank_name')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_142501_add_payslip_snapshot_columns_to_payroll_items_table.php' && Schema::hasColumn('payroll_items', 'scheduled_days')) {
             continue;
         }
 
@@ -144,7 +182,8 @@ test('employee salary can be configured and updated', function (): void {
     ]);
 
     expect($updated->base_salary)->toBe('175000.00')
-        ->and(EmployeeSalary::query()->count())->toBe(1);
+        ->and(EmployeeSalary::query()->count())->toBe(1)
+        ->and(EmployeeSalaryRevision::query()->where('employee_id', $employee->id)->count())->toBe(1);
 
     expect(fn () => $service->upsert($employee, ['base_salary' => '0']))->toThrow(ValidationException::class);
 });
@@ -483,4 +522,212 @@ test('paying a payroll run posts to accounting when hr account defaults are set'
     expect($paid->status)->toBe(PayrollRunStatus::Paid)
         ->and($journal)->not->toBeNull()
         ->and($journal->status)->toBe(JournalEntryStatus::Posted);
+});
+
+test('enabled PAYE uses the country tax table and skips salary tax components', function (): void {
+    app(TaxTableService::class)->ensureDefaults();
+    app(HrSettingsService::class)->update([
+        'hr.payroll.tax_enabled' => true,
+    ]);
+
+    $employee = Employee::factory()->create();
+    app(EmployeeSalaryService::class)->upsert($employee, [
+        'base_salary' => '100000.00',
+        'components' => [
+            [
+                'type' => PayrollLineType::Deduction->value,
+                'calculation' => SalaryComponentCalculation::Percent->value,
+                'code' => 'paye',
+                'label' => 'PAYE percent',
+                'amount' => '10',
+                'is_tax' => true,
+            ],
+        ],
+    ]);
+
+    $run = app(PayrollRunService::class)->create([
+        'period_start' => now()->startOfMonth()->toDateString(),
+        'period_end' => now()->endOfMonth()->toDateString(),
+    ]);
+
+    $item = $run->items->first();
+    $paye = $item?->lines->firstWhere('code', 'paye');
+
+    expect($item)->not->toBeNull()
+        ->and($item->lines->where('code', 'paye')->count())->toBe(1)
+        ->and($paye)->not->toBeNull()
+        ->and((float) $paye->amount)->toBe(6500.0)
+        ->and((float) $item->deduction_total)->toBe(6500.0);
+});
+
+test('overtime policy pays weekend work at a higher rate than weekday work', function (): void {
+    app(HrSettingsService::class)->update([
+        'hr.overtime.enabled' => true,
+        'hr.working_hours_per_day' => 8,
+        'hr.overtime.rate_percent' => 150,
+    ]);
+
+    $policy = app(OvertimePolicyService::class)->store([
+        'name' => 'Differential OT',
+        'is_default' => true,
+        'weekday_rate_percent' => 150,
+        'weekend_rate_percent' => 200,
+        'holiday_rate_percent' => 200,
+    ]);
+
+    $schedule = app(WorkScheduleService::class)->store([
+        'name' => 'Office week',
+        'overtime_policy_id' => $policy->id,
+        'days' => collect(range(1, 5))->map(fn (int $weekday): array => [
+            'weekday' => $weekday,
+            'start_time' => '09:00',
+            'end_time' => '17:00',
+        ])->all(),
+    ]);
+
+    $weekdayEmployee = Employee::factory()->create(['work_schedule_id' => $schedule->id]);
+    $weekendEmployee = Employee::factory()->create(['work_schedule_id' => $schedule->id]);
+
+    EmployeeSalary::factory()->create([
+        'employee_id' => $weekdayEmployee->id,
+        'base_salary' => '100000.00',
+    ]);
+    EmployeeSalary::factory()->create([
+        'employee_id' => $weekendEmployee->id,
+        'base_salary' => '100000.00',
+    ]);
+
+    Attendance::factory()->create([
+        'employee_id' => $weekdayEmployee->id,
+        'work_date' => '2026-08-17',
+        'status' => AttendanceStatus::Present,
+        'overtime_minutes' => 120,
+        'overtime_rate_percent' => 0,
+    ]);
+
+    Attendance::factory()->create([
+        'employee_id' => $weekendEmployee->id,
+        'work_date' => '2026-08-22',
+        'status' => AttendanceStatus::Present,
+        'overtime_minutes' => 120,
+        'overtime_rate_percent' => 0,
+    ]);
+
+    $run = app(PayrollRunService::class)->create([
+        'period_start' => '2026-08-01',
+        'period_end' => '2026-08-31',
+    ]);
+
+    $weekdayItem = $run->items->firstWhere('employee_id', $weekdayEmployee->id);
+    $weekendItem = $run->items->firstWhere('employee_id', $weekendEmployee->id);
+    $weekdayOvertime = $weekdayItem?->lines->firstWhere('code', 'overtime');
+    $weekendOvertime = $weekendItem?->lines->firstWhere('code', 'overtime');
+
+    expect($weekdayOvertime)->not->toBeNull()
+        ->and($weekendOvertime)->not->toBeNull()
+        ->and((float) $weekendOvertime->amount)->toBeGreaterThan((float) $weekdayOvertime->amount);
+});
+
+test('mid-period hire prorates base salary against scheduled working days', function (): void {
+    $employee = Employee::factory()->create([
+        'hired_at' => '2026-08-17',
+        'bank_name' => 'Access Bank',
+        'bank_code' => '044',
+        'account_number' => '0123456789',
+        'account_name' => 'Ada Lovelace',
+        'tax_id' => '1234567890',
+    ]);
+    EmployeeSalary::factory()->create([
+        'employee_id' => $employee->id,
+        'base_salary' => '100000.00',
+    ]);
+
+    $run = app(PayrollRunService::class)->create([
+        'period_start' => '2026-08-01',
+        'period_end' => '2026-08-31',
+    ]);
+
+    $item = $run->items->first();
+
+    expect($item)->not->toBeNull()
+        ->and($item->scheduled_days)->toBeGreaterThan($item->working_days)
+        ->and($item->working_days)->toBeGreaterThan(0)
+        ->and((float) $item->base_salary)->toBeLessThan(100000)
+        ->and($item->account_number)->toBe('0123456789')
+        ->and($item->bank_code)->toBe('044');
+
+    $register = app(PayrollRunService::class)->paymentRegister($run);
+    expect($register[0]['account_number'] ?? null)->toBe('0123456789');
+
+    $pdf = app(PayslipPdfService::class)->output($item);
+    expect(str_starts_with($pdf, '%PDF'))->toBeTrue();
+});
+
+test('terminated employees still receive a prorated final payslip', function (): void {
+    $employee = Employee::factory()->create([
+        'employment_status' => EmploymentStatus::Terminated,
+        'hired_at' => '2026-01-01',
+        'terminated_at' => '2026-08-07',
+    ]);
+    EmployeeSalary::factory()->create([
+        'employee_id' => $employee->id,
+        'base_salary' => '100000.00',
+    ]);
+
+    $run = app(PayrollRunService::class)->create([
+        'period_start' => '2026-08-01',
+        'period_end' => '2026-08-31',
+    ]);
+
+    $item = $run->items->first();
+
+    expect($run->employee_count)->toBe(1)
+        ->and($item)->not->toBeNull()
+        ->and($item->working_days)->toBeGreaterThan(0)
+        ->and($item->working_days)->toBeLessThan($item->scheduled_days)
+        ->and((float) $item->base_salary)->toBeLessThan(100000);
+});
+
+test('payroll journals split gross expense from paye payable', function (): void {
+    Event::fake([PayrollProcessed::class, PayrollPaid::class, PayslipAvailable::class]);
+
+    app(TaxTableService::class)->ensureDefaults();
+    app(HrSettingsService::class)->update(['hr.payroll.tax_enabled' => true]);
+
+    $employee = Employee::factory()->create();
+    EmployeeSalary::factory()->create([
+        'employee_id' => $employee->id,
+        'base_salary' => '100000.00',
+    ]);
+
+    $expense = Account::factory()->create(['type' => AccountType::Expense]);
+    $payable = Account::factory()->create(['type' => AccountType::Liability]);
+    $taxPayable = Account::factory()->create(['type' => AccountType::Liability]);
+    $admin = User::factory()->create();
+
+    $service = app(PayrollRunService::class);
+    $run = $service->create([
+        'period_start' => now()->startOfMonth()->toDateString(),
+        'period_end' => now()->endOfMonth()->toDateString(),
+    ]);
+    $processed = $service->process($run, $admin);
+    $paid = $service->pay($processed, $admin, [
+        'post_to_accounting' => true,
+        'expense_account_id' => $expense->id,
+        'payable_account_id' => $payable->id,
+        'tax_payable_account_id' => $taxPayable->id,
+    ]);
+
+    $journal = JournalEntry::query()
+        ->where('source_type', $paid->getMorphClass())
+        ->where('source_id', $paid->id)
+        ->where('entry_type', 'payroll')
+        ->with('lines')
+        ->first();
+
+    expect($journal)->not->toBeNull()
+        ->and($journal->lines)->toHaveCount(3)
+        ->and((float) $journal->lines->firstWhere('account_id', $expense->id)?->debit)->toBe((float) $paid->gross_total)
+        ->and((float) $journal->lines->firstWhere('account_id', $taxPayable->id)?->credit)->toBe(6500.0)
+        ->and((float) $journal->lines->firstWhere('account_id', $payable->id)?->credit)->toBe((float) $paid->net_total);
 });

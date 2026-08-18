@@ -9,10 +9,12 @@ use App\Models\Tenant\Employee;
 use App\Models\Tenant\LeaveBalance;
 use App\Models\Tenant\LeaveType;
 use App\Models\Tenant\User;
+use App\Services\Tenant\HR\HrReportService;
 use App\Services\Tenant\HR\HrSettingsService;
 use App\Services\Tenant\HR\HrSummaryService;
 use App\Services\Tenant\HR\LeaveRequestService;
 use App\Services\Tenant\HR\LeaveTypeService;
+use App\Services\Tenant\HR\TaxTableService;
 use App\Services\Tenant\Settings\TenantSettingsService;
 use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
@@ -39,8 +41,17 @@ beforeEach(function (): void {
         '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php',
         '2026_08_18_003148_add_manager_id_to_departments_table.php',
         '2026_08_18_001429_create_payroll_runs_table.php',
+        '2026_08_18_001431_create_payroll_items_table.php',
+        '2026_08_18_001434_create_payroll_item_lines_table.php',
         '2026_08_18_014813_create_payroll_periods_table.php',
         '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php',
+        '2026_08_18_134108_create_work_schedules_table.php',
+        '2026_08_18_134110_create_work_schedule_days_table.php',
+        '2026_08_18_134113_create_overtime_policies_table.php',
+        '2026_08_18_134116_create_public_holidays_table.php',
+        '2026_08_18_134118_create_tax_tables_table.php',
+        '2026_08_18_134122_create_tax_table_bands_table.php',
+        '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php',
     ];
 
     foreach ($migrations as $file) {
@@ -57,8 +68,17 @@ beforeEach(function (): void {
             '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php' => null,
             '2026_08_18_003148_add_manager_id_to_departments_table.php' => null,
             '2026_08_18_001429_create_payroll_runs_table.php' => 'payroll_runs',
+            '2026_08_18_001431_create_payroll_items_table.php' => 'payroll_items',
+            '2026_08_18_001434_create_payroll_item_lines_table.php' => 'payroll_item_lines',
             '2026_08_18_014813_create_payroll_periods_table.php' => 'payroll_periods',
             '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' => null,
+            '2026_08_18_134108_create_work_schedules_table.php' => 'work_schedules',
+            '2026_08_18_134110_create_work_schedule_days_table.php' => 'work_schedule_days',
+            '2026_08_18_134113_create_overtime_policies_table.php' => 'overtime_policies',
+            '2026_08_18_134116_create_public_holidays_table.php' => 'public_holidays',
+            '2026_08_18_134118_create_tax_tables_table.php' => 'tax_tables',
+            '2026_08_18_134122_create_tax_table_bands_table.php' => 'tax_table_bands',
+            '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php' => null,
             default => null,
         };
 
@@ -79,6 +99,10 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' && Schema::hasColumn('attendances', 'overtime_minutes')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php' && Schema::hasColumn('employees', 'work_schedule_id')) {
             continue;
         }
 
@@ -104,6 +128,7 @@ test('hr settings return defaults and persist allowlisted keys', function (): vo
         ->and($defaults['hr.employee_code_prefix'])->toBe('EMP')
         ->and($defaults['hr.payroll.frequency'])->toBe('monthly')
         ->and($defaults['hr.payroll.approval_required'])->toBeFalse()
+        ->and($defaults['hr.payroll.tax_enabled'])->toBeFalse()
         ->and($defaults['hr.overtime.enabled'])->toBeFalse()
         ->and($defaults['hr.leave.carry_over_enabled'])->toBeFalse()
         ->and($settings->workingDays())->toBe([1, 2, 3, 4, 5]);
@@ -259,4 +284,78 @@ test('leave carry-over uses the previous year remaining days up to the configure
     expect($current)->not->toBeNull()
         ->and($current->carried_over)->toBe(5)
         ->and($current->remaining())->toBe(26);
+});
+
+test('tax table list seeds nigeria paye when none exist', function (): void {
+    $tables = app(TaxTableService::class)->list();
+
+    expect($tables->total())->toBe(1)
+        ->and($tables->first()?->country_code)->toBe('NG')
+        ->and($tables->first()?->bands)->not->toBeEmpty();
+});
+
+test('hr reports return attendance leave overtime and headcount windows', function (): void {
+    $employee = Employee::factory()->create();
+
+    $attendance = app(HrReportService::class)->attendance([
+        'from' => now()->startOfMonth()->toDateString(),
+        'to' => now()->endOfMonth()->toDateString(),
+        'employee_id' => $employee->id,
+    ]);
+    $leave = app(HrReportService::class)->leave([
+        'from' => now()->startOfMonth()->toDateString(),
+        'to' => now()->endOfMonth()->toDateString(),
+    ]);
+    $overtime = app(HrReportService::class)->overtime([
+        'from' => now()->startOfMonth()->toDateString(),
+        'to' => now()->endOfMonth()->toDateString(),
+    ]);
+    $payroll = app(HrReportService::class)->payroll([
+        'from' => now()->startOfMonth()->toDateString(),
+        'to' => now()->endOfMonth()->toDateString(),
+    ]);
+    $headcount = app(HrReportService::class)->headcount([
+        'as_of' => now()->toDateString(),
+    ]);
+
+    expect($attendance)->toHaveKeys(['from', 'to', 'totals', 'rows'])
+        ->and($leave)->toHaveKeys(['from', 'to', 'by_type', 'rows'])
+        ->and($overtime)->toHaveKeys(['from', 'to', 'totals', 'rows'])
+        ->and($payroll)->toHaveKeys(['from', 'to', 'totals', 'by_department', 'rows'])
+        ->and($headcount['total'])->toBeGreaterThanOrEqual(1);
+});
+
+test('hr report and workforce routes are registered behind the hr feature', function (): void {
+    $attendance = app('router')->getRoutes()->getByName('tenant.hr.reports.attendance');
+    $schedules = app('router')->getRoutes()->getByName('tenant.work-schedules.index');
+    $policies = app('router')->getRoutes()->getByName('tenant.overtime-policies.index');
+    $holidays = app('router')->getRoutes()->getByName('tenant.public-holidays.index');
+    $taxes = app('router')->getRoutes()->getByName('tenant.tax-tables.index');
+    $pdf = app('router')->getRoutes()->getByName('tenant.payroll-runs.items.pdf');
+    $register = app('router')->getRoutes()->getByName('tenant.payroll-runs.payment-register');
+    $history = app('router')->getRoutes()->getByName('tenant.employees.salary.revisions');
+
+    expect($attendance)->not->toBeNull()
+        ->and(implode(',', $attendance->gatherMiddleware()))->toContain('feature:hr')
+        ->and(implode(',', $attendance->gatherMiddleware()))->toContain('hr.enabled')
+        ->and($schedules)->not->toBeNull()
+        ->and($policies)->not->toBeNull()
+        ->and($holidays)->not->toBeNull()
+        ->and($taxes)->not->toBeNull()
+        ->and($pdf)->not->toBeNull()
+        ->and($register)->not->toBeNull()
+        ->and($history)->not->toBeNull();
+});
+
+test('managers can view hr reports while customers cannot', function (): void {
+    $manager = User::factory()->create();
+    $manager->syncRoles(['manager']);
+
+    $customer = User::factory()->create();
+    $customer->syncRoles(['customer']);
+
+    expect($manager->can('hr.reports.view'))->toBeTrue()
+        ->and($manager->can('viewHrReports'))->toBeTrue()
+        ->and($customer->can('hr.reports.view'))->toBeFalse()
+        ->and($customer->can('viewHrReports'))->toBeFalse();
 });

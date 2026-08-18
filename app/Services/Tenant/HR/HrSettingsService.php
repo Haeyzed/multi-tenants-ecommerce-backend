@@ -177,6 +177,32 @@ class HrSettingsService
         return $id === null ? null : (int) $id;
     }
 
+    public function payrollTaxPayableAccountId(): ?int
+    {
+        $id = $this->value('hr.payroll.tax_payable_account_id');
+
+        return $id === null ? null : (int) $id;
+    }
+
+    public function payrollDeductionPayableAccountId(): ?int
+    {
+        $id = $this->value('hr.payroll.deduction_payable_account_id');
+
+        return $id === null ? null : (int) $id;
+    }
+
+    public function isPayrollTaxEnabled(): bool
+    {
+        return $this->isPayrollEnabled() && (bool) $this->value('hr.payroll.tax_enabled');
+    }
+
+    public function payrollTaxTableId(): ?int
+    {
+        $id = $this->value('hr.payroll.tax_table_id');
+
+        return $id === null ? null : (int) $id;
+    }
+
     public function isOvertimeEnabled(): bool
     {
         return $this->isAttendanceEnabled() && (bool) $this->value('hr.overtime.enabled');

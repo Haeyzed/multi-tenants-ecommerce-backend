@@ -14,12 +14,17 @@ use App\Models\Tenant\Employee;
 use App\Models\Tenant\PayrollItem;
 use App\Models\Tenant\PayrollRun;
 use App\Models\Tenant\User;
+use App\Services\Tenant\HR\HrCsvExporter;
 use App\Services\Tenant\HR\PayrollRunService;
+use App\Services\Tenant\HR\PayslipPdfService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Tenant HR payroll run endpoints.
@@ -27,7 +32,11 @@ use Illuminate\Support\Facades\Auth;
 #[Group('HR')]
 class PayrollRunController extends Controller
 {
-    public function __construct(private readonly PayrollRunService $payrollRunService) {}
+    public function __construct(
+        private readonly PayrollRunService $payrollRunService,
+        private readonly PayslipPdfService $payslips,
+        private readonly HrCsvExporter $csv,
+    ) {}
 
     #[Response(status: 200, description: 'Paginated payroll runs.', type: 'array{success: true, message: string, data: PayrollRunResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexPayrollRunRequest $request): JsonResponse
@@ -135,6 +144,28 @@ class PayrollRunController extends Controller
             new PayrollItemResource($this->payrollRunService->showItem($payroll_item)),
             'Payslip retrieved successfully.',
         );
+    }
+
+    public function downloadItem(PayrollRun $payroll_run, PayrollItem $payroll_item): HttpResponse
+    {
+        abort_unless($payroll_item->payroll_run_id === $payroll_run->id, 404);
+
+        $this->authorize('view', $payroll_item);
+
+        return $this->payslips->download($this->payrollRunService->showItem($payroll_item));
+    }
+
+    public function paymentRegister(Request $request, PayrollRun $payroll_run): JsonResponse|StreamedResponse
+    {
+        $this->authorize('view', $payroll_run);
+
+        $rows = $this->payrollRunService->paymentRegister($this->payrollRunService->show($payroll_run));
+
+        if ($request->query('format') === 'csv') {
+            return $this->csv->rows('payment-register-'.$payroll_run->reference.'.csv', $rows);
+        }
+
+        return $this->success($rows, 'Payment register retrieved successfully.');
     }
 
     #[Response(status: 200, description: 'Employee payslips.', type: 'array{success: true, message: string, data: PayrollItemResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]

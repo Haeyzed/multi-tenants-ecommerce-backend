@@ -20,6 +20,7 @@ class UpdateAttendanceRequest extends BaseRequest
             'checked_in_at' => ['sometimes', 'nullable', 'date'],
             'checked_out_at' => ['sometimes', 'nullable', 'date'],
             'overtime_minutes' => ['sometimes', 'integer', 'min:0', 'max:1440'],
+            'overtime_rate_percent' => ['sometimes', 'integer', 'min:0', 'max:400'],
             'notes' => ['sometimes', 'nullable', 'string'],
         ];
     }

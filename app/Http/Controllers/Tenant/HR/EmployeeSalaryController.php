@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Tenant\HR;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\HR\UpsertEmployeeSalaryRequest;
 use App\Http\Resources\Tenant\HR\EmployeeSalaryResource;
+use App\Http\Resources\Tenant\HR\EmployeeSalaryRevisionResource;
 use App\Models\Tenant\Employee;
 use App\Services\Tenant\HR\EmployeeSalaryService;
 use Dedoc\Scramble\Attributes\Group;
@@ -42,6 +43,17 @@ class EmployeeSalaryController extends Controller
         return $this->updated(
             new EmployeeSalaryResource($this->employeeSalaryService->upsert($employee, $request->validated())),
             'Employee salary saved successfully.',
+        );
+    }
+
+    #[Response(status: 200, description: 'Salary history.', type: 'array{success: true, message: string, data: EmployeeSalaryRevisionResource[], meta: null, errors: null}')]
+    public function history(Employee $employee): JsonResponse
+    {
+        $this->authorize('viewSalary', $employee);
+
+        return $this->success(
+            EmployeeSalaryRevisionResource::collection($this->employeeSalaryService->history($employee)),
+            'Salary history retrieved successfully.',
         );
     }
 }

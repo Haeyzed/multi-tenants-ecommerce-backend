@@ -38,6 +38,7 @@ use App\Models\Tenant\LoyaltyAccount;
 use App\Models\Tenant\LoyaltyProgram;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\OrderReturn;
+use App\Models\Tenant\OvertimePolicy;
 use App\Models\Tenant\PayrollItem;
 use App\Models\Tenant\PayrollRun;
 use App\Models\Tenant\PosSession;
@@ -51,6 +52,7 @@ use App\Models\Tenant\ProductReview;
 use App\Models\Tenant\ProductTag;
 use App\Models\Tenant\ProductVariant;
 use App\Models\Tenant\Promotion;
+use App\Models\Tenant\PublicHoliday;
 use App\Models\Tenant\PurchaseOrder;
 use App\Models\Tenant\Refund;
 use App\Models\Tenant\Seller;
@@ -64,9 +66,11 @@ use App\Models\Tenant\ShippingMethod;
 use App\Models\Tenant\StoreCreditAccount;
 use App\Models\Tenant\Supplier;
 use App\Models\Tenant\Tax;
+use App\Models\Tenant\TaxTable;
 use App\Models\Tenant\TaxZone;
 use App\Models\Tenant\Unit;
 use App\Models\Tenant\Warehouse;
+use App\Models\Tenant\WorkSchedule;
 use App\Policies\Tenant\AccountPolicy;
 use App\Policies\Tenant\AttendancePolicy;
 use App\Policies\Tenant\BlogCategoryPolicy;
@@ -94,6 +98,7 @@ use App\Policies\Tenant\LoyaltyAccountPolicy;
 use App\Policies\Tenant\LoyaltyProgramPolicy;
 use App\Policies\Tenant\OrderPolicy;
 use App\Policies\Tenant\OrderReturnPolicy;
+use App\Policies\Tenant\OvertimePolicyPolicy;
 use App\Policies\Tenant\PagePolicy;
 use App\Policies\Tenant\PayrollItemPolicy;
 use App\Policies\Tenant\PayrollRunPolicy;
@@ -108,6 +113,7 @@ use App\Policies\Tenant\ProductReviewPolicy;
 use App\Policies\Tenant\ProductTagPolicy;
 use App\Policies\Tenant\ProductVariantPolicy;
 use App\Policies\Tenant\PromotionPolicy;
+use App\Policies\Tenant\PublicHolidayPolicy;
 use App\Policies\Tenant\PurchaseOrderPolicy;
 use App\Policies\Tenant\RefundPolicy;
 use App\Policies\Tenant\SellerCommissionPolicy;
@@ -121,9 +127,11 @@ use App\Policies\Tenant\ShippingMethodPolicy;
 use App\Policies\Tenant\StoreCreditAccountPolicy;
 use App\Policies\Tenant\SupplierPolicy;
 use App\Policies\Tenant\TaxPolicy;
+use App\Policies\Tenant\TaxTablePolicy;
 use App\Policies\Tenant\TaxZonePolicy;
 use App\Policies\Tenant\UnitPolicy;
 use App\Policies\Tenant\WarehousePolicy;
+use App\Policies\Tenant\WorkSchedulePolicy;
 use App\Services\Notification\ChannelResolver;
 use App\Services\Notification\Channels\DatabaseChannel;
 use App\Services\Notification\Channels\EmailChannel;
@@ -255,6 +263,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Attendance::class, AttendancePolicy::class);
         Gate::policy(LeaveRequest::class, LeaveRequestPolicy::class);
         Gate::policy(LeaveType::class, LeaveTypePolicy::class);
+        Gate::policy(WorkSchedule::class, WorkSchedulePolicy::class);
+        Gate::policy(OvertimePolicy::class, OvertimePolicyPolicy::class);
+        Gate::policy(PublicHoliday::class, PublicHolidayPolicy::class);
+        Gate::policy(TaxTable::class, TaxTablePolicy::class);
         Gate::policy(PayrollRun::class, PayrollRunPolicy::class);
         Gate::policy(PayrollItem::class, PayrollItemPolicy::class);
         Gate::policy(BlogCategory::class, BlogCategoryPolicy::class);
@@ -278,6 +290,13 @@ class AppServiceProvider extends ServiceProvider
                 $user->can('hr.view')
                 || $user->can('hr.employees.view')
                 || $user->can('hr.payroll.view')
+            );
+        });
+
+        Gate::define('viewHrReports', function ($user): bool {
+            return method_exists($user, 'can') && (
+                $user->can('hr.reports.view')
+                || $user->can('hr.view')
             );
         });
 

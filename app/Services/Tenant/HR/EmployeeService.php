@@ -42,7 +42,7 @@ class EmployeeService
     public function list(array $params = []): LengthAwarePaginator
     {
         return Employee::query()
-            ->with(['user', 'department', 'designation', 'manager.user'])
+            ->with(['user', 'department', 'designation', 'manager.user', 'workSchedule'])
             ->filter($params)
             ->applySort($params['sort'] ?? null)
             ->paginate($this->perPage($params));
@@ -54,13 +54,19 @@ class EmployeeService
      *     department_id?: int|null,
      *     designation_id?: int|null,
      *     manager_id?: int|null,
+     *     work_schedule_id?: int|null,
      *     job_title?: string|null,
      *     employee_number?: string|null,
      *     employment_status?: EmploymentStatus|string|null,
      *     employment_type?: string|null,
      *     work_location?: string|null,
      *     hired_at?: string|null,
-     *     notes?: string|null
+     *     notes?: string|null,
+     *     bank_name?: string|null,
+     *     bank_code?: string|null,
+     *     account_number?: string|null,
+     *     account_name?: string|null,
+     *     tax_id?: string|null
      * }  $data
      *
      * @throws ValidationException
@@ -84,6 +90,7 @@ class EmployeeService
             'department_id' => $data['department_id'] ?? null,
             'designation_id' => $data['designation_id'] ?? null,
             'manager_id' => $data['manager_id'] ?? null,
+            'work_schedule_id' => $data['work_schedule_id'] ?? null,
             'job_title' => $data['job_title'] ?? null,
             'employee_number' => $data['employee_number'] ?? $this->nextEmployeeNumber(),
             'employment_status' => $data['employment_status'] ?? $this->hrSettings->defaultEmploymentStatus(),
@@ -91,9 +98,14 @@ class EmployeeService
             'work_location' => $data['work_location'] ?? null,
             'hired_at' => $data['hired_at'] ?? null,
             'notes' => $data['notes'] ?? null,
+            'bank_name' => $data['bank_name'] ?? null,
+            'bank_code' => $data['bank_code'] ?? null,
+            'account_number' => $data['account_number'] ?? null,
+            'account_name' => $data['account_name'] ?? null,
+            'tax_id' => $data['tax_id'] ?? null,
         ]);
 
-        $employee = Employee::query()->create($payload)->load(['user', 'department', 'designation', 'manager.user']);
+        $employee = Employee::query()->create($payload)->load(['user', 'department', 'designation', 'manager.user', 'workSchedule']);
 
         $this->recordEmployment($employee, EmploymentChangeType::Hired, $employee->hired_at?->toDateString());
 
@@ -104,7 +116,7 @@ class EmployeeService
 
     public function show(Employee $employee): Employee
     {
-        return $employee->load(['user', 'department', 'designation', 'manager.user']);
+        return $employee->load(['user', 'department', 'designation', 'manager.user', 'workSchedule']);
     }
 
     /**
@@ -112,13 +124,19 @@ class EmployeeService
      *     department_id?: int|null,
      *     designation_id?: int|null,
      *     manager_id?: int|null,
+     *     work_schedule_id?: int|null,
      *     job_title?: string|null,
      *     employee_number?: string|null,
      *     employment_status?: EmploymentStatus|string,
      *     employment_type?: string|null,
      *     work_location?: string|null,
      *     hired_at?: string|null,
-     *     notes?: string|null
+     *     notes?: string|null,
+     *     bank_name?: string|null,
+     *     bank_code?: string|null,
+     *     account_number?: string|null,
+     *     account_name?: string|null,
+     *     tax_id?: string|null
      * }  $data
      *
      * @throws ValidationException
@@ -134,6 +152,7 @@ class EmployeeService
             'department_id' => $employee->department_id,
             'designation_id' => $employee->designation_id,
             'manager_id' => $employee->manager_id,
+            'work_schedule_id' => $employee->work_schedule_id,
             'job_title' => $employee->job_title,
             'employment_type' => $employee->employment_type?->value,
             'work_location' => $employee->work_location,
@@ -161,7 +180,7 @@ class EmployeeService
         $employee->fill($this->syncDesignationDepartment($data, $employee));
         $employee->save();
 
-        $employee = $employee->fresh(['user', 'department', 'designation', 'manager.user']) ?? $employee;
+        $employee = $employee->fresh(['user', 'department', 'designation', 'manager.user', 'workSchedule']) ?? $employee;
 
         if ($employee->employment_status !== $previousStatus) {
             $this->recordEmployment($employee, EmploymentChangeType::StatusChanged);
@@ -268,7 +287,7 @@ class EmployeeService
     }
 
     /**
-     * @return array{department_id: int|null, designation_id: int|null, manager_id: int|null, job_title: string|null, employment_type: string|null, work_location: string|null}
+     * @return array{department_id: int|null, designation_id: int|null, manager_id: int|null, work_schedule_id: int|null, job_title: string|null, employment_type: string|null, work_location: string|null}
      */
     protected function assignmentSnapshot(Employee $employee): array
     {
@@ -276,6 +295,7 @@ class EmployeeService
             'department_id' => $employee->department_id,
             'designation_id' => $employee->designation_id,
             'manager_id' => $employee->manager_id,
+            'work_schedule_id' => $employee->work_schedule_id,
             'job_title' => $employee->job_title,
             'employment_type' => $employee->employment_type?->value,
             'work_location' => $employee->work_location,

@@ -23,6 +23,9 @@ use App\Services\Tenant\HR\DesignationService;
 use App\Services\Tenant\HR\EmployeeService;
 use App\Services\Tenant\HR\HrSettingsService;
 use App\Services\Tenant\HR\LeaveRequestService;
+use App\Services\Tenant\HR\OvertimePolicyService;
+use App\Services\Tenant\HR\PublicHolidayService;
+use App\Services\Tenant\HR\WorkScheduleService;
 use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -50,6 +53,14 @@ beforeEach(function (): void {
         '2026_08_18_003148_add_manager_id_to_departments_table.php',
         '2026_08_18_014822_create_employment_records_table.php',
         '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php',
+        '2026_08_18_134108_create_work_schedules_table.php',
+        '2026_08_18_134110_create_work_schedule_days_table.php',
+        '2026_08_18_134113_create_overtime_policies_table.php',
+        '2026_08_18_134116_create_public_holidays_table.php',
+        '2026_08_18_134118_create_tax_tables_table.php',
+        '2026_08_18_134122_create_tax_table_bands_table.php',
+        '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php',
+        '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php',
     ];
 
     foreach ($migrations as $file) {
@@ -67,6 +78,14 @@ beforeEach(function (): void {
             '2026_08_18_003148_add_manager_id_to_departments_table.php' => null,
             '2026_08_18_014822_create_employment_records_table.php' => 'employment_records',
             '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' => null,
+            '2026_08_18_134108_create_work_schedules_table.php' => 'work_schedules',
+            '2026_08_18_134110_create_work_schedule_days_table.php' => 'work_schedule_days',
+            '2026_08_18_134113_create_overtime_policies_table.php' => 'overtime_policies',
+            '2026_08_18_134116_create_public_holidays_table.php' => 'public_holidays',
+            '2026_08_18_134118_create_tax_tables_table.php' => 'tax_tables',
+            '2026_08_18_134122_create_tax_table_bands_table.php' => 'tax_table_bands',
+            '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php' => null,
+            '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php' => null,
             default => null,
         };
 
@@ -87,6 +106,14 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' && Schema::hasColumn('attendances', 'overtime_minutes')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_134125_add_work_schedule_and_overtime_rate_columns.php' && Schema::hasColumn('employees', 'work_schedule_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_18_142459_add_bank_and_tax_columns_to_employees_table.php' && Schema::hasColumn('employees', 'bank_name')) {
             continue;
         }
 
@@ -392,4 +419,60 @@ test('clock out records overtime minutes when overtime is enabled', function ():
     $clockedOut = $service->clockOut($employee);
 
     expect($clockedOut->overtime_minutes)->toBe(120);
+});
+
+test('assigned work schedule overrides settings for clock in days', function (): void {
+    $this->travelTo(Carbon::parse('2026-08-23 09:00:00'));
+
+    app(HrSettingsService::class)->update([
+        'hr.working_days' => '1,2,3,4,5,6,7',
+    ]);
+
+    $schedule = app(WorkScheduleService::class)->store([
+        'name' => 'Weekdays',
+        'days' => collect(range(1, 5))->map(fn (int $weekday): array => [
+            'weekday' => $weekday,
+            'start_time' => '09:00',
+            'end_time' => '17:00',
+        ])->all(),
+    ]);
+
+    $employee = Employee::factory()->create(['work_schedule_id' => $schedule->id]);
+
+    expect(fn () => app(AttendanceService::class)->clockIn($employee))->toThrow(ValidationException::class);
+});
+
+test('overtime policy caps daily overtime and snapshots holiday rates', function (): void {
+    $this->travelTo(Carbon::parse('2026-08-18 09:00:00'));
+
+    app(HrSettingsService::class)->update([
+        'hr.working_days' => '1,2,3,4,5,6,7',
+        'hr.work_start_time' => '09:00',
+        'hr.overtime.enabled' => true,
+        'hr.working_hours_per_day' => 8,
+        'hr.overtime.rate_percent' => 150,
+    ]);
+
+    app(OvertimePolicyService::class)->store([
+        'name' => 'Standard OT',
+        'is_default' => true,
+        'weekday_rate_percent' => 150,
+        'holiday_rate_percent' => 200,
+        'max_daily_minutes' => 60,
+    ]);
+
+    app(PublicHolidayService::class)->store([
+        'observed_on' => '2026-08-18',
+        'name' => 'Test Holiday',
+    ]);
+
+    $employee = Employee::factory()->create();
+    $service = app(AttendanceService::class);
+
+    $service->clockIn($employee);
+    $this->travelTo(Carbon::parse('2026-08-18 19:00:00'));
+    $clockedOut = $service->clockOut($employee);
+
+    expect($clockedOut->overtime_minutes)->toBe(60)
+        ->and($clockedOut->overtime_rate_percent)->toBe(200);
 });

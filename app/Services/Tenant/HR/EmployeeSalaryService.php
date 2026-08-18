@@ -9,6 +9,7 @@ use App\Enums\Tenant\HR\PayrollLineType;
 use App\Enums\Tenant\HR\SalaryComponentCalculation;
 use App\Models\Tenant\Employee;
 use App\Models\Tenant\EmployeeSalary;
+use App\Models\Tenant\EmployeeSalaryRevision;
 use App\Support\Money;
 use Illuminate\Validation\ValidationException;
 
@@ -60,12 +61,18 @@ class EmployeeSalaryService
             ]);
         }
 
+        $existing = $this->show($employee);
+
         $payload = [
             'base_salary' => Money::add($baseSalary, '0'),
             'currency' => strtoupper((string) ($data['currency'] ?? $this->hrSettings->payrollCurrency())),
             'pay_frequency' => $data['pay_frequency'] ?? $this->hrSettings->payrollFrequency(),
             'effective_from' => $data['effective_from'] ?? now()->toDateString(),
         ];
+
+        if ($existing !== null) {
+            $this->recordRevision($existing, (string) $payload['effective_from']);
+        }
 
         $salary = $employee->salary()->updateOrCreate(
             ['employee_id' => $employee->id],
@@ -77,6 +84,37 @@ class EmployeeSalaryService
         }
 
         return $salary->fresh(['components']) ?? $salary;
+    }
+
+    /**
+     * @return list<EmployeeSalaryRevision>
+     */
+    public function history(Employee $employee): array
+    {
+        return $employee->salaryRevisions()->get()->all();
+    }
+
+    protected function recordRevision(EmployeeSalary $salary, string $effectiveTo): void
+    {
+        $salary->loadMissing('components');
+
+        EmployeeSalaryRevision::query()->create([
+            'employee_id' => $salary->employee_id,
+            'base_salary' => $salary->base_salary,
+            'currency' => $salary->currency,
+            'pay_frequency' => $salary->pay_frequency,
+            'effective_from' => $salary->effective_from?->toDateString() ?? $effectiveTo,
+            'effective_to' => $effectiveTo,
+            'components' => $salary->components->map(fn ($component): array => [
+                'type' => $component->type instanceof PayrollLineType ? $component->type->value : $component->type,
+                'calculation' => $component->calculation instanceof SalaryComponentCalculation ? $component->calculation->value : $component->calculation,
+                'code' => $component->code,
+                'label' => $component->label,
+                'amount' => $component->amount,
+                'is_tax' => $component->is_tax,
+                'sort_order' => $component->sort_order,
+            ])->values()->all(),
+        ]);
     }
 
     /**
