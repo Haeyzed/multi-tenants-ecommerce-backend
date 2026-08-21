@@ -22,11 +22,16 @@ class PermissionController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  PermissionService  $permissionService
      */
     public function __construct(private readonly PermissionService $permissionService) {}
 
     /**
      * List tenant permissions with pagination and search.
+     *
+     * @param  IndexPermissionRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -46,6 +51,9 @@ class PermissionController extends Controller
 
     /**
      * Create a tenant permission.
+     *
+     * @param  StorePermissionRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -64,6 +72,9 @@ class PermissionController extends Controller
 
     /**
      * Show a tenant permission.
+     *
+     * @param  Permission  $permission
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -80,6 +91,10 @@ class PermissionController extends Controller
 
     /**
      * Update a tenant permission.
+     *
+     * @param  UpdatePermissionRequest  $request
+     * @param  Permission  $permission
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -98,6 +113,9 @@ class PermissionController extends Controller
 
     /**
      * Delete a tenant permission.
+     *
+     * @param  Permission  $permission
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

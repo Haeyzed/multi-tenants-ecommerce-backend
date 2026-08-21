@@ -19,10 +19,18 @@ use Illuminate\Http\JsonResponse;
  */
 class ProductReviewController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductReviewService  $reviewService
+     */
     public function __construct(private readonly ProductReviewService $reviewService) {}
 
     /**
      * List reviews.
+     *
+     * @param  IndexProductReviewRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -42,6 +50,10 @@ class ProductReviewController extends Controller
 
     /**
      * Moderate a review status.
+     *
+     * @param  ModerateProductReviewRequest  $request
+     * @param  ProductReview  $review
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -60,6 +72,9 @@ class ProductReviewController extends Controller
 
     /**
      * Delete a review.
+     *
+     * @param  ProductReview  $review
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

@@ -22,7 +22,13 @@ use Illuminate\Support\Facades\Schema;
 class RecruitmentActivityService
 {
     /**
+     * Record.
+     *
+     * @param  Model  $subject
+     * @param  string  $action
+     * @param  ?User  $actor
      * @param  array<string, mixed>  $meta
+     * @return void
      */
     public function record(Model $subject, string $action, ?User $actor = null, array $meta = []): void
     {
@@ -40,6 +46,9 @@ class RecruitmentActivityService
     }
 
     /**
+     * List for candidate.
+     *
+     * @param  Candidate  $candidate
      * @param  array{sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, RecruitmentActivity>
      */
@@ -54,6 +63,9 @@ class RecruitmentActivityService
     }
 
     /**
+     * List for application.
+     *
+     * @param  JobApplication  $application
      * @param  array{sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, RecruitmentActivity>
      */
@@ -63,6 +75,9 @@ class RecruitmentActivityService
     }
 
     /**
+     * Paginate.
+     *
+     * @param  array  $groups
      * @param  list<int>  $applicationIds
      * @param  array{sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, RecruitmentActivity>
@@ -102,6 +117,9 @@ class RecruitmentActivityService
     }
 
     /**
+     * Groups for.
+     *
+     * @param  Model  $root
      * @param  list<int>  $applicationIds
      * @return list<array{0: string, 1: list<int>}>
      */
@@ -123,6 +141,8 @@ class RecruitmentActivityService
     }
 
     /**
+     * Sanitize.
+     *
      * @param  array<string, mixed>  $meta
      * @return array<string, mixed>
      */

@@ -14,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 class PublicHolidayService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, year?: int|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, PublicHoliday>
      */
@@ -26,7 +28,10 @@ class PublicHolidayService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array{observed_on: string, name: string, repeats_annually?: bool}  $data
+     * @return PublicHoliday
      *
      * @throws ValidationException
      */
@@ -41,13 +46,23 @@ class PublicHolidayService
         ]);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PublicHoliday  $holiday
+     * @return PublicHoliday
+     */
     public function show(PublicHoliday $holiday): PublicHoliday
     {
         return $holiday;
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  PublicHoliday  $holiday
      * @param  array{observed_on?: string, name?: string, repeats_annually?: bool}  $data
+     * @return PublicHoliday
      *
      * @throws ValidationException
      */
@@ -63,12 +78,24 @@ class PublicHolidayService
         return $holiday;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  PublicHoliday  $holiday
+     * @return void
+     */
     public function destroy(PublicHoliday $holiday): void
     {
         $holiday->delete();
     }
 
     /**
+     * Assert unique date.
+     *
+     * @param  string  $date
+     * @param  ?int  $ignoreId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertUniqueDate(string $date, ?int $ignoreId = null): void
@@ -86,7 +113,10 @@ class PublicHolidayService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

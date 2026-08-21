@@ -16,10 +16,24 @@ use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * Tenant BlogPostController endpoints.
+ */
 class BlogPostController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  BlogPostService  $blogPostService
+     */
     public function __construct(private readonly BlogPostService $blogPostService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated blog posts.', type: 'array{success: true, message: string, data: BlogPostResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -34,6 +48,12 @@ class BlogPostController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreBlogPostRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created blog post.', type: 'array{success: true, message: string, data: BlogPostResource, meta: null, errors: null}')]
     public function store(StoreBlogPostRequest $request): JsonResponse
     {
@@ -45,6 +65,12 @@ class BlogPostController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  BlogPost  $blog_post
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A blog post.', type: 'array{success: true, message: string, data: BlogPostResource, meta: null, errors: null}')]
     public function show(BlogPost $blog_post): JsonResponse
     {
@@ -56,6 +82,13 @@ class BlogPostController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateBlogPostRequest  $request
+     * @param  BlogPost  $blog_post
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated blog post.', type: 'array{success: true, message: string, data: BlogPostResource, meta: null, errors: null}')]
     public function update(UpdateBlogPostRequest $request, BlogPost $blog_post): JsonResponse
     {
@@ -67,6 +100,12 @@ class BlogPostController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  BlogPost  $blog_post
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted blog post.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(BlogPost $blog_post): JsonResponse
     {
@@ -76,6 +115,13 @@ class BlogPostController extends Controller
         return $this->deleted('Blog post deleted successfully.');
     }
 
+    /**
+     * Store featured image.
+     *
+     * @param  StoreFeaturedImageRequest  $request
+     * @param  BlogPost  $blog_post
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Blog post with featured image.', type: 'array{success: true, message: string, data: BlogPostResource, meta: null, errors: null}')]
     public function storeFeaturedImage(StoreFeaturedImageRequest $request, BlogPost $blog_post): JsonResponse
     {
@@ -87,6 +133,12 @@ class BlogPostController extends Controller
         );
     }
 
+    /**
+     * Destroy featured image.
+     *
+     * @param  BlogPost  $blog_post
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Blog post with featured image removed.', type: 'array{success: true, message: string, data: BlogPostResource, meta: null, errors: null}')]
     public function destroyFeaturedImage(BlogPost $blog_post): JsonResponse
     {

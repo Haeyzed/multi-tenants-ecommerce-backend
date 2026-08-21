@@ -24,6 +24,12 @@ use Illuminate\Support\Facades\Auth;
  */
 class AuthController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  DriverAuthService  $authService
+     * @param  DriverService  $driverService
+     */
     public function __construct(
         private readonly DriverAuthService $authService,
         private readonly DriverService $driverService,
@@ -31,6 +37,9 @@ class AuthController extends Controller
 
     /**
      * Authenticate a driver and return a Sanctum token.
+     *
+     * @param  LoginRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -49,6 +58,9 @@ class AuthController extends Controller
 
     /**
      * Revoke the current driver access token.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -67,6 +79,9 @@ class AuthController extends Controller
 
     /**
      * Request a password reset link for a driver.
+     *
+     * @param  ForgotPasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -82,6 +97,9 @@ class AuthController extends Controller
 
     /**
      * Reset a driver's password using a reset token.
+     *
+     * @param  ResetPasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -97,6 +115,9 @@ class AuthController extends Controller
 
     /**
      * Return the authenticated driver.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -116,6 +137,9 @@ class AuthController extends Controller
 
     /**
      * Update the authenticated driver's profile.
+     *
+     * @param  UpdateProfileRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -137,6 +161,9 @@ class AuthController extends Controller
 
     /**
      * Change the authenticated driver's password.
+     *
+     * @param  ChangePasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

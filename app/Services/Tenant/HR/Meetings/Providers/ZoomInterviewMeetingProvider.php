@@ -33,11 +33,21 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
      */
     private const REQUIRED_KEYS = ['account_id', 'client_id', 'client_secret', 'host_user_id'];
 
+    /**
+     * Name.
+     *
+     * @return string
+     */
     public function name(): string
     {
         return MeetingProvider::Zoom->value;
     }
 
+    /**
+     * Capabilities.
+     *
+     * @return MeetingProviderCapabilities
+     */
     public function capabilities(): MeetingProviderCapabilities
     {
         return new MeetingProviderCapabilities(
@@ -52,16 +62,34 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
         );
     }
 
+    /**
+     * Is configured.
+     *
+     * @param  array  $credentials
+     * @return bool
+     */
     public function isConfigured(array $credentials): bool
     {
         return $this->missingCredentialKeys(self::REQUIRED_KEYS, $credentials) === [];
     }
 
+    /**
+     * Test connection.
+     *
+     * @param  array  $credentials
+     * @return void
+     */
     public function testConnection(array $credentials): void
     {
         $this->accessToken($credentials);
     }
 
+    /**
+     * Create meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return MeetingResult
+     */
     public function createMeeting(MeetingRequest $request): MeetingResult
     {
         $token = $this->accessToken($request->credentials);
@@ -79,6 +107,12 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
         return $this->normalize(is_array($payload) ? $payload : []);
     }
 
+    /**
+     * Update meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return MeetingResult
+     */
     public function updateMeeting(MeetingRequest $request): MeetingResult
     {
         if ($request->externalId === null || $request->externalId === '') {
@@ -106,6 +140,12 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
         return $this->normalize(is_array($payload) ? $payload : []);
     }
 
+    /**
+     * Cancel meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return void
+     */
     public function cancelMeeting(MeetingRequest $request): void
     {
         if ($request->externalId === null || $request->externalId === '') {
@@ -123,6 +163,12 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
         }
     }
 
+    /**
+     * Get meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return ?MeetingResult
+     */
     public function getMeeting(MeetingRequest $request): ?MeetingResult
     {
         if ($request->externalId === null || $request->externalId === '') {
@@ -144,7 +190,10 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
     }
 
     /**
+     * Access token.
+     *
      * @param  array<string, mixed>  $credentials
+     * @return string
      */
     protected function accessToken(array $credentials): string
     {
@@ -190,6 +239,9 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
     }
 
     /**
+     * Payload.
+     *
+     * @param  MeetingRequest  $request
      * @return array<string, mixed>
      */
     protected function payload(MeetingRequest $request): array
@@ -220,7 +272,10 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
     }
 
     /**
+     * Normalize.
+     *
      * @param  array<string, mixed>  $payload
+     * @return MeetingResult
      */
     protected function normalize(array $payload): MeetingResult
     {
@@ -241,6 +296,14 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
         );
     }
 
+    /**
+     * Fail.
+     *
+     * @param  string  $operation
+     * @param  ?MeetingRequest  $request
+     * @param  Throwable  $exception
+     * @return never
+     */
     protected function fail(string $operation, ?MeetingRequest $request, Throwable $exception): never
     {
         $status = $exception instanceof RequestException ? $exception->response?->status() : null;
@@ -266,6 +329,12 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
         );
     }
 
+    /**
+     * Operation label.
+     *
+     * @param  string  $operation
+     * @return string
+     */
     protected function operationLabel(string $operation): string
     {
         return match ($operation) {

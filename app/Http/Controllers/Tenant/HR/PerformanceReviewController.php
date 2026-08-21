@@ -22,8 +22,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class PerformanceReviewController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PerformanceReviewService  $reviews
+     */
     public function __construct(private readonly PerformanceReviewService $reviews) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexPerformanceReviewRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated performance reviews.', type: 'array{success: true, message: string, data: PerformanceReviewResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexPerformanceReviewRequest $request): JsonResponse
     {
@@ -38,6 +49,12 @@ class PerformanceReviewController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StorePerformanceReviewRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created performance review.', type: 'array{success: true, message: string, data: PerformanceReviewResource, meta: null, errors: null}')]
     public function store(StorePerformanceReviewRequest $request): JsonResponse
     {
@@ -49,6 +66,12 @@ class PerformanceReviewController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PerformanceReview  $performance_review
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A performance review.', type: 'array{success: true, message: string, data: PerformanceReviewResource, meta: null, errors: null}')]
     public function show(PerformanceReview $performance_review): JsonResponse
     {
@@ -60,6 +83,13 @@ class PerformanceReviewController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdatePerformanceReviewRequest  $request
+     * @param  PerformanceReview  $performance_review
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated performance review.', type: 'array{success: true, message: string, data: PerformanceReviewResource, meta: null, errors: null}')]
     public function update(UpdatePerformanceReviewRequest $request, PerformanceReview $performance_review): JsonResponse
     {
@@ -71,6 +101,12 @@ class PerformanceReviewController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  PerformanceReview  $performance_review
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted performance review.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(PerformanceReview $performance_review): JsonResponse
     {

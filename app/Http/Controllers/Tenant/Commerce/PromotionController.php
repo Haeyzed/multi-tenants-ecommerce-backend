@@ -20,8 +20,19 @@ use Illuminate\Http\Request;
  */
 class PromotionController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PromotionService  $promotionService
+     */
     public function __construct(private readonly PromotionService $promotionService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated promotions.', type: 'array{success: true, message: string, data: PromotionResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -36,6 +47,12 @@ class PromotionController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StorePromotionRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created promotion.', type: 'array{success: true, message: string, data: PromotionResource, meta: null, errors: null}')]
     public function store(StorePromotionRequest $request): JsonResponse
     {
@@ -47,6 +64,12 @@ class PromotionController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Promotion  $promotion
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A promotion.', type: 'array{success: true, message: string, data: PromotionResource, meta: null, errors: null}')]
     public function show(Promotion $promotion): JsonResponse
     {
@@ -58,6 +81,13 @@ class PromotionController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdatePromotionRequest  $request
+     * @param  Promotion  $promotion
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated promotion.', type: 'array{success: true, message: string, data: PromotionResource, meta: null, errors: null}')]
     public function update(UpdatePromotionRequest $request, Promotion $promotion): JsonResponse
     {
@@ -69,6 +99,12 @@ class PromotionController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Promotion  $promotion
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted promotion.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Promotion $promotion): JsonResponse
     {

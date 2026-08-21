@@ -15,11 +15,25 @@ use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 
+/**
+ * Tenant JobOfferController endpoints.
+ */
 #[Group('HR / Offers')]
 class JobOfferController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  JobOfferService  $offers
+     */
     public function __construct(private readonly JobOfferService $offers) {}
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreJobOfferRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created offer.', type: 'array{success: true, message: string, data: JobOfferResource, meta: null, errors: null}')]
     public function store(StoreJobOfferRequest $request): JsonResponse
     {
@@ -31,6 +45,12 @@ class JobOfferController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  JobOffer  $job_offer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'An offer.', type: 'array{success: true, message: string, data: JobOfferResource, meta: null, errors: null}')]
     public function show(JobOffer $job_offer): JsonResponse
     {
@@ -42,6 +62,13 @@ class JobOfferController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateJobOfferRequest  $request
+     * @param  JobOffer  $job_offer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated offer.', type: 'array{success: true, message: string, data: JobOfferResource, meta: null, errors: null}')]
     public function update(UpdateJobOfferRequest $request, JobOffer $job_offer): JsonResponse
     {
@@ -53,6 +80,12 @@ class JobOfferController extends Controller
         );
     }
 
+    /**
+     * Approve.
+     *
+     * @param  JobOffer  $job_offer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Approved offer.', type: 'array{success: true, message: string, data: JobOfferResource, meta: null, errors: null}')]
     public function approve(JobOffer $job_offer): JsonResponse
     {
@@ -67,6 +100,12 @@ class JobOfferController extends Controller
         );
     }
 
+    /**
+     * Send.
+     *
+     * @param  JobOffer  $job_offer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Sent offer.', type: 'array{success: true, message: string, data: JobOfferResource, meta: null, errors: null}')]
     public function send(JobOffer $job_offer): JsonResponse
     {
@@ -81,6 +120,12 @@ class JobOfferController extends Controller
         );
     }
 
+    /**
+     * Accept.
+     *
+     * @param  JobOffer  $job_offer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Accepted offer.', type: 'array{success: true, message: string, data: JobOfferResource, meta: null, errors: null}')]
     public function accept(JobOffer $job_offer): JsonResponse
     {
@@ -95,6 +140,12 @@ class JobOfferController extends Controller
         );
     }
 
+    /**
+     * Reject.
+     *
+     * @param  JobOffer  $job_offer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Rejected offer.', type: 'array{success: true, message: string, data: JobOfferResource, meta: null, errors: null}')]
     public function reject(JobOffer $job_offer): JsonResponse
     {
@@ -109,6 +160,12 @@ class JobOfferController extends Controller
         );
     }
 
+    /**
+     * Withdraw.
+     *
+     * @param  JobOffer  $job_offer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Withdrawn offer.', type: 'array{success: true, message: string, data: JobOfferResource, meta: null, errors: null}')]
     public function withdraw(JobOffer $job_offer): JsonResponse
     {

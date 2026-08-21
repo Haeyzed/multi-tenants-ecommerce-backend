@@ -20,6 +20,12 @@ use Illuminate\Support\Facades\Schema;
  */
 class BackInStockNotificationService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  NotificationService  $notifications
+     * @param  ProductAvailabilityService  $availability
+     */
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly ProductAvailabilityService $availability,
@@ -27,6 +33,11 @@ class BackInStockNotificationService
 
     /**
      * Notify subscribers when inventory crosses from unavailable to available.
+     *
+     * @param  Inventory  $inventory
+     * @param  int  $availableBefore
+     * @param  int  $availableAfter
+     * @return void
      */
     public function handleInventoryChange(Inventory $inventory, int $availableBefore, int $availableAfter): void
     {
@@ -47,6 +58,11 @@ class BackInStockNotificationService
 
     /**
      * Subscribe a customer to back-in-stock alerts for a product or variant.
+     *
+     * @param  int  $customerId
+     * @param  int  $productId
+     * @param  ?int  $productVariantId
+     * @return ProductStockSubscription
      */
     public function subscribe(
         int $customerId,
@@ -66,7 +82,10 @@ class BackInStockNotificationService
     }
 
     /**
+     * Notify subscribers.
+     *
      * @param  Product|ProductVariant|null  $inventoryable
+     * @return void
      */
     protected function notifySubscribers(?Model $inventoryable): void
     {
@@ -132,7 +151,10 @@ class BackInStockNotificationService
     }
 
     /**
+     * Reset subscriptions.
+     *
      * @param  Product|ProductVariant|null  $inventoryable
+     * @return void
      */
     protected function resetSubscriptions(?Model $inventoryable): void
     {
@@ -153,6 +175,8 @@ class BackInStockNotificationService
     }
 
     /**
+     * Resolve product and variant.
+     *
      * @param  Product|ProductVariant  $inventoryable
      * @return array{0: int, 1: int|null}
      */

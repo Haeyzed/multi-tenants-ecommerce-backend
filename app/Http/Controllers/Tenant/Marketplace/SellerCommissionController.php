@@ -18,8 +18,19 @@ use Illuminate\Http\JsonResponse;
  */
 class SellerCommissionController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommissionService  $commissions
+     */
     public function __construct(private readonly CommissionService $commissions) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexSellerCommissionRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated commissions.', type: 'array{success: true, message: string, data: SellerCommissionResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexSellerCommissionRequest $request): JsonResponse
     {
@@ -34,6 +45,12 @@ class SellerCommissionController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  SellerCommission  $commission
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A commission.', type: 'array{success: true, message: string, data: SellerCommissionResource, meta: null, errors: null}')]
     public function show(SellerCommission $commission): JsonResponse
     {

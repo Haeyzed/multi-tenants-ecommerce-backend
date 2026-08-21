@@ -24,8 +24,19 @@ use Illuminate\Http\Request;
  */
 class DeliveryController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  DeliveryService  $deliveryService
+     */
     public function __construct(private readonly DeliveryService $deliveryService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated deliveries.', type: 'array{success: true, message: string, data: DeliveryResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -40,6 +51,12 @@ class DeliveryController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreDeliveryRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function store(StoreDeliveryRequest $request): JsonResponse
     {
@@ -57,6 +74,12 @@ class DeliveryController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function show(Delivery $delivery): JsonResponse
     {
@@ -68,6 +91,13 @@ class DeliveryController extends Controller
         );
     }
 
+    /**
+     * Assign.
+     *
+     * @param  AssignDeliveryRequest  $request
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Assigned delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function assign(AssignDeliveryRequest $request, Delivery $delivery): JsonResponse
     {
@@ -81,6 +111,12 @@ class DeliveryController extends Controller
         );
     }
 
+    /**
+     * Assign automatic.
+     *
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Automatically assigned delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function assignAutomatic(Delivery $delivery): JsonResponse
     {
@@ -92,6 +128,12 @@ class DeliveryController extends Controller
         );
     }
 
+    /**
+     * Cancel.
+     *
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Cancelled delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function cancel(Delivery $delivery): JsonResponse
     {
@@ -103,6 +145,13 @@ class DeliveryController extends Controller
         );
     }
 
+    /**
+     * Fail.
+     *
+     * @param  FailDeliveryRequest  $request
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Failed delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function fail(FailDeliveryRequest $request, Delivery $delivery): JsonResponse
     {

@@ -18,8 +18,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class LeaveBalanceController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  LeaveRequestService  $leaveRequestService
+     */
     public function __construct(private readonly LeaveRequestService $leaveRequestService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Employee leave balances.', type: 'array{success: true, message: string, data: LeaveBalanceResource[], meta: null, errors: null}')]
     public function index(Employee $employee): JsonResponse
     {

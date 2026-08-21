@@ -33,17 +33,8 @@ class CommerceReportService
     /**
      * Headline sales figures for a period.
      *
+     * @param  DateRange  $range
      * @return array{
-     *     orders_count: int,
-     *     gross: string,
-     *     net: string,
-     *     aov: string,
-     *     discount_total: string,
-     *     tax_total: string,
-     *     shipping_total: string,
-     *     refund_total: string,
-     *     items_sold: int
-     * }
      */
     public function salesSummary(DateRange $range): array
     {
@@ -86,6 +77,8 @@ class CommerceReportService
     /**
      * Sales grouped into day, week, or month buckets.
      *
+     * @param  DateRange  $range
+     * @param  ReportInterval  $interval
      * @return list<array{bucket: string, orders_count: int, gross: string, net: string, discount_total: string}>
      */
     public function salesBreakdown(DateRange $range, ReportInterval $interval = ReportInterval::Day): array
@@ -117,14 +110,8 @@ class CommerceReportService
     /**
      * Customer acquisition and retention figures for a period.
      *
+     * @param  DateRange  $range
      * @return array{
-     *     total_customers: int,
-     *     new_customers: int,
-     *     active_customers: int,
-     *     returning_customers: int,
-     *     average_order_value: string,
-     *     average_customer_value: string
-     * }
      */
     public function customerMetrics(DateRange $range): array
     {
@@ -165,6 +152,8 @@ class CommerceReportService
     /**
      * Best selling products in a period.
      *
+     * @param  DateRange  $range
+     * @param  int  $limit
      * @return list<array{product_id: int|null, product_name: string, quantity_sold: int, revenue: string, orders_count: int}>
      */
     public function productMetrics(DateRange $range, int $limit = 10): array
@@ -199,13 +188,6 @@ class CommerceReportService
      * Current stock position across all warehouses.
      *
      * @return array{
-     *     tracked_items: int,
-     *     quantity_on_hand: int,
-     *     quantity_reserved: int,
-     *     quantity_available: int,
-     *     low_stock_count: int,
-     *     out_of_stock_count: int
-     * }
      */
     public function inventoryMetrics(): array
     {
@@ -243,15 +225,9 @@ class CommerceReportService
     /**
      * Marketplace commission aggregates, optionally scoped to one seller.
      *
-     * Returns null when the marketplace tables are not installed.
-     *
+     * @param  DateRange  $range
+     * @param  ?int  $sellerId
      * @return array{
-     *     sellers_count: int,
-     *     orders_count: int,
-     *     gross_sales: string,
-     *     commission_total: string,
-     *     seller_earnings: string
-     * }|null
      */
     public function marketplaceMetrics(DateRange $range, ?int $sellerId = null): ?array
     {
@@ -285,13 +261,9 @@ class CommerceReportService
     /**
      * Marketplace figures restricted to a single seller.
      *
+     * @param  DateRange  $range
+     * @param  int  $sellerId
      * @return array{
-     *     sellers_count: int,
-     *     orders_count: int,
-     *     gross_sales: string,
-     *     commission_total: string,
-     *     seller_earnings: string
-     * }|null
      */
     public function sellerMetrics(DateRange $range, int $sellerId): ?array
     {
@@ -301,12 +273,8 @@ class CommerceReportService
     /**
      * Coupon redemption aggregates for a period.
      *
+     * @param  DateRange  $range
      * @return array{
-     *     redemptions: int,
-     *     discount_total: string,
-     *     unique_customers: int,
-     *     top_coupons: list<array{coupon_id: int, redemptions: int, discount_total: string}>
-     * }
      */
     public function couponMetrics(DateRange $range): array
     {
@@ -349,13 +317,8 @@ class CommerceReportService
     /**
      * Payment capture aggregates for a period.
      *
+     * @param  DateRange  $range
      * @return array{
-     *     captured_total: string,
-     *     captured_count: int,
-     *     failed_count: int,
-     *     pending_count: int,
-     *     by_gateway: list<array{gateway: string, captured_count: int, captured_total: string}>
-     * }
      */
     public function paymentMetrics(DateRange $range): array
     {
@@ -398,6 +361,9 @@ class CommerceReportService
 
     /**
      * Total completed refunds within a period.
+     *
+     * @param  DateRange  $range
+     * @return string
      */
     protected function refundTotal(DateRange $range): string
     {
@@ -427,6 +393,10 @@ class CommerceReportService
 
     /**
      * Driver-aware SQL expression bucketing a timestamp column.
+     *
+     * @param  string  $column
+     * @param  ReportInterval  $interval
+     * @return string
      */
     protected function bucketExpression(string $column, ReportInterval $interval): string
     {
@@ -453,6 +423,9 @@ class CommerceReportService
 
     /**
      * Normalize an aggregate result to a two-decimal money string.
+     *
+     * @param  mixed  $value
+     * @return string
      */
     protected function money(mixed $value): string
     {

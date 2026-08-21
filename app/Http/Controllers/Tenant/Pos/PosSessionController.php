@@ -21,8 +21,19 @@ use Illuminate\Http\Request;
  */
 class PosSessionController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PosSessionService  $sessions
+     */
     public function __construct(private readonly PosSessionService $sessions) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Paginated sessions.',
@@ -41,6 +52,12 @@ class PosSessionController extends Controller
         );
     }
 
+    /**
+     * Open.
+     *
+     * @param  OpenPosSessionRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'Opened session.',
@@ -67,6 +84,12 @@ class PosSessionController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PosSession  $pos_session
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'A session.',
@@ -82,6 +105,13 @@ class PosSessionController extends Controller
         );
     }
 
+    /**
+     * Close.
+     *
+     * @param  ClosePosSessionRequest  $request
+     * @param  PosSession  $pos_session
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Closed session.',

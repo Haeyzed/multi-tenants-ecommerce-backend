@@ -17,11 +17,23 @@ use Illuminate\Http\JsonResponse;
  */
 class PosReportController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PosReportService  $reports
+     * @param  PosSessionService  $sessions
+     */
     public function __construct(
         private readonly PosReportService $reports,
         private readonly PosSessionService $sessions,
     ) {}
 
+    /**
+     * Session summary.
+     *
+     * @param  PosSession  $pos_session
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Session summary.', type: 'array{success: true, message: string, data: array, meta: null, errors: null}')]
     public function sessionSummary(PosSession $pos_session): JsonResponse
     {
@@ -33,6 +45,12 @@ class PosReportController extends Controller
         );
     }
 
+    /**
+     * Sales by terminal.
+     *
+     * @param  PosReportRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Sales by terminal.', type: 'array{success: true, message: string, data: array, meta: null, errors: null}')]
     public function salesByTerminal(PosReportRequest $request): JsonResponse
     {
@@ -44,6 +62,12 @@ class PosReportController extends Controller
         );
     }
 
+    /**
+     * Sales by cashier.
+     *
+     * @param  PosReportRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Sales by cashier.', type: 'array{success: true, message: string, data: array, meta: null, errors: null}')]
     public function salesByCashier(PosReportRequest $request): JsonResponse
     {
@@ -55,6 +79,12 @@ class PosReportController extends Controller
         );
     }
 
+    /**
+     * Payment method totals.
+     *
+     * @param  PosReportRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Payment method totals.', type: 'array{success: true, message: string, data: array, meta: null, errors: null}')]
     public function paymentMethodTotals(PosReportRequest $request): JsonResponse
     {

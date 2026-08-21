@@ -36,6 +36,14 @@ use Illuminate\Validation\ValidationException;
  */
 class OrderReturnService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceSettingService  $commerceSettings
+     * @param  OrderReturnTransitionService  $transitions
+     * @param  RefundService  $refunds
+     * @param  InventoryService  $inventory
+     */
     public function __construct(
         private readonly CommerceSettingService $commerceSettings,
         private readonly OrderReturnTransitionService $transitions,
@@ -44,7 +52,10 @@ class OrderReturnService
     ) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{status?: string|null, order_id?: int|null, seller_id?: int|null, per_page?: int|null}  $params
+     * @param  ?Authenticatable  $actor
      * @return LengthAwarePaginator<int, OrderReturn>
      */
     public function list(array $params = [], ?Authenticatable $actor = null): LengthAwarePaginator
@@ -71,6 +82,10 @@ class OrderReturnService
     }
 
     /**
+     * List for customer.
+     *
+     * @param  Customer  $customer
+     * @param  array  $params
      * @return LengthAwarePaginator<int, OrderReturn>
      */
     public function listForCustomer(Customer $customer, array $params = []): LengthAwarePaginator
@@ -83,6 +98,12 @@ class OrderReturnService
             ->paginate(max(1, min((int) ($params['per_page'] ?? 15), 100)));
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  OrderReturn  $return
+     * @return OrderReturn
+     */
     public function show(OrderReturn $return): OrderReturn
     {
         return $return->load(['order.items', 'customer', 'items.orderItem', 'refund', 'seller']);
@@ -91,11 +112,14 @@ class OrderReturnService
     /**
      * Customer creates a return request for eligible delivered/fulfilled order lines.
      *
+     * @param  Customer  $customer
+     * @param  Order  $order
      * @param  array{
      *     items: list<array{order_item_id: int, quantity: int, reason?: string|null}>,
      *     reason?: string|null,
      *     customer_note?: string|null
      * }  $data
+     * @return OrderReturn
      *
      * @throws ValidationException
      */
@@ -192,6 +216,11 @@ class OrderReturnService
     }
 
     /**
+     * Mark under review.
+     *
+     * @param  OrderReturn  $return
+     * @return OrderReturn
+     *
      * @throws ValidationException
      */
     public function markUnderReview(OrderReturn $return): OrderReturn
@@ -200,6 +229,12 @@ class OrderReturnService
     }
 
     /**
+     * Approve.
+     *
+     * @param  OrderReturn  $return
+     * @param  ?string  $adminNote
+     * @return OrderReturn
+     *
      * @throws ValidationException
      */
     public function approve(OrderReturn $return, ?string $adminNote = null): OrderReturn
@@ -218,6 +253,12 @@ class OrderReturnService
     }
 
     /**
+     * Reject.
+     *
+     * @param  OrderReturn  $return
+     * @param  ?string  $adminNote
+     * @return OrderReturn
+     *
      * @throws ValidationException
      */
     public function reject(OrderReturn $return, ?string $adminNote = null): OrderReturn
@@ -238,6 +279,11 @@ class OrderReturnService
     }
 
     /**
+     * Mark received.
+     *
+     * @param  OrderReturn  $return
+     * @return OrderReturn
+     *
      * @throws ValidationException
      */
     public function markReceived(OrderReturn $return): OrderReturn
@@ -261,6 +307,11 @@ class OrderReturnService
     }
 
     /**
+     * Start inspection.
+     *
+     * @param  OrderReturn  $return
+     * @return OrderReturn
+     *
      * @throws ValidationException
      */
     public function startInspection(OrderReturn $return): OrderReturn
@@ -271,12 +322,15 @@ class OrderReturnService
     /**
      * Inspect a return line and optionally restock accepted sellable units.
      *
+     * @param  OrderReturnItem  $item
+     * @param  User  $inspector
      * @param  array{
      *     inspection_status: string,
      *     condition?: string|null,
      *     inspection_note?: string|null,
      *     restock?: bool|null
      * }  $data
+     * @return OrderReturnItem
      *
      * @throws ValidationException
      */
@@ -317,6 +371,9 @@ class OrderReturnService
     /**
      * Approve return for refund after all lines inspected.
      *
+     * @param  OrderReturn  $return
+     * @return OrderReturn
+     *
      * @throws ValidationException
      */
     public function approveForRefund(OrderReturn $return): OrderReturn
@@ -352,6 +409,9 @@ class OrderReturnService
 
     /**
      * Process gateway refund for accepted return lines via RefundService.
+     *
+     * @param  OrderReturn  $return
+     * @return OrderReturn
      *
      * @throws ValidationException
      */
@@ -394,6 +454,9 @@ class OrderReturnService
 
     /**
      * Quantity still available to return for an order line.
+     *
+     * @param  OrderItem  $orderItem
+     * @return int
      */
     public function returnableQuantity(OrderItem $orderItem): int
     {
@@ -411,6 +474,12 @@ class OrderReturnService
     }
 
     /**
+     * Assert customer owns order.
+     *
+     * @param  Customer  $customer
+     * @param  Order  $order
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertCustomerOwnsOrder(Customer $customer, Order $order): void
@@ -423,6 +492,11 @@ class OrderReturnService
     }
 
     /**
+     * Assert order eligible for return.
+     *
+     * @param  Order  $order
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertOrderEligibleForReturn(Order $order): void
@@ -468,6 +542,10 @@ class OrderReturnService
 
     /**
      * Proportional share of the line's net total (after discount, including tax).
+     *
+     * @param  OrderItem  $orderItem
+     * @param  int  $quantity
+     * @return string
      */
     protected function lineRefundAmount(OrderItem $orderItem, int $quantity): string
     {
@@ -485,6 +563,9 @@ class OrderReturnService
 
     /**
      * Restock accepted return quantity onto the original inventory row when present.
+     *
+     * @param  OrderReturnItem  $item
+     * @return void
      */
     protected function restockItem(OrderReturnItem $item): void
     {
@@ -509,6 +590,11 @@ class OrderReturnService
         $item->save();
     }
 
+    /**
+     * Generate return number.
+     *
+     * @return string
+     */
     protected function generateReturnNumber(): string
     {
         $prefix = 'RET-'.now()->format('Ymd').'-';

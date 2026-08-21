@@ -31,12 +31,21 @@ class OrderTransitionService
         OrderStatus::Refunded->value => [],
     ];
 
+    /**
+     * Create a new class instance.
+     *
+     * @param  OrderInventoryService  $orderInventory
+     */
     public function __construct(
         private readonly OrderInventoryService $orderInventory,
     ) {}
 
     /**
      * Transition an order to a new status when allowed.
+     *
+     * @param  Order  $order
+     * @param  OrderStatus  $to
+     * @return Order
      *
      * @throws ValidationException
      */

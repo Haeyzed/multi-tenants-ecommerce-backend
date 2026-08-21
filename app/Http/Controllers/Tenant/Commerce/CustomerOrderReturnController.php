@@ -23,8 +23,19 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class CustomerOrderReturnController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  OrderReturnService  $returns
+     */
     public function __construct(private readonly OrderReturnService $returns) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Customer returns.', type: 'array{success: true, message: string, data: OrderReturnResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -39,6 +50,13 @@ class CustomerOrderReturnController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreOrderReturnRequest  $request
+     * @param  Order  $order
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created return.', type: 'array{success: true, message: string, data: OrderReturnResource, meta: null, errors: null}')]
     public function store(StoreOrderReturnRequest $request, Order $order): JsonResponse
     {
@@ -51,6 +69,12 @@ class CustomerOrderReturnController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  OrderReturn  $order_return
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A return.', type: 'array{success: true, message: string, data: OrderReturnResource, meta: null, errors: null}')]
     public function show(OrderReturn $order_return): JsonResponse
     {

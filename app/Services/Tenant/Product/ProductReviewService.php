@@ -24,11 +24,18 @@ use Illuminate\Validation\ValidationException;
  */
 class ProductReviewService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
     /**
      * Customer creates a pending review. Never accepts verified_purchase from client.
      *
+     * @param  Customer  $customer
+     * @param  Product  $product
      * @param  array{
      *     rating: int,
      *     title?: string|null,
@@ -36,6 +43,7 @@ class ProductReviewService
      *     product_variant_id?: int|null,
      *     images?: list<UploadedFile>|null
      * }  $data
+     * @return ProductReview
      */
     public function customerStore(Customer $customer, Product $product, array $data): ProductReview
     {
@@ -81,6 +89,10 @@ class ProductReviewService
 
     /**
      * Whether the customer has a paid, completed order containing the product.
+     *
+     * @param  Customer  $customer
+     * @param  Product  $product
+     * @return bool
      */
     public function customerHasVerifiedPurchase(Customer $customer, Product $product): bool
     {
@@ -118,6 +130,10 @@ class ProductReviewService
     /**
      * Moderate a review and recalculate product aggregates when needed.
      *
+     * @param  ProductReview  $review
+     * @param  ProductReviewStatus|string  $status
+     * @return ProductReview
+     *
      * @throws ValidationException
      */
     public function moderate(ProductReview $review, ProductReviewStatus|string $status): ProductReview
@@ -145,6 +161,9 @@ class ProductReviewService
 
     /**
      * Delete a review and recalculate aggregates.
+     *
+     * @param  ProductReview  $review
+     * @return void
      */
     public function destroy(ProductReview $review): void
     {
@@ -157,6 +176,9 @@ class ProductReviewService
 
     /**
      * Recalculate average rating and approved review count on the product.
+     *
+     * @param  Product  $product
+     * @return void
      */
     public function recalculateAggregates(Product $product): void
     {
@@ -176,6 +198,7 @@ class ProductReviewService
     /**
      * Approved reviews for a product (storefront).
      *
+     * @param  Product  $product
      * @param  array{sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, ProductReview>
      */
@@ -190,7 +213,10 @@ class ProductReviewService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

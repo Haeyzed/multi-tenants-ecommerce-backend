@@ -21,6 +21,13 @@ use Illuminate\Support\Collection;
  */
 class StorefrontCatalogService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductAvailabilityService  $availabilityService
+     * @param  CategoryService  $categoryService
+     * @param  ProductSearchService  $productSearchService
+     */
     public function __construct(
         private readonly ProductAvailabilityService $availabilityService,
         private readonly CategoryService $categoryService,
@@ -64,6 +71,9 @@ class StorefrontCatalogService
 
     /**
      * Resolve a storefront product by slug or id.
+     *
+     * @param  string|int  $slugOrId
+     * @return Product
      */
     public function product(string|int $slugOrId): Product
     {
@@ -118,6 +128,9 @@ class StorefrontCatalogService
 
     /**
      * Resolve a storefront collection by slug or id.
+     *
+     * @param  string|int  $slugOrId
+     * @return ProductCollection
      */
     public function collection(string|int $slugOrId): ProductCollection
     {
@@ -164,6 +177,9 @@ class StorefrontCatalogService
 
     /**
      * Resolve an active brand by slug or id.
+     *
+     * @param  string|int  $slugOrId
+     * @return Brand
      */
     public function brand(string|int $slugOrId): Brand
     {
@@ -210,6 +226,9 @@ class StorefrontCatalogService
 
     /**
      * Resolve an active category by slug or id.
+     *
+     * @param  string|int  $slugOrId
+     * @return Category
      */
     public function category(string|int $slugOrId): Category
     {
@@ -230,6 +249,7 @@ class StorefrontCatalogService
     /**
      * Approved reviews for a storefront-visible product.
      *
+     * @param  Product  $product
      * @param  array{sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, ProductReview>
      */
@@ -249,6 +269,9 @@ class StorefrontCatalogService
 
     /**
      * Attach computed availability string on the model for resources.
+     *
+     * @param  Product  $product
+     * @return Product
      */
     protected function attachAvailability(Product $product): Product
     {
@@ -258,7 +281,10 @@ class StorefrontCatalogService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

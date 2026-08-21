@@ -18,6 +18,12 @@ use Illuminate\Support\Facades\Auth;
  */
 class CustomerGiftCardController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CartService  $cartService
+     * @param  GiftCardService  $giftCardService
+     */
     public function __construct(
         private readonly CartService $cartService,
         private readonly GiftCardService $giftCardService,
@@ -26,8 +32,8 @@ class CustomerGiftCardController extends Controller
     /**
      * Preview how much of the current cart a gift card could cover.
      *
-     * The preview is indicative only: it uses the cart subtotal, while the amount
-     * actually redeemed is recalculated against the final order total at checkout.
+     * @param  PreviewGiftCardRequest  $request
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Gift card preview for the active cart.', type: 'array{success: true, message: string, data: array{last_four: string, currency: string, balance: string, applicable_amount: string, expires_at: string|null}, meta: null, errors: null}')]
     public function preview(PreviewGiftCardRequest $request): JsonResponse

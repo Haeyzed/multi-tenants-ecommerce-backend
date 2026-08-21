@@ -30,9 +30,16 @@ class GiftCardService
      */
     private const int CODE_LENGTH = 16;
 
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceSettingService  $commerceSettings
+     */
     public function __construct(private readonly CommerceSettingService $commerceSettings) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, status?: string|null, customer_id?: int|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, GiftCard>
      */
@@ -45,6 +52,12 @@ class GiftCardService
             ->paginate($this->perPage($params));
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  GiftCard  $giftCard
+     * @return GiftCard
+     */
     public function show(GiftCard $giftCard): GiftCard
     {
         return $giftCard->load(['customer', 'transactions' => fn ($query) => $query->latest('id')]);
@@ -52,9 +65,6 @@ class GiftCardService
 
     /**
      * Issue a new gift card and return it alongside the plain code.
-     *
-     * The plain code is the only copy that will ever exist; surface it once on the
-     * create response and never persist it.
      *
      * @param  array{
      *     amount: string,
@@ -115,6 +125,9 @@ class GiftCardService
     /**
      * Activate an inactive card so it can be redeemed.
      *
+     * @param  GiftCard  $giftCard
+     * @return GiftCard
+     *
      * @throws ValidationException
      */
     public function activate(GiftCard $giftCard): GiftCard
@@ -140,6 +153,10 @@ class GiftCardService
 
     /**
      * Cancel a card, forfeiting any remaining balance.
+     *
+     * @param  GiftCard  $giftCard
+     * @param  ?string  $reason
+     * @return GiftCard
      */
     public function cancel(GiftCard $giftCard, ?string $reason = null): GiftCard
     {
@@ -174,6 +191,9 @@ class GiftCardService
 
     /**
      * Look up a card by its plain code.
+     *
+     * @param  string  $plainCode
+     * @return ?GiftCard
      */
     public function findByCode(string $plainCode): ?GiftCard
     {
@@ -188,6 +208,10 @@ class GiftCardService
 
     /**
      * Resolve a redeemable card for the given currency, or fail validation.
+     *
+     * @param  string  $plainCode
+     * @param  string  $currency
+     * @return GiftCard
      *
      * @throws ValidationException
      */
@@ -210,8 +234,8 @@ class GiftCardService
     /**
      * Flip a lapsed card to the expired status.
      *
-     * Kept separate from {@see self::assertRedeemable()} so the housekeeping write
-     * survives even when the caller's transaction rolls back on a rejected redemption.
+     * @param  GiftCard  $giftCard
+     * @return void
      */
     public function markExpiredIfDue(GiftCard $giftCard): void
     {
@@ -223,6 +247,10 @@ class GiftCardService
 
     /**
      * Amount of a due total this card can cover.
+     *
+     * @param  GiftCard  $giftCard
+     * @param  string  $amountDue
+     * @return string
      */
     public function applicableAmount(GiftCard $giftCard, string $amountDue): string
     {
@@ -236,9 +264,10 @@ class GiftCardService
     /**
      * Redeem part or all of a card's balance against an order.
      *
-     * The card row is locked for the duration of the transaction so concurrent
-     * checkouts cannot overspend the same balance. A card that reaches a zero
-     * balance is marked depleted.
+     * @param  GiftCard|string  $giftCard
+     * @param  string  $amount
+     * @param  Order  $order
+     * @return GiftCardTransaction
      *
      * @throws ValidationException
      */
@@ -287,9 +316,11 @@ class GiftCardService
     /**
      * Return a previously redeemed amount to the originating card.
      *
-     * Called when a refund completes for the gift-card-funded portion of an order:
-     * the balance goes back to the same card it was redeemed from, and a depleted
-     * card becomes active again unless it expired or was cancelled meanwhile.
+     * @param  GiftCard|string  $giftCard
+     * @param  string  $amount
+     * @param  ?Order  $order
+     * @param  ?string  $description
+     * @return GiftCardTransaction
      *
      * @throws ValidationException
      */
@@ -328,6 +359,11 @@ class GiftCardService
 
     /**
      * Manually adjust a card balance up or down.
+     *
+     * @param  GiftCard  $giftCard
+     * @param  string  $signedAmount
+     * @param  ?string  $description
+     * @return GiftCardTransaction
      *
      * @throws ValidationException
      */
@@ -373,6 +409,9 @@ class GiftCardService
     /**
      * Masked balance preview for a customer-supplied code.
      *
+     * @param  string  $plainCode
+     * @param  string  $currency
+     * @param  string  $amountDue
      * @return array{last_four: string, currency: string, balance: string, applicable_amount: string, expires_at: Carbon|null}
      *
      * @throws ValidationException
@@ -392,6 +431,9 @@ class GiftCardService
 
     /**
      * Hash a plain code for storage and lookup.
+     *
+     * @param  string  $plainCode
+     * @return string
      */
     public function hashCode(string $plainCode): string
     {
@@ -400,6 +442,10 @@ class GiftCardService
 
     /**
      * Reject cards that cannot currently fund a checkout.
+     *
+     * @param  GiftCard  $giftCard
+     * @param  string  $currency
+     * @return void
      *
      * @throws ValidationException
      */
@@ -431,6 +477,11 @@ class GiftCardService
     }
 
     /**
+     * Lock card.
+     *
+     * @param  GiftCard|string  $giftCard
+     * @return GiftCard
+     *
      * @throws ValidationException
      */
     protected function lockCard(GiftCard|string $giftCard): GiftCard
@@ -450,6 +501,17 @@ class GiftCardService
         return $locked;
     }
 
+    /**
+     * Record transaction.
+     *
+     * @param  GiftCard  $giftCard
+     * @param  GiftCardTransactionType  $type
+     * @param  string  $amount
+     * @param  string  $balanceAfter
+     * @param  ?Order  $order
+     * @param  ?string  $description
+     * @return GiftCardTransaction
+     */
     protected function recordTransaction(
         GiftCard $giftCard,
         GiftCardTransactionType $type,
@@ -470,6 +532,8 @@ class GiftCardService
 
     /**
      * Generate a human-readable code in GC-XXXX-XXXX-XXXX-XXXX form.
+     *
+     * @return string
      */
     protected function generateCode(): string
     {
@@ -481,13 +545,22 @@ class GiftCardService
         return $code;
     }
 
+    /**
+     * Normalize code.
+     *
+     * @param  string  $plainCode
+     * @return string
+     */
     protected function normalizeCode(string $plainCode): string
     {
         return Str::upper(trim($plainCode));
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

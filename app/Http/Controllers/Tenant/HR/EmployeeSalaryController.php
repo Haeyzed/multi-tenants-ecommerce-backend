@@ -20,8 +20,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class EmployeeSalaryController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  EmployeeSalaryService  $employeeSalaryService
+     */
     public function __construct(private readonly EmployeeSalaryService $employeeSalaryService) {}
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Employee salary configuration.', type: 'array{success: true, message: string, data: EmployeeSalaryResource|null, meta: null, errors: null}')]
     public function show(Employee $employee): JsonResponse
     {
@@ -35,6 +46,13 @@ class EmployeeSalaryController extends Controller
         );
     }
 
+    /**
+     * Upsert.
+     *
+     * @param  UpsertEmployeeSalaryRequest  $request
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated employee salary.', type: 'array{success: true, message: string, data: EmployeeSalaryResource, meta: null, errors: null}')]
     public function upsert(UpsertEmployeeSalaryRequest $request, Employee $employee): JsonResponse
     {
@@ -46,6 +64,12 @@ class EmployeeSalaryController extends Controller
         );
     }
 
+    /**
+     * History.
+     *
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Salary history.', type: 'array{success: true, message: string, data: EmployeeSalaryRevisionResource[], meta: null, errors: null}')]
     public function history(Employee $employee): JsonResponse
     {

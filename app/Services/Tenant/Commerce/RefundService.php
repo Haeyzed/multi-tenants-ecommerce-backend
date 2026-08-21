@@ -35,6 +35,14 @@ use Throwable;
  */
 class RefundService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PaymentManager  $paymentManager
+     * @param  AccountingService  $accounting
+     * @param  GiftCardService  $giftCards
+     * @param  StoreCreditService  $storeCredit
+     */
     public function __construct(
         private readonly PaymentManager $paymentManager,
         private readonly AccountingService $accounting,
@@ -43,6 +51,8 @@ class RefundService
     ) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{order_id?: int|null, status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Refund>
      */
@@ -62,7 +72,12 @@ class RefundService
     }
 
     /**
+     * Create.
+     *
+     * @param  Order  $order
+     * @param  OrderPayment  $payment
      * @param  array{amount?: string|null, reason?: string|null, restore_prepaid?: bool|null}  $data
+     * @return Refund
      */
     public function create(Order $order, OrderPayment $payment, array $data = []): Refund
     {
@@ -205,6 +220,9 @@ class RefundService
 
     /**
      * Reconcile a Processing refund against the payment provider.
+     *
+     * @param  Refund  $refund
+     * @return Refund
      */
     public function reconcile(Refund $refund): Refund
     {
@@ -292,7 +310,10 @@ class RefundService
     /**
      * Allocate a refund across remaining gateway balance first, then prepaid tenders.
      *
+     * @param  Order  $order
+     * @param  string  $amount
      * @param  array{reason?: string|null}  $data
+     * @return Refund
      */
     public function refundAllocated(Order $order, string $amount, array $data = []): Refund
     {
@@ -355,7 +376,9 @@ class RefundService
     /**
      * Refund an order's prepaid gift card / store credit (optionally alongside a gateway payment).
      *
+     * @param  Order  $order
      * @param  array{amount?: string|null, reason?: string|null}  $data
+     * @return Refund
      */
     public function createPrepaid(Order $order, array $data = []): Refund
     {
@@ -430,6 +453,12 @@ class RefundService
         });
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Refund  $refund
+     * @return Refund
+     */
     public function show(Refund $refund): Refund
     {
         return $refund->load(['order', 'payment']);
@@ -438,10 +467,8 @@ class RefundService
     /**
      * Return prepaid gift card / store credit for an order, capped by remaining unrestored amounts.
      *
-     * Gift card is restored first (same order as checkout draw-down), then store credit.
-     * Prior restore ledger rows reduce what is still available so partial refunds can be
-     * followed by later restores without stranding the remainder.
-     *
+     * @param  Order  $order
+     * @param  ?string  $maxAmount
      * @return array{gift_card: string, store_credit: string}
      */
     public function restoreAlternativeFunding(Order $order, ?string $maxAmount = null): array
@@ -497,7 +524,11 @@ class RefundService
     }
 
     /**
+     * Mark refund failed.
+     *
+     * @param  Refund  $refund
      * @param  array<string, mixed>  $metadata
+     * @return void
      */
     protected function markRefundFailed(Refund $refund, array $metadata): void
     {
@@ -509,7 +540,11 @@ class RefundService
     /**
      * Persist reconciliation metadata while leaving the refund in Processing.
      *
+     * @param  Refund  $refund
+     * @param  Order  $order
+     * @param  OrderPayment  $payment
      * @param  array<string, mixed>  $metadata
+     * @return void
      */
     protected function leaveRefundPendingReconciliation(
         Refund $refund,
@@ -530,7 +565,9 @@ class RefundService
     /**
      * Persist reconciliation metadata while leaving the refund in Processing.
      *
+     * @param  Refund  $refund
      * @param  array<string, mixed>  $metadata
+     * @return void
      */
     protected function markRefundPendingReconciliation(Refund $refund, array $metadata): void
     {
@@ -541,6 +578,18 @@ class RefundService
         $refund->save();
     }
 
+    /**
+     * Finalize successful refund.
+     *
+     * @param  Refund  $refund
+     * @param  OrderPayment  $payment
+     * @param  Order  $order
+     * @param  string  $requestedAmount
+     * @param  bool  $isFullRefund
+     * @param  bool  $restorePrepaid
+     * @param  PaymentRefundResult  $result
+     * @return Refund
+     */
     protected function finalizeSuccessfulRefund(
         Refund $refund,
         OrderPayment $payment,
@@ -595,6 +644,10 @@ class RefundService
     }
 
     /**
+     * Match provider refund.
+     *
+     * @param  Refund  $refund
+     * @param  OrderPayment  $payment
      * @param  list<array<string, mixed>>  $providerRefunds
      * @return array<string, mixed>|null
      */
@@ -634,6 +687,12 @@ class RefundService
         return null;
     }
 
+    /**
+     * Prepaid total.
+     *
+     * @param  Order  $order
+     * @return string
+     */
     protected function prepaidTotal(Order $order): string
     {
         return Money::add(
@@ -642,6 +701,12 @@ class RefundService
         );
     }
 
+    /**
+     * Prepaid remaining.
+     *
+     * @param  Order  $order
+     * @return string
+     */
     protected function prepaidRemaining(Order $order): string
     {
         return Money::add(
@@ -650,12 +715,24 @@ class RefundService
         );
     }
 
+    /**
+     * Prepaid funding already restored.
+     *
+     * @param  Order  $order
+     * @return bool
+     */
     protected function prepaidFundingAlreadyRestored(Order $order): bool
     {
         return bccomp($this->prepaidRemaining($order), '0', 2) <= 0
             && bccomp($this->prepaidTotal($order), '0', 2) > 0;
     }
 
+    /**
+     * Gift card snapshot.
+     *
+     * @param  Order  $order
+     * @return string
+     */
     protected function giftCardSnapshot(Order $order): string
     {
         if (! Schema::hasColumn('orders', 'gift_card_amount')) {
@@ -665,6 +742,12 @@ class RefundService
         return Money::add((string) ($order->gift_card_amount ?? '0.00'), '0');
     }
 
+    /**
+     * Store credit snapshot.
+     *
+     * @param  Order  $order
+     * @return string
+     */
     protected function storeCreditSnapshot(Order $order): string
     {
         if (! Schema::hasColumn('orders', 'store_credit_amount')) {
@@ -674,6 +757,12 @@ class RefundService
         return Money::add((string) ($order->store_credit_amount ?? '0.00'), '0');
     }
 
+    /**
+     * Gift card restored amount.
+     *
+     * @param  Order  $order
+     * @return string
+     */
     protected function giftCardRestoredAmount(Order $order): string
     {
         if (! Schema::hasTable('gift_card_transactions')) {
@@ -686,6 +775,12 @@ class RefundService
             ->sum('amount'), '0');
     }
 
+    /**
+     * Store credit restored amount.
+     *
+     * @param  Order  $order
+     * @return string
+     */
     protected function storeCreditRestoredAmount(Order $order): string
     {
         if (! Schema::hasTable('store_credit_transactions')) {
@@ -699,6 +794,12 @@ class RefundService
             ->sum('amount'), '0');
     }
 
+    /**
+     * Gift card remaining to restore.
+     *
+     * @param  Order  $order
+     * @return string
+     */
     protected function giftCardRemainingToRestore(Order $order): string
     {
         $remaining = Money::sub($this->giftCardSnapshot($order), $this->giftCardRestoredAmount($order));
@@ -706,6 +807,12 @@ class RefundService
         return bccomp($remaining, '0', 2) > 0 ? $remaining : '0.00';
     }
 
+    /**
+     * Store credit remaining to restore.
+     *
+     * @param  Order  $order
+     * @return string
+     */
     protected function storeCreditRemainingToRestore(Order $order): string
     {
         $remaining = Money::sub($this->storeCreditSnapshot($order), $this->storeCreditRestoredAmount($order));
@@ -713,6 +820,13 @@ class RefundService
         return bccomp($remaining, '0', 2) > 0 ? $remaining : '0.00';
     }
 
+    /**
+     * Sync order payment status.
+     *
+     * @param  Order  $order
+     * @param  ?OrderPayment  $payment
+     * @return void
+     */
     protected function syncOrderPaymentStatus(Order $order, ?OrderPayment $payment = null): void
     {
         $gatewayRemaining = $payment !== null
@@ -729,6 +843,12 @@ class RefundService
         $order->save();
     }
 
+    /**
+     * Gateway refundable total.
+     *
+     * @param  Order  $order
+     * @return string
+     */
     protected function gatewayRefundableTotal(Order $order): string
     {
         $total = '0.00';
@@ -747,6 +867,9 @@ class RefundService
 
     /**
      * Remaining refundable amount excluding completed and in-flight processing refunds.
+     *
+     * @param  OrderPayment  $payment
+     * @return string
      */
     protected function refundableAmount(OrderPayment $payment): string
     {

@@ -17,6 +17,11 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
  */
 class ProductSearchService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductSearchDriver  $driver
+     */
     public function __construct(private readonly ProductSearchDriver $driver) {}
 
     /**

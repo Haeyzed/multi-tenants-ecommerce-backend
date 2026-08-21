@@ -14,8 +14,10 @@ class AnalyticsCsvExporter
     /**
      * Stream a list of uniform rows as CSV.
      *
+     * @param  string  $filename
      * @param  list<array<string, scalar|null>>  $rows
-     * @param  list<string>|null  $headings  Defaults to the keys of the first row.
+     * @param  ?array  $headings
+     * @return StreamedResponse
      */
     public function rows(string $filename, array $rows, ?array $headings = null): StreamedResponse
     {
@@ -46,7 +48,9 @@ class AnalyticsCsvExporter
     /**
      * Stream a flat summary as a two column metric/value CSV.
      *
+     * @param  string  $filename
      * @param  array<string, scalar|null>  $summary
+     * @return StreamedResponse
      */
     public function summary(string $filename, array $summary): StreamedResponse
     {
@@ -60,7 +64,11 @@ class AnalyticsCsvExporter
     }
 
     /**
+     * Stream.
+     *
+     * @param  string  $filename
      * @param  callable(): void  $writer
+     * @return StreamedResponse
      */
     protected function stream(string $filename, callable $writer): StreamedResponse
     {

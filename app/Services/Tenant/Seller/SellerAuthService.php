@@ -27,6 +27,13 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class SellerAuthService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  UsageLimiter  $usageLimiter
+     * @param  CommerceSettingService  $commerceSettings
+     * @param  MediaService  $mediaService
+     */
     public function __construct(
         private readonly UsageLimiter $usageLimiter,
         private readonly CommerceSettingService $commerceSettings,
@@ -112,6 +119,9 @@ class SellerAuthService
 
     /**
      * Revoke the current Sanctum access token for the given seller.
+     *
+     * @param  Seller  $seller
+     * @return void
      */
     public function logout(Seller $seller): void
     {
@@ -124,6 +134,9 @@ class SellerAuthService
 
     /**
      * Send a password reset link without revealing whether the email exists.
+     *
+     * @param  string  $email
+     * @return void
      */
     public function forgotPassword(string $email): void
     {
@@ -142,6 +155,7 @@ class SellerAuthService
      * Reset a seller's password using the password broker.
      *
      * @param  array{email: string, password: string, password_confirmation: string, token: string}  $data
+     * @return void
      *
      * @throws ValidationException
      */
@@ -170,7 +184,9 @@ class SellerAuthService
     /**
      * Change the authenticated seller's password and revoke all tokens.
      *
+     * @param  Seller  $seller
      * @param  array{current_password: string, password: string}  $data
+     * @return void
      *
      * @throws ValidationException
      */
@@ -194,7 +210,9 @@ class SellerAuthService
     /**
      * Update the authenticated seller's profile (non-commission fields).
      *
+     * @param  Seller  $seller
      * @param  array{name?: string, description?: string|null, email?: string, phone?: string|null}  $data
+     * @return Seller
      */
     public function updateProfile(Seller $seller, array $data): Seller
     {
@@ -206,6 +224,10 @@ class SellerAuthService
 
     /**
      * Replace the seller logo.
+     *
+     * @param  Seller  $seller
+     * @param  UploadedFile  $logo
+     * @return Media
      */
     public function replaceLogo(Seller $seller, UploadedFile $logo): Media
     {
@@ -214,6 +236,9 @@ class SellerAuthService
 
     /**
      * Remove the seller logo.
+     *
+     * @param  Seller  $seller
+     * @return void
      */
     public function removeLogo(Seller $seller): void
     {

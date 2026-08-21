@@ -24,9 +24,16 @@ use Illuminate\Support\Collection;
  */
 class HrReportService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrReportQuery  $queries
+     */
     public function __construct(private readonly HrReportQuery $queries) {}
 
     /**
+     * Attendance.
+     *
      * @param  array{from?: string|null, to?: string|null, department_id?: int|null, employee_id?: int|null}  $params
      * @return array<string, mixed>
      */
@@ -66,6 +73,8 @@ class HrReportService
     }
 
     /**
+     * Leave.
+     *
      * @param  array{from?: string|null, to?: string|null, department_id?: int|null, employee_id?: int|null}  $params
      * @return array<string, mixed>
      */
@@ -103,6 +112,8 @@ class HrReportService
     }
 
     /**
+     * Payroll.
+     *
      * @param  array{from?: string|null, to?: string|null, department_id?: int|null}  $params
      * @return array<string, mixed>
      */
@@ -161,6 +172,8 @@ class HrReportService
     }
 
     /**
+     * Overtime.
+     *
      * @param  array{from?: string|null, to?: string|null, department_id?: int|null, employee_id?: int|null}  $params
      * @return array<string, mixed>
      */
@@ -199,6 +212,8 @@ class HrReportService
     }
 
     /**
+     * Headcount.
+     *
      * @param  array{as_of?: string|null}  $params
      * @return array<string, mixed>
      */
@@ -235,6 +250,8 @@ class HrReportService
     }
 
     /**
+     * Recruitment.
+     *
      * @param  array{from?: string|null, to?: string|null}  $params
      * @return array<string, mixed>
      */
@@ -309,6 +326,9 @@ class HrReportService
     }
 
     /**
+     * Recruitment funnel.
+     *
+     * @param  Collection<int, JobApplication>  $applications
      * @param  Collection<int, JobApplication>  $applications
      * @param  Collection<int|string, Collection<int, ApplicationStageHistory>>  $history
      * @return list<array{status: string, reached: int, advanced: int}>
@@ -362,6 +382,9 @@ class HrReportService
     }
 
     /**
+     * Time in stage.
+     *
+     * @param  Collection<int, JobApplication>  $applications
      * @param  Collection<int, JobApplication>  $applications
      * @param  Collection<int|string, Collection<int, ApplicationStageHistory>>  $history
      * @return list<array{status: string, average_days: float, samples: int}>

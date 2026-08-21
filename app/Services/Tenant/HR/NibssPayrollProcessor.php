@@ -18,12 +18,21 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class NibssPayrollProcessor
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     * @param  HrCsvExporter  $csv
+     */
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly HrCsvExporter $csv,
     ) {}
 
     /**
+     * Instructions.
+     *
+     * @param  PayrollRun  $payrollRun
      * @return list<array<string, scalar|null>>
      */
     public function instructions(PayrollRun $payrollRun): array
@@ -47,6 +56,12 @@ class NibssPayrollProcessor
         })->values()->all();
     }
 
+    /**
+     * Download.
+     *
+     * @param  PayrollRun  $payrollRun
+     * @return StreamedResponse
+     */
     public function download(PayrollRun $payrollRun): StreamedResponse
     {
         return $this->csv->rows(
@@ -57,6 +72,9 @@ class NibssPayrollProcessor
 
     /**
      * Submit NIP bulk credits to the configured NIBSS-compatible endpoint.
+     *
+     * @param  PayrollRun  $payrollRun
+     * @return PayrollRun
      *
      * @throws ValidationException
      */
@@ -121,6 +139,9 @@ class NibssPayrollProcessor
     }
 
     /**
+     * Credits.
+     *
+     * @param  PayrollRun  $payrollRun
      * @return list<array<string, scalar|null>>
      */
     protected function credits(PayrollRun $payrollRun): array
@@ -136,6 +157,10 @@ class NibssPayrollProcessor
     }
 
     /**
+     * Assert configured.
+     *
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertConfigured(): void

@@ -18,8 +18,19 @@ use Illuminate\Http\Request;
  */
 class AccountingReportController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  AccountingReportService  $reports
+     */
     public function __construct(private readonly AccountingReportService $reports) {}
 
+    /**
+     * Trial balance.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Trial balance rows for active accounts.',
@@ -38,6 +49,13 @@ class AccountingReportController extends Controller
         );
     }
 
+    /**
+     * Ledger.
+     *
+     * @param  Request  $request
+     * @param  Account  $account
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Paginated ledger lines for an account.',
@@ -56,6 +74,13 @@ class AccountingReportController extends Controller
         );
     }
 
+    /**
+     * Balance.
+     *
+     * @param  Request  $request
+     * @param  Account  $account
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Account debit/credit totals and net balance.',

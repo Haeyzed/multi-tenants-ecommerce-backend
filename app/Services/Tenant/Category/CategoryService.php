@@ -18,6 +18,11 @@ use Illuminate\Validation\ValidationException;
  */
 class CategoryService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
     /**
@@ -44,8 +49,6 @@ class CategoryService
 
     /**
      * Build a nested category tree from root nodes.
-     *
-     * Loads all categories once and nests in memory to avoid N+1 recursion.
      *
      * @param  array{is_active?: bool|null}  $params
      * @return Collection<int, Category>
@@ -94,6 +97,8 @@ class CategoryService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @param  ?UploadedFile  $image
+     * @return Category
      *
      * @throws ValidationException
      */
@@ -125,6 +130,9 @@ class CategoryService
 
     /**
      * Retrieve a category with relations loaded.
+     *
+     * @param  Category  $category
+     * @return Category
      */
     public function show(Category $category): Category
     {
@@ -134,6 +142,7 @@ class CategoryService
     /**
      * Update a category, validating hierarchy changes.
      *
+     * @param  Category  $category
      * @param  array{
      *     name?: string,
      *     parent_id?: int|null,
@@ -141,6 +150,8 @@ class CategoryService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @param  ?UploadedFile  $image
+     * @return Category
      *
      * @throws ValidationException
      */
@@ -164,6 +175,9 @@ class CategoryService
 
     /**
      * Delete a category when it has no children or products.
+     *
+     * @param  Category  $category
+     * @return void
      *
      * @throws ValidationException
      */
@@ -190,6 +204,7 @@ class CategoryService
     /**
      * List immediate children of a category.
      *
+     * @param  Category  $category
      * @return Collection<int, Category>
      */
     public function children(Category $category): Collection
@@ -199,6 +214,10 @@ class CategoryService
 
     /**
      * Replace the category image.
+     *
+     * @param  Category  $category
+     * @param  UploadedFile  $image
+     * @return Category
      */
     public function storeImage(Category $category, UploadedFile $image): Category
     {
@@ -209,6 +228,9 @@ class CategoryService
 
     /**
      * Remove the category image.
+     *
+     * @param  Category  $category
+     * @return Category
      */
     public function destroyImage(Category $category): Category
     {
@@ -219,6 +241,9 @@ class CategoryService
 
     /**
      * Ensure parent_id exists in the current tenant database.
+     *
+     * @param  int  $parentId
+     * @return void
      *
      * @throws ValidationException
      */
@@ -233,6 +258,10 @@ class CategoryService
 
     /**
      * Prevent self-parenting and circular hierarchy.
+     *
+     * @param  Category  $category
+     * @param  mixed  $parentId
+     * @return void
      *
      * @throws ValidationException
      */
@@ -261,6 +290,10 @@ class CategoryService
 
     /**
      * Walk ancestors of the proposed parent to detect cycles.
+     *
+     * @param  Category  $category
+     * @param  int  $parentId
+     * @return bool
      */
     protected function wouldCreateCycle(Category $category, int $parentId): bool
     {
@@ -310,6 +343,9 @@ class CategoryService
      */
     /**
      * Whether the category has associated products.
+     *
+     * @param  Category  $category
+     * @return bool
      */
     protected function hasAssociatedProducts(Category $category): bool
     {
@@ -317,7 +353,10 @@ class CategoryService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

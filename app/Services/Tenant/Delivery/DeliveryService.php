@@ -41,9 +41,16 @@ class DeliveryService
         'cancelled' => [],
     ];
 
+    /**
+     * Create a new class instance.
+     *
+     * @param  DriverAssignmentManager  $assignmentManager
+     */
     public function __construct(private readonly DriverAssignmentManager $assignmentManager) {}
 
     /**
+     * order_id?: int|null, driver_id?: int|null, status?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     order_id?: int|null,
      *     driver_id?: int|null,
@@ -76,7 +83,10 @@ class DeliveryService
     /**
      * Create a pending delivery for an order (optionally linked to a shipment).
      *
+     * @param  Order  $order
+     * @param  ?Shipment  $shipment
      * @param  array{notes?: string|null}  $data
+     * @return Delivery
      */
     public function createForOrder(Order $order, ?Shipment $shipment = null, array $data = []): Delivery
     {
@@ -97,7 +107,9 @@ class DeliveryService
     /**
      * Create a pending delivery for a shipment.
      *
+     * @param  Shipment  $shipment
      * @param  array{notes?: string|null}  $data
+     * @return Delivery
      */
     public function createForShipment(Shipment $shipment, array $data = []): Delivery
     {
@@ -108,6 +120,9 @@ class DeliveryService
 
     /**
      * Retrieve a delivery with relations.
+     *
+     * @param  Delivery  $delivery
+     * @return Delivery
      */
     public function show(Delivery $delivery): Delivery
     {
@@ -116,6 +131,10 @@ class DeliveryService
 
     /**
      * Assign a driver to a pending (or re-assignable) delivery.
+     *
+     * @param  Delivery  $delivery
+     * @param  Driver  $driver
+     * @return Delivery
      *
      * @throws ValidationException
      */
@@ -160,6 +179,9 @@ class DeliveryService
     /**
      * Assign a driver using the configured assignment strategy.
      *
+     * @param  Delivery  $delivery
+     * @return Delivery
+     *
      * @throws ValidationException
      */
     public function assignAutomatically(Delivery $delivery): Delivery
@@ -177,6 +199,10 @@ class DeliveryService
 
     /**
      * Driver accepts an assigned delivery.
+     *
+     * @param  Delivery  $delivery
+     * @param  Driver  $driver
+     * @return Delivery
      *
      * @throws ValidationException
      */
@@ -209,6 +235,10 @@ class DeliveryService
     /**
      * Driver rejects an assigned delivery.
      *
+     * @param  Delivery  $delivery
+     * @param  Driver  $driver
+     * @return Delivery
+     *
      * @throws ValidationException
      */
     public function reject(Delivery $delivery, Driver $driver): Delivery
@@ -236,6 +266,10 @@ class DeliveryService
     /**
      * Mark delivery as picked up.
      *
+     * @param  Delivery  $delivery
+     * @param  ?Driver  $driver
+     * @return Delivery
+     *
      * @throws ValidationException
      */
     public function markPickedUp(Delivery $delivery, ?Driver $driver = null): Delivery
@@ -247,6 +281,10 @@ class DeliveryService
 
     /**
      * Mark delivery as out for delivery.
+     *
+     * @param  Delivery  $delivery
+     * @param  ?Driver  $driver
+     * @return Delivery
      *
      * @throws ValidationException
      */
@@ -260,6 +298,10 @@ class DeliveryService
     /**
      * Mark delivery as arrived at the drop-off location.
      *
+     * @param  Delivery  $delivery
+     * @param  ?Driver  $driver
+     * @return Delivery
+     *
      * @throws ValidationException
      */
     public function markArrived(Delivery $delivery, ?Driver $driver = null): Delivery
@@ -271,6 +313,10 @@ class DeliveryService
 
     /**
      * Mark delivery as delivered.
+     *
+     * @param  Delivery  $delivery
+     * @param  ?Driver  $driver
+     * @return Delivery
      *
      * @throws ValidationException
      */
@@ -284,7 +330,10 @@ class DeliveryService
     /**
      * Mark delivery as failed.
      *
+     * @param  Delivery  $delivery
      * @param  array{failure_reason?: string|null}  $data
+     * @param  ?Driver  $driver
+     * @return Delivery
      *
      * @throws ValidationException
      */
@@ -299,6 +348,10 @@ class DeliveryService
     /**
      * Cancel a delivery.
      *
+     * @param  Delivery  $delivery
+     * @param  ?Driver  $driver
+     * @return Delivery
+     *
      * @throws ValidationException
      */
     public function cancel(Delivery $delivery, ?Driver $driver = null): Delivery
@@ -311,6 +364,7 @@ class DeliveryService
     /**
      * List deliveries for a specific driver.
      *
+     * @param  Driver  $driver
      * @param  array{status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Delivery>
      */
@@ -324,6 +378,7 @@ class DeliveryService
     /**
      * List deliveries for a customer's order.
      *
+     * @param  Order  $order
      * @param  array{per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Delivery>
      */
@@ -336,7 +391,16 @@ class DeliveryService
     }
 
     /**
+     * Advance.
+     *
+     * @param  Delivery  $delivery
+     * @param  DeliveryStatus  $to
+     * @param  ?Driver  $driver
      * @param  callable(Delivery): void  $mutator
+     * @param  bool  $completeDriver
+     * @param  bool  $broadcastStarted
+     * @param  bool  $broadcastCompleted
+     * @return Delivery
      *
      * @throws ValidationException
      */
@@ -387,6 +451,12 @@ class DeliveryService
     }
 
     /**
+     * Assert can transition.
+     *
+     * @param  Delivery  $delivery
+     * @param  DeliveryStatus  $to
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertCanTransition(Delivery $delivery, DeliveryStatus $to): void
@@ -405,6 +475,12 @@ class DeliveryService
     }
 
     /**
+     * Assert driver owns.
+     *
+     * @param  Delivery  $delivery
+     * @param  Driver  $driver
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertDriverOwns(Delivery $delivery, Driver $driver): void
@@ -417,7 +493,10 @@ class DeliveryService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

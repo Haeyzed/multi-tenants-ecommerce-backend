@@ -26,8 +26,19 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 #[Group('HR')]
 class EmployeeController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  EmployeeService  $employeeService
+     */
     public function __construct(private readonly EmployeeService $employeeService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexEmployeeRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated employees.', type: 'array{success: true, message: string, data: EmployeeResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexEmployeeRequest $request): JsonResponse
     {
@@ -42,6 +53,12 @@ class EmployeeController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreEmployeeRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created employee.', type: 'array{success: true, message: string, data: EmployeeResource, meta: null, errors: null}')]
     public function store(StoreEmployeeRequest $request): JsonResponse
     {
@@ -53,6 +70,12 @@ class EmployeeController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'An employee.', type: 'array{success: true, message: string, data: EmployeeResource, meta: null, errors: null}')]
     public function show(Employee $employee): JsonResponse
     {
@@ -64,6 +87,13 @@ class EmployeeController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateEmployeeRequest  $request
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated employee.', type: 'array{success: true, message: string, data: EmployeeResource, meta: null, errors: null}')]
     public function update(UpdateEmployeeRequest $request, Employee $employee): JsonResponse
     {
@@ -75,6 +105,12 @@ class EmployeeController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted employee.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Employee $employee): JsonResponse
     {
@@ -84,6 +120,12 @@ class EmployeeController extends Controller
         return $this->deleted('Employee deleted successfully.');
     }
 
+    /**
+     * Documents.
+     *
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Employee documents.', type: 'array{success: true, message: string, data: MediaResource[], meta: null, errors: null}')]
     public function documents(Employee $employee): JsonResponse
     {
@@ -95,6 +137,13 @@ class EmployeeController extends Controller
         );
     }
 
+    /**
+     * Store document.
+     *
+     * @param  StoreEmployeeDocumentRequest  $request
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Uploaded employee document.', type: 'array{success: true, message: string, data: MediaResource, meta: null, errors: null}')]
     public function storeDocument(StoreEmployeeDocumentRequest $request, Employee $employee): JsonResponse
     {
@@ -113,6 +162,13 @@ class EmployeeController extends Controller
         );
     }
 
+    /**
+     * Destroy document.
+     *
+     * @param  Employee  $employee
+     * @param  Media  $media
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted employee document.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroyDocument(Employee $employee, Media $media): JsonResponse
     {

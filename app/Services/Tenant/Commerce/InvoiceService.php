@@ -20,6 +20,8 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class InvoiceService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{order_id?: int|null, customer_id?: int|null, status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Invoice>
      */
@@ -42,6 +44,13 @@ class InvoiceService
         return $query->paginate(max(1, min((int) ($params['per_page'] ?? 15), 100)));
     }
 
+    /**
+     * Generate for order.
+     *
+     * @param  Order  $order
+     * @param  bool  $queuePdf
+     * @return Invoice
+     */
     public function generateForOrder(Order $order, bool $queuePdf = true): Invoice
     {
         $existing = Invoice::query()
@@ -98,11 +107,24 @@ class InvoiceService
         });
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Invoice  $invoice
+     * @return Invoice
+     */
     public function show(Invoice $invoice): Invoice
     {
         return $invoice->load(['items', 'order', 'customer']);
     }
 
+    /**
+     * Customer show.
+     *
+     * @param  Customer  $customer
+     * @param  Invoice  $invoice
+     * @return Invoice
+     */
     public function customerShow(Customer $customer, Invoice $invoice): Invoice
     {
         if ($invoice->customer_id !== $customer->id) {
@@ -112,6 +134,13 @@ class InvoiceService
         return $this->show($invoice);
     }
 
+    /**
+     * Customer for order.
+     *
+     * @param  Customer  $customer
+     * @param  Order  $order
+     * @return Invoice
+     */
     public function customerForOrder(Customer $customer, Order $order): Invoice
     {
         if ($order->customer_id !== $customer->id) {
@@ -122,6 +151,9 @@ class InvoiceService
     }
 
     /**
+     * Download.
+     *
+     * @param  Invoice  $invoice
      * @return array{invoice: Invoice, media_url: string|null}
      */
     public function download(Invoice $invoice): array
@@ -135,6 +167,11 @@ class InvoiceService
         ];
     }
 
+    /**
+     * Generate invoice number.
+     *
+     * @return string
+     */
     protected function generateInvoiceNumber(): string
     {
         $prefix = 'INV-'.now()->format('Y').'-';

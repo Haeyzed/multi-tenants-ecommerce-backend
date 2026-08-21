@@ -21,10 +21,18 @@ use Illuminate\Http\JsonResponse;
  */
 class SeoController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  SeoService  $seoService
+     */
     public function __construct(private readonly SeoService $seoService) {}
 
     /**
      * Show SEO for a brand.
+     *
+     * @param  Brand  $brand
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Brand SEO.', type: 'array{success: true, message: string, data: SeoMetaResource|null, meta: null, errors: null}')]
     public function showBrand(Brand $brand): JsonResponse
@@ -34,6 +42,10 @@ class SeoController extends Controller
 
     /**
      * Upsert SEO for a brand.
+     *
+     * @param  UpsertSeoRequest  $request
+     * @param  Brand  $brand
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Updated brand SEO.', type: 'array{success: true, message: string, data: SeoMetaResource, meta: null, errors: null}')]
     public function upsertBrand(UpsertSeoRequest $request, Brand $brand): JsonResponse
@@ -43,6 +55,9 @@ class SeoController extends Controller
 
     /**
      * Show SEO for a category.
+     *
+     * @param  Category  $category
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Category SEO.', type: 'array{success: true, message: string, data: SeoMetaResource|null, meta: null, errors: null}')]
     public function showCategory(Category $category): JsonResponse
@@ -52,6 +67,10 @@ class SeoController extends Controller
 
     /**
      * Upsert SEO for a category.
+     *
+     * @param  UpsertSeoRequest  $request
+     * @param  Category  $category
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Updated category SEO.', type: 'array{success: true, message: string, data: SeoMetaResource, meta: null, errors: null}')]
     public function upsertCategory(UpsertSeoRequest $request, Category $category): JsonResponse
@@ -61,6 +80,9 @@ class SeoController extends Controller
 
     /**
      * Show SEO for a product.
+     *
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Product SEO.', type: 'array{success: true, message: string, data: SeoMetaResource|null, meta: null, errors: null}')]
     public function showProduct(Product $product): JsonResponse
@@ -70,6 +92,10 @@ class SeoController extends Controller
 
     /**
      * Upsert SEO for a product.
+     *
+     * @param  UpsertSeoRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Updated product SEO.', type: 'array{success: true, message: string, data: SeoMetaResource, meta: null, errors: null}')]
     public function upsertProduct(UpsertSeoRequest $request, Product $product): JsonResponse
@@ -79,6 +105,9 @@ class SeoController extends Controller
 
     /**
      * Show SEO for a collection.
+     *
+     * @param  ProductCollection  $collection
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Collection SEO.', type: 'array{success: true, message: string, data: SeoMetaResource|null, meta: null, errors: null}')]
     public function showCollection(ProductCollection $collection): JsonResponse
@@ -88,6 +117,10 @@ class SeoController extends Controller
 
     /**
      * Upsert SEO for a collection.
+     *
+     * @param  UpsertSeoRequest  $request
+     * @param  ProductCollection  $collection
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Updated collection SEO.', type: 'array{success: true, message: string, data: SeoMetaResource, meta: null, errors: null}')]
     public function upsertCollection(UpsertSeoRequest $request, ProductCollection $collection): JsonResponse
@@ -96,7 +129,10 @@ class SeoController extends Controller
     }
 
     /**
+     * Show for.
+     *
      * @param  Model&object{seo(): mixed}  $model
+     * @return JsonResponse
      */
     protected function showFor(Model $model): JsonResponse
     {
@@ -109,8 +145,12 @@ class SeoController extends Controller
     }
 
     /**
+     * Upsert for.
+     *
+     * @param  Model&object{seo(): mixed}  $model
      * @param  Model&object{seo(): mixed}  $model
      * @param  array<string, mixed>  $data
+     * @return JsonResponse
      */
     protected function upsertFor(Model $model, array $data): JsonResponse
     {

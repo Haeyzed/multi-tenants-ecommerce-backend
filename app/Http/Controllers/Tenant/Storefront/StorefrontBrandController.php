@@ -17,10 +17,18 @@ use Illuminate\Http\JsonResponse;
  */
 class StorefrontBrandController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  StorefrontCatalogService  $catalogService
+     */
     public function __construct(private readonly StorefrontCatalogService $catalogService) {}
 
     /**
      * List active brands.
+     *
+     * @param  IndexStorefrontRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -40,6 +48,9 @@ class StorefrontBrandController extends Controller
 
     /**
      * Show an active brand by slug or id.
+     *
+     * @param  string  $brand
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

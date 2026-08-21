@@ -23,10 +23,18 @@ use Illuminate\Http\JsonResponse;
  */
 class ProductBadgeController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductBadgeService  $badgeService
+     */
     public function __construct(private readonly ProductBadgeService $badgeService) {}
 
     /**
      * List badges.
+     *
+     * @param  IndexProductBadgeRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -46,6 +54,9 @@ class ProductBadgeController extends Controller
 
     /**
      * Badge options for select inputs.
+     *
+     * @param  IndexProductBadgeRequest  $request
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Badge options.', type: ApiResponseSchema::OPTIONS)]
     public function options(IndexProductBadgeRequest $request): JsonResponse
@@ -58,6 +69,9 @@ class ProductBadgeController extends Controller
 
     /**
      * Create a badge.
+     *
+     * @param  StoreProductBadgeRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -77,6 +91,9 @@ class ProductBadgeController extends Controller
 
     /**
      * Show a badge.
+     *
+     * @param  ProductBadge  $badge
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -93,6 +110,10 @@ class ProductBadgeController extends Controller
 
     /**
      * Update a badge.
+     *
+     * @param  UpdateProductBadgeRequest  $request
+     * @param  ProductBadge  $badge
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -112,6 +133,9 @@ class ProductBadgeController extends Controller
 
     /**
      * Delete a badge.
+     *
+     * @param  ProductBadge  $badge
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -127,6 +151,10 @@ class ProductBadgeController extends Controller
 
     /**
      * Sync badges on a product.
+     *
+     * @param  SyncProductBadgesRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

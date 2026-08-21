@@ -22,8 +22,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class OvertimePolicyController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  OvertimePolicyService  $overtimePolicies
+     */
     public function __construct(private readonly OvertimePolicyService $overtimePolicies) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexOvertimePolicyRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated overtime policies.', type: 'array{success: true, message: string, data: OvertimePolicyResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexOvertimePolicyRequest $request): JsonResponse
     {
@@ -38,6 +49,11 @@ class OvertimePolicyController extends Controller
         );
     }
 
+    /**
+     * Return options for select inputs.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Overtime policy options.', type: ApiResponseSchema::OPTIONS)]
     public function options(): JsonResponse
     {
@@ -49,6 +65,12 @@ class OvertimePolicyController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreOvertimePolicyRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created overtime policy.', type: 'array{success: true, message: string, data: OvertimePolicyResource, meta: null, errors: null}')]
     public function store(StoreOvertimePolicyRequest $request): JsonResponse
     {
@@ -60,6 +82,12 @@ class OvertimePolicyController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  OvertimePolicy  $overtime_policy
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'An overtime policy.', type: 'array{success: true, message: string, data: OvertimePolicyResource, meta: null, errors: null}')]
     public function show(OvertimePolicy $overtime_policy): JsonResponse
     {
@@ -71,6 +99,13 @@ class OvertimePolicyController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateOvertimePolicyRequest  $request
+     * @param  OvertimePolicy  $overtime_policy
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated overtime policy.', type: 'array{success: true, message: string, data: OvertimePolicyResource, meta: null, errors: null}')]
     public function update(UpdateOvertimePolicyRequest $request, OvertimePolicy $overtime_policy): JsonResponse
     {
@@ -82,6 +117,12 @@ class OvertimePolicyController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  OvertimePolicy  $overtime_policy
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted overtime policy.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(OvertimePolicy $overtime_policy): JsonResponse
     {

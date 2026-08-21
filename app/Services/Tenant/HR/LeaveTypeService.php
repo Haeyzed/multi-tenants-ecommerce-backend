@@ -17,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 class LeaveTypeService
 {
     /**
+     * search?: string|null, is_active?: bool|null, is_paid?: bool|null, sort?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     search?: string|null,
      *     is_active?: bool|null,
@@ -37,6 +39,8 @@ class LeaveTypeService
     }
 
     /**
+     * Return options for select inputs.
+     *
      * @return Collection<int, array{label: string, value: string, id: int}>
      */
     public function options(): Collection
@@ -56,6 +60,8 @@ class LeaveTypeService
     }
 
     /**
+     * name: string, code: string, is_paid?: bool, is_active?: bool, default_days?: int, allow_carry_over?: bool, description?: string|null }  $data
+     *
      * @param  array{
      *     name: string,
      *     code: string,
@@ -65,6 +71,7 @@ class LeaveTypeService
      *     allow_carry_over?: bool,
      *     description?: string|null
      * }  $data
+     * @return LeaveType
      */
     public function store(array $data): LeaveType
     {
@@ -81,12 +88,21 @@ class LeaveTypeService
         ]);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  LeaveType  $leaveType
+     * @return LeaveType
+     */
     public function show(LeaveType $leaveType): LeaveType
     {
         return $leaveType;
     }
 
     /**
+     * name?: string, code?: string, is_paid?: bool, is_active?: bool, default_days?: int, allow_carry_over?: bool, description?: string|null }  $data
+     *
+     * @param  LeaveType  $leaveType
      * @param  array{
      *     name?: string,
      *     code?: string,
@@ -96,6 +112,7 @@ class LeaveTypeService
      *     allow_carry_over?: bool,
      *     description?: string|null
      * }  $data
+     * @return LeaveType
      */
     public function update(LeaveType $leaveType, array $data): LeaveType
     {
@@ -110,6 +127,11 @@ class LeaveTypeService
     }
 
     /**
+     * Delete a resource.
+     *
+     * @param  LeaveType  $leaveType
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(LeaveType $leaveType): void
@@ -125,6 +147,9 @@ class LeaveTypeService
 
     /**
      * Resolve an active leave type by code, seeding defaults if needed.
+     *
+     * @param  string  $code
+     * @return LeaveType
      *
      * @throws ValidationException
      */
@@ -152,6 +177,9 @@ class LeaveTypeService
     /**
      * Resolve an active leave type by primary key, seeding defaults if needed.
      *
+     * @param  int  $id
+     * @return LeaveType
+     *
      * @throws ValidationException
      */
     public function findActiveById(int $id): LeaveType
@@ -177,6 +205,8 @@ class LeaveTypeService
 
     /**
      * Seed Annual, Sick, Unpaid, and Other when the tenant has no leave types.
+     *
+     * @return void
      */
     public function ensureDefaults(): void
     {
@@ -197,7 +227,10 @@ class LeaveTypeService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

@@ -20,8 +20,19 @@ use Illuminate\Http\Request;
  */
 class SupplierController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  SupplierService  $supplierService
+     */
     public function __construct(private readonly SupplierService $supplierService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated suppliers.', type: 'array{success: true, message: string, data: SupplierResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -36,6 +47,11 @@ class SupplierController extends Controller
         );
     }
 
+    /**
+     * Return options for select inputs.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Supplier options.', type: ApiResponseSchema::OPTIONS)]
     public function options(): JsonResponse
     {
@@ -47,6 +63,12 @@ class SupplierController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreSupplierRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created supplier.', type: 'array{success: true, message: string, data: SupplierResource, meta: null, errors: null}')]
     public function store(StoreSupplierRequest $request): JsonResponse
     {
@@ -58,6 +80,12 @@ class SupplierController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Supplier  $supplier
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A supplier.', type: 'array{success: true, message: string, data: SupplierResource, meta: null, errors: null}')]
     public function show(Supplier $supplier): JsonResponse
     {
@@ -69,6 +97,13 @@ class SupplierController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateSupplierRequest  $request
+     * @param  Supplier  $supplier
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated supplier.', type: 'array{success: true, message: string, data: SupplierResource, meta: null, errors: null}')]
     public function update(UpdateSupplierRequest $request, Supplier $supplier): JsonResponse
     {
@@ -80,6 +115,12 @@ class SupplierController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Supplier  $supplier
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted supplier.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Supplier $supplier): JsonResponse
     {

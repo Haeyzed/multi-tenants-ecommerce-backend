@@ -18,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 class TaxAdminService
 {
     /**
+     * List taxes.
+     *
      * @param  array{search?: string|null, is_active?: bool|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Tax>
      */
@@ -41,6 +43,8 @@ class TaxAdminService
     }
 
     /**
+     * name: string, code: string, is_active?: bool, is_inclusive?: bool, priority?: int, rates?: list<array{rate: string|float, effective_from?: string|null, effective_to?: string|null}> }  $data
+     *
      * @param  array{
      *     name: string,
      *     code: string,
@@ -49,6 +53,7 @@ class TaxAdminService
      *     priority?: int,
      *     rates?: list<array{rate: string|float, effective_from?: string|null, effective_to?: string|null}>
      * }  $data
+     * @return Tax
      */
     public function storeTax(array $data): Tax
     {
@@ -73,12 +78,21 @@ class TaxAdminService
         });
     }
 
+    /**
+     * Show tax.
+     *
+     * @param  Tax  $tax
+     * @return Tax
+     */
     public function showTax(Tax $tax): Tax
     {
         return $tax->load(['rates', 'rules.taxZone']);
     }
 
     /**
+     * name?: string, code?: string, is_active?: bool, is_inclusive?: bool, priority?: int, rates?: list<array{rate: string|float, effective_from?: string|null, effective_to?: string|null}> }  $data
+     *
+     * @param  Tax  $tax
      * @param  array{
      *     name?: string,
      *     code?: string,
@@ -87,6 +101,7 @@ class TaxAdminService
      *     priority?: int,
      *     rates?: list<array{rate: string|float, effective_from?: string|null, effective_to?: string|null}>
      * }  $data
+     * @return Tax
      */
     public function updateTax(Tax $tax, array $data): Tax
     {
@@ -109,12 +124,20 @@ class TaxAdminService
         });
     }
 
+    /**
+     * Destroy tax.
+     *
+     * @param  Tax  $tax
+     * @return void
+     */
     public function destroyTax(Tax $tax): void
     {
         $tax->delete();
     }
 
     /**
+     * List zones.
+     *
      * @param  array{is_active?: bool|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, TaxZone>
      */
@@ -130,11 +153,14 @@ class TaxAdminService
     }
 
     /**
+     * name: string, is_active?: bool, locations?: list<array{country_id?: int|null, state_id?: int|null, city_id?: int|null}> }  $data
+     *
      * @param  array{
      *     name: string,
      *     is_active?: bool,
      *     locations?: list<array{country_id?: int|null, state_id?: int|null, city_id?: int|null}>
      * }  $data
+     * @return TaxZone
      */
     public function storeZone(array $data): TaxZone
     {
@@ -156,17 +182,27 @@ class TaxAdminService
         });
     }
 
+    /**
+     * Show zone.
+     *
+     * @param  TaxZone  $zone
+     * @return TaxZone
+     */
     public function showZone(TaxZone $zone): TaxZone
     {
         return $zone->load(['locations', 'rules.tax']);
     }
 
     /**
+     * name?: string, is_active?: bool, locations?: list<array{country_id?: int|null, state_id?: int|null, city_id?: int|null}> }  $data
+     *
+     * @param  TaxZone  $zone
      * @param  array{
      *     name?: string,
      *     is_active?: bool,
      *     locations?: list<array{country_id?: int|null, state_id?: int|null, city_id?: int|null}>
      * }  $data
+     * @return TaxZone
      */
     public function updateZone(TaxZone $zone, array $data): TaxZone
     {
@@ -189,6 +225,12 @@ class TaxAdminService
         });
     }
 
+    /**
+     * Destroy zone.
+     *
+     * @param  TaxZone  $zone
+     * @return void
+     */
     public function destroyZone(TaxZone $zone): void
     {
         if ($zone->rules()->exists()) {
@@ -201,12 +243,15 @@ class TaxAdminService
     }
 
     /**
+     * tax_id: int, tax_zone_id: int, applies_to: string, is_active?: bool }  $data
+     *
      * @param  array{
      *     tax_id: int,
      *     tax_zone_id: int,
      *     applies_to: string,
      *     is_active?: bool
      * }  $data
+     * @return TaxRule
      */
     public function storeRule(array $data): TaxRule
     {
@@ -219,7 +264,11 @@ class TaxAdminService
     }
 
     /**
+     * Update rule.
+     *
+     * @param  TaxRule  $rule
      * @param  array{applies_to?: string, is_active?: bool}  $data
+     * @return TaxRule
      */
     public function updateRule(TaxRule $rule, array $data): TaxRule
     {
@@ -233,13 +282,22 @@ class TaxAdminService
         return $rule->fresh(['tax', 'taxZone']) ?? $rule;
     }
 
+    /**
+     * Destroy rule.
+     *
+     * @param  TaxRule  $rule
+     * @return void
+     */
     public function destroyRule(TaxRule $rule): void
     {
         $rule->delete();
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

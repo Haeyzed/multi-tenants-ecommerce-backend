@@ -13,6 +13,12 @@ use App\Models\Tenant\Driver;
  */
 class ManualDriverAssignmentStrategy implements DriverAssignmentStrategyInterface
 {
+    /**
+     * Assign.
+     *
+     * @param  Delivery  $delivery
+     * @return ?Driver
+     */
     public function assign(Delivery $delivery): ?Driver
     {
         return null;

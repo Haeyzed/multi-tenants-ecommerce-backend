@@ -24,12 +24,20 @@ use Illuminate\Validation\ValidationException;
  */
 class SellerOfferService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  InventoryService  $inventoryService
+     * @param  CommerceSettingService  $commerceSettings
+     */
     public function __construct(
         private readonly InventoryService $inventoryService,
         private readonly CommerceSettingService $commerceSettings,
     ) {}
 
     /**
+     * seller_id?: int|null, product_id?: int|null, status?: string|null, search?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     seller_id?: int|null,
      *     product_id?: int|null,
@@ -37,6 +45,7 @@ class SellerOfferService
      *     search?: string|null,
      *     per_page?: int|null
      * }  $params
+     * @param  ?Authenticatable  $actor
      * @return LengthAwarePaginator<int, SellerOffer>
      */
     public function list(array $params = [], ?Authenticatable $actor = null): LengthAwarePaginator
@@ -70,7 +79,11 @@ class SellerOfferService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @param  ?Authenticatable  $actor
+     * @return SellerOffer
      *
      * @throws ValidationException
      */
@@ -116,13 +129,24 @@ class SellerOfferService
         return $offer->load(['seller', 'product', 'productVariant']);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  SellerOffer  $offer
+     * @return SellerOffer
+     */
     public function show(SellerOffer $offer): SellerOffer
     {
         return $offer->load(['seller', 'product', 'productVariant', 'inventories.warehouse']);
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  SellerOffer  $offer
      * @param  array<string, mixed>  $data
+     * @param  ?Authenticatable  $actor
+     * @return SellerOffer
      *
      * @throws ValidationException
      */
@@ -156,6 +180,12 @@ class SellerOfferService
     }
 
     /**
+     * Delete a resource.
+     *
+     * @param  SellerOffer  $offer
+     * @param  ?Authenticatable  $actor
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(SellerOffer $offer, ?Authenticatable $actor = null): void
@@ -166,6 +196,10 @@ class SellerOfferService
 
     /**
      * Set absolute on-hand stock for the offer at the default warehouse.
+     *
+     * @param  SellerOffer  $offer
+     * @param  int  $quantity
+     * @return void
      *
      * @throws ValidationException
      */
@@ -208,6 +242,12 @@ class SellerOfferService
     }
 
     /**
+     * Resolve seller.
+     *
+     * @param  int  $sellerId
+     * @param  ?Authenticatable  $actor
+     * @return Seller
+     *
      * @throws ValidationException
      */
     protected function resolveSeller(int $sellerId, ?Authenticatable $actor): Seller
@@ -222,6 +262,11 @@ class SellerOfferService
     }
 
     /**
+     * Assert seller can manage offers.
+     *
+     * @param  Seller  $seller
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertSellerCanManageOffers(Seller $seller): void
@@ -234,6 +279,11 @@ class SellerOfferService
     }
 
     /**
+     * Assert product sellable.
+     *
+     * @param  Product  $product
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertProductSellable(Product $product): void
@@ -246,6 +296,12 @@ class SellerOfferService
     }
 
     /**
+     * Assert variant belongs to product.
+     *
+     * @param  Product  $product
+     * @param  int  $variantId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertVariantBelongsToProduct(Product $product, int $variantId): void
@@ -263,6 +319,12 @@ class SellerOfferService
     }
 
     /**
+     * Assert actor owns offer.
+     *
+     * @param  SellerOffer  $offer
+     * @param  ?Authenticatable  $actor
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertActorOwnsOffer(SellerOffer $offer, ?Authenticatable $actor): void
@@ -275,7 +337,10 @@ class SellerOfferService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

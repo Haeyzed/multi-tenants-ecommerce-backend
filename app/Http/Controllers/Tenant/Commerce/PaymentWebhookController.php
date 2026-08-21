@@ -15,8 +15,20 @@ use Illuminate\Http\Request;
  */
 class PaymentWebhookController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PaymentWebhookManager  $webhooks
+     */
     public function __construct(private readonly PaymentWebhookManager $webhooks) {}
 
+    /**
+     * __invoke.
+     *
+     * @param  Request  $request
+     * @param  string  $provider
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Webhook acknowledged.',
@@ -31,6 +43,9 @@ class PaymentWebhookController extends Controller
 
     /**
      * Backward-compatible Paystack-only route.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

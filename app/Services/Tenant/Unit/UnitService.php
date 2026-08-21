@@ -64,6 +64,7 @@ class UnitService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @return Unit
      */
     public function store(array $data): Unit
     {
@@ -78,6 +79,9 @@ class UnitService
 
     /**
      * Retrieve a unit.
+     *
+     * @param  Unit  $unit
+     * @return Unit
      */
     public function show(Unit $unit): Unit
     {
@@ -87,6 +91,7 @@ class UnitService
     /**
      * Update a measurement unit.
      *
+     * @param  Unit  $unit
      * @param  array{
      *     name?: string,
      *     short_name?: string|null,
@@ -94,6 +99,7 @@ class UnitService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @return Unit
      */
     public function update(Unit $unit, array $data): Unit
     {
@@ -105,6 +111,9 @@ class UnitService
 
     /**
      * Delete a unit when no products or variants reference it.
+     *
+     * @param  Unit  $unit
+     * @return void
      *
      * @throws ValidationException
      */
@@ -120,7 +129,10 @@ class UnitService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

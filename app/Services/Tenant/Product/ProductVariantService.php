@@ -20,11 +20,17 @@ use Illuminate\Validation\ValidationException;
  */
 class ProductVariantService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
     /**
      * Paginate variants for a product.
      *
+     * @param  Product  $product
      * @param  array{
      *     search?: string|null,
      *     is_active?: bool|null,
@@ -47,9 +53,13 @@ class ProductVariantService
     /**
      * Create a variant with option values and optional price/image.
      *
+     * @param  Product  $product
+     * @param  array<string, mixed>  $data
      * @param  array<string, mixed>  $data
      * @param  list<int>  $optionValueIds
      * @param  array<string, mixed>|null  $price
+     * @param  ?UploadedFile  $image
+     * @return ProductVariant
      *
      * @throws ValidationException
      */
@@ -100,6 +110,9 @@ class ProductVariantService
 
     /**
      * Retrieve a variant with relations.
+     *
+     * @param  ProductVariant  $variant
+     * @return ProductVariant
      */
     public function show(ProductVariant $variant): ProductVariant
     {
@@ -116,9 +129,13 @@ class ProductVariantService
     /**
      * Update a variant with option values and optional price/image.
      *
+     * @param  ProductVariant  $variant
+     * @param  array<string, mixed>  $data
      * @param  array<string, mixed>  $data
      * @param  list<int>|null  $optionValueIds
      * @param  array<string, mixed>|null  $price
+     * @param  ?UploadedFile  $image
+     * @return ProductVariant
      *
      * @throws ValidationException
      */
@@ -166,6 +183,9 @@ class ProductVariantService
     /**
      * Delete a variant when no stock remains.
      *
+     * @param  ProductVariant  $variant
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(ProductVariant $variant): void
@@ -184,6 +204,10 @@ class ProductVariantService
 
     /**
      * Attach or replace a variant image.
+     *
+     * @param  ProductVariant  $variant
+     * @param  UploadedFile  $image
+     * @return ProductVariant
      */
     public function storeImage(ProductVariant $variant, UploadedFile $image): ProductVariant
     {
@@ -194,6 +218,9 @@ class ProductVariantService
 
     /**
      * Remove a variant image.
+     *
+     * @param  ProductVariant  $variant
+     * @return ProductVariant
      */
     public function destroyImage(ProductVariant $variant): ProductVariant
     {
@@ -203,6 +230,11 @@ class ProductVariantService
     }
 
     /**
+     * Assert product allows variants.
+     *
+     * @param  Product  $product
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertProductAllowsVariants(Product $product): void
@@ -217,6 +249,12 @@ class ProductVariantService
     }
 
     /**
+     * Assert unique sku.
+     *
+     * @param  ?string  $sku
+     * @param  ?int  $ignoreVariantId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertUniqueSku(?string $sku, ?int $ignoreVariantId): void
@@ -241,6 +279,12 @@ class ProductVariantService
     }
 
     /**
+     * Assert unique barcode.
+     *
+     * @param  ?string  $barcode
+     * @param  ?int  $ignoreVariantId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertUniqueBarcode(?string $barcode, ?int $ignoreVariantId): void
@@ -263,7 +307,12 @@ class ProductVariantService
     }
 
     /**
+     * Assert unique option combination.
+     *
+     * @param  Product  $product
      * @param  list<int>  $optionValueIds
+     * @param  ?int  $ignoreVariantId
+     * @return void
      *
      * @throws ValidationException
      */
@@ -296,7 +345,11 @@ class ProductVariantService
     }
 
     /**
+     * Upsert active price.
+     *
+     * @param  ProductVariant  $variant
      * @param  array<string, mixed>  $price
+     * @return ProductPrice
      */
     protected function upsertActivePrice(ProductVariant $variant, array $price): ProductPrice
     {
@@ -330,7 +383,10 @@ class ProductVariantService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

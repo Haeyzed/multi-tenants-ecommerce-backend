@@ -21,6 +21,13 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class WishlistService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  BackInStockNotificationService  $backInStock
+     * @param  CommerceAnalyticsService  $analytics
+     * @param  ProductAvailabilityService  $availability
+     */
     public function __construct(
         private readonly BackInStockNotificationService $backInStock,
         private readonly CommerceAnalyticsService $analytics,
@@ -29,6 +36,9 @@ class WishlistService
 
     /**
      * Get or create the customer's wishlist with items loaded.
+     *
+     * @param  Customer  $customer
+     * @return Wishlist
      */
     public function getWishlist(Customer $customer): Wishlist
     {
@@ -42,6 +52,11 @@ class WishlistService
 
     /**
      * Add a product (and optional variant) to the wishlist.
+     *
+     * @param  Customer  $customer
+     * @param  int  $productId
+     * @param  ?int  $variantId
+     * @return WishlistItem
      *
      * @throws ValidationException
      */
@@ -103,6 +118,10 @@ class WishlistService
 
     /**
      * Remove an item from the customer's wishlist.
+     *
+     * @param  Customer  $customer
+     * @param  WishlistItem  $item
+     * @return void
      */
     public function removeItem(Customer $customer, WishlistItem $item): void
     {
@@ -118,6 +137,9 @@ class WishlistService
     /**
      * Check whether a product is in the customer's wishlist.
      *
+     * @param  Customer  $customer
+     * @param  Product  $product
+     * @param  ?int  $variantId
      * @return array{in_wishlist: bool, wishlist_item_id: int|null}
      */
     public function check(Customer $customer, Product $product, ?int $variantId = null): array
@@ -140,6 +162,12 @@ class WishlistService
         ];
     }
 
+    /**
+     * Get or create wishlist.
+     *
+     * @param  Customer  $customer
+     * @return Wishlist
+     */
     protected function getOrCreateWishlist(Customer $customer): Wishlist
     {
         return Wishlist::query()->firstOrCreate([

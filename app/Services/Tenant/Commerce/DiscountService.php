@@ -24,6 +24,15 @@ use Illuminate\Validation\ValidationException;
  */
 class DiscountService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CouponService  $couponService
+     * @param  FeatureGate  $featureGate
+     * @param  FlashSaleService  $flashSaleService
+     * @param  LoyaltyService  $loyaltyService
+     * @param  PromotionService  $promotionService
+     */
     public function __construct(
         private readonly CouponService $couponService,
         private readonly FeatureGate $featureGate,
@@ -33,8 +42,14 @@ class DiscountService
     ) {}
 
     /**
-     * Calculate discounts from promotions and optional coupon code.
-     * Exclusive promotions win by priority; stackable promotions combine when no exclusive applies.
+     * Calculate discounts from promotions and optional coupon code. Exclusive promotions win by priority; stackable promotions combine when no exclusive applies.
+     *
+     * @param  Customer  $customer
+     * @param  Cart  $cart
+     * @param  ?string  $couponCode
+     * @param  string  $subtotal
+     * @param  string  $shippingTotal
+     * @return DiscountApplicationResult
      */
     public function applyCouponsAndPromotions(
         Customer $customer,
@@ -121,8 +136,12 @@ class DiscountService
     /**
      * Layer a loyalty point redemption on top of coupon and promotion discounts.
      *
-     * The redemption is capped by whatever is still discountable on the cart so
-     * points can never push the merchandise total below zero.
+     * @param  Customer  $customer
+     * @param  Cart  $cart
+     * @param  DiscountApplicationResult  $applied
+     * @param  string  $subtotal
+     * @param  ?int  $loyaltyPoints
+     * @return DiscountApplicationResult
      */
     public function applyLoyaltyRedemption(
         Customer $customer,
@@ -183,6 +202,10 @@ class DiscountService
 
     /**
      * Write the loyalty ledger entry for a redemption once the order exists.
+     *
+     * @param  Order  $order
+     * @param  DiscountApplicationResult  $discount
+     * @return void
      */
     public function recordLoyaltyRedemption(Order $order, DiscountApplicationResult $discount): void
     {
@@ -206,6 +229,11 @@ class DiscountService
 
     /**
      * Preview coupon discount for cart without persisting.
+     *
+     * @param  Customer  $customer
+     * @param  Cart  $cart
+     * @param  string  $couponCode
+     * @return DiscountResult
      */
     public function previewCoupon(Customer $customer, Cart $cart, string $couponCode): DiscountResult
     {
@@ -215,7 +243,9 @@ class DiscountService
     /**
      * Record coupon usage after order creation.
      *
-     * Re-checks usage limits under a row lock so concurrent checkouts cannot exceed caps.
+     * @param  Order  $order
+     * @param  DiscountApplicationResult  $discount
+     * @return void
      */
     public function recordCouponUsage(Order $order, DiscountApplicationResult $discount): void
     {
@@ -251,6 +281,9 @@ class DiscountService
     }
 
     /**
+     * Merge line discounts.
+     *
+     * @param  array<int, string>  $existing
      * @param  array<int, string>  $existing
      * @param  array<int, string>  $additional
      * @return array<int, string>

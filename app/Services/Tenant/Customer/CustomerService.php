@@ -23,6 +23,12 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class CustomerService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  NotificationService  $notifications
+     * @param  MediaService  $mediaService
+     */
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly MediaService $mediaService,
@@ -50,6 +56,9 @@ class CustomerService
 
     /**
      * Retrieve a customer with addresses.
+     *
+     * @param  Customer  $customer
+     * @return Customer
      */
     public function show(Customer $customer): Customer
     {
@@ -59,6 +68,7 @@ class CustomerService
     /**
      * Update a customer (admin — no password changes).
      *
+     * @param  Customer  $customer
      * @param  array{
      *     first_name?: string,
      *     last_name?: string,
@@ -67,6 +77,7 @@ class CustomerService
      *     status?: CustomerStatus|string,
      *     customer_group_id?: int|null
      * }  $data
+     * @return Customer
      */
     public function update(Customer $customer, array $data): Customer
     {
@@ -78,6 +89,10 @@ class CustomerService
 
     /**
      * Update a customer's status.
+     *
+     * @param  Customer  $customer
+     * @param  CustomerStatus  $status
+     * @return Customer
      */
     public function updateStatus(Customer $customer, CustomerStatus $status): Customer
     {
@@ -93,7 +108,10 @@ class CustomerService
     /**
      * Update the authenticated customer's profile and optional avatar.
      *
+     * @param  Customer  $customer
      * @param  array{first_name?: string, last_name?: string, email?: string, phone?: string|null}  $data
+     * @param  ?UploadedFile  $avatar
+     * @return Customer
      */
     public function updateProfile(Customer $customer, array $data, ?UploadedFile $avatar = null): Customer
     {
@@ -120,6 +138,10 @@ class CustomerService
 
     /**
      * Replace the authenticated customer's avatar.
+     *
+     * @param  Customer  $customer
+     * @param  UploadedFile  $avatar
+     * @return Media
      */
     public function replaceAvatar(Customer $customer, UploadedFile $avatar): Media
     {
@@ -128,6 +150,9 @@ class CustomerService
 
     /**
      * Remove the authenticated customer's avatar.
+     *
+     * @param  Customer  $customer
+     * @return void
      */
     public function removeAvatar(Customer $customer): void
     {
@@ -136,6 +161,9 @@ class CustomerService
 
     /**
      * Deactivate a customer account (self-service).
+     *
+     * @param  Customer  $customer
+     * @return void
      */
     public function deactivateAccount(Customer $customer): void
     {
@@ -162,6 +190,7 @@ class CustomerService
     /**
      * List addresses for a customer.
      *
+     * @param  Customer  $customer
      * @return Collection<int, CustomerAddress>
      */
     public function listAddresses(Customer $customer): Collection
@@ -172,6 +201,7 @@ class CustomerService
     /**
      * Store a new address for a customer.
      *
+     * @param  Customer  $customer
      * @param  array{
      *     first_name: string,
      *     last_name: string,
@@ -185,6 +215,7 @@ class CustomerService
      *     landmark?: string|null,
      *     is_default?: bool
      * }  $data
+     * @return CustomerAddress
      */
     public function storeAddress(Customer $customer, array $data): CustomerAddress
     {
@@ -206,7 +237,10 @@ class CustomerService
     /**
      * Update an address belonging to a customer.
      *
+     * @param  Customer  $customer
+     * @param  CustomerAddress  $address
      * @param  array<string, mixed>  $data
+     * @return CustomerAddress
      *
      * @throws ValidationException
      */
@@ -228,6 +262,10 @@ class CustomerService
 
     /**
      * Delete an address belonging to a customer.
+     *
+     * @param  Customer  $customer
+     * @param  CustomerAddress  $address
+     * @return void
      *
      * @throws ValidationException
      */
@@ -252,6 +290,10 @@ class CustomerService
     /**
      * Mark an address as the default for a customer.
      *
+     * @param  Customer  $customer
+     * @param  CustomerAddress  $address
+     * @return CustomerAddress
+     *
      * @throws ValidationException
      */
     public function makeDefault(Customer $customer, CustomerAddress $address): CustomerAddress
@@ -268,6 +310,12 @@ class CustomerService
     }
 
     /**
+     * Ensure address belongs to customer.
+     *
+     * @param  Customer  $customer
+     * @param  CustomerAddress  $address
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function ensureAddressBelongsToCustomer(Customer $customer, CustomerAddress $address): void
@@ -279,6 +327,13 @@ class CustomerService
         }
     }
 
+    /**
+     * Unset default addresses.
+     *
+     * @param  Customer  $customer
+     * @param  ?int  $exceptId
+     * @return void
+     */
     protected function unsetDefaultAddresses(Customer $customer, ?int $exceptId = null): void
     {
         $query = $customer->addresses()->where('is_default', true);
@@ -291,7 +346,10 @@ class CustomerService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

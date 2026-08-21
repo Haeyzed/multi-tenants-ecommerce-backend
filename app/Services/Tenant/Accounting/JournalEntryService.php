@@ -19,7 +19,13 @@ class JournalEntryService
     /**
      * Create a balanced draft journal entry with lines.
      *
+     * @param  string  $reference
+     * @param  ?string  $description
+     * @param  string  $entryDate
      * @param  list<array{account_id: int, debit?: string|int|float, credit?: string|int|float, description?: string|null}>  $lines
+     * @param  ?Model  $source
+     * @param  ?string  $entryType
+     * @return JournalEntry
      *
      * @throws ValidationException
      */
@@ -60,6 +66,9 @@ class JournalEntryService
     /**
      * Post a draft journal entry; immutable afterwards.
      *
+     * @param  JournalEntry  $entry
+     * @return JournalEntry
+     *
      * @throws ValidationException
      */
     public function post(JournalEntry $entry): JournalEntry
@@ -94,7 +103,10 @@ class JournalEntryService
     /**
      * Post a unique journal for a morph source + entry_type, skipping if one already exists.
      *
-     * @param  callable(JournalEntryService): JournalEntry  $builder  Must create and return a draft (or posted) entry
+     * @param  Model  $source
+     * @param  string  $entryType
+     * @param  callable  $builder
+     * @return ?JournalEntry
      */
     public function postUnique(Model $source, string $entryType, callable $builder): ?JournalEntry
     {
@@ -122,6 +134,9 @@ class JournalEntryService
 
     /**
      * Create and post a reversing entry for a posted journal.
+     *
+     * @param  JournalEntry  $entry
+     * @return JournalEntry
      *
      * @throws ValidationException
      */
@@ -155,7 +170,10 @@ class JournalEntryService
     }
 
     /**
+     * Assert balanced.
+     *
      * @param  list<array{account_id: int, debit?: string|int|float, credit?: string|int|float, description?: string|null}>  $lines
+     * @return void
      *
      * @throws ValidationException
      */
@@ -203,6 +221,12 @@ class JournalEntryService
         }
     }
 
+    /**
+     * Normalize amount.
+     *
+     * @param  string|int|float  $amount
+     * @return string
+     */
     private function normalizeAmount(string|int|float $amount): string
     {
         return Money::add((string) $amount, '0');

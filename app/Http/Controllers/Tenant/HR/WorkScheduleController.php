@@ -22,8 +22,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class WorkScheduleController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  WorkScheduleService  $workSchedules
+     */
     public function __construct(private readonly WorkScheduleService $workSchedules) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexWorkScheduleRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated work schedules.', type: 'array{success: true, message: string, data: WorkScheduleResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexWorkScheduleRequest $request): JsonResponse
     {
@@ -38,6 +49,11 @@ class WorkScheduleController extends Controller
         );
     }
 
+    /**
+     * Return options for select inputs.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Work schedule options.', type: ApiResponseSchema::OPTIONS)]
     public function options(): JsonResponse
     {
@@ -49,6 +65,12 @@ class WorkScheduleController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreWorkScheduleRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created work schedule.', type: 'array{success: true, message: string, data: WorkScheduleResource, meta: null, errors: null}')]
     public function store(StoreWorkScheduleRequest $request): JsonResponse
     {
@@ -60,6 +82,12 @@ class WorkScheduleController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  WorkSchedule  $work_schedule
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A work schedule.', type: 'array{success: true, message: string, data: WorkScheduleResource, meta: null, errors: null}')]
     public function show(WorkSchedule $work_schedule): JsonResponse
     {
@@ -71,6 +99,13 @@ class WorkScheduleController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateWorkScheduleRequest  $request
+     * @param  WorkSchedule  $work_schedule
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated work schedule.', type: 'array{success: true, message: string, data: WorkScheduleResource, meta: null, errors: null}')]
     public function update(UpdateWorkScheduleRequest $request, WorkSchedule $work_schedule): JsonResponse
     {
@@ -82,6 +117,12 @@ class WorkScheduleController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  WorkSchedule  $work_schedule
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted work schedule.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(WorkSchedule $work_schedule): JsonResponse
     {

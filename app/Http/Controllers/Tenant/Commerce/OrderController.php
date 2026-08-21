@@ -21,6 +21,12 @@ use Illuminate\Http\JsonResponse;
  */
 class OrderController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  OrderService  $orderService
+     * @param  OrderTransitionService  $transitions
+     */
     public function __construct(
         private readonly OrderService $orderService,
         private readonly OrderTransitionService $transitions,
@@ -28,6 +34,9 @@ class OrderController extends Controller
 
     /**
      * List orders with filters.
+     *
+     * @param  IndexOrderRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -49,6 +58,9 @@ class OrderController extends Controller
 
     /**
      * Show an order.
+     *
+     * @param  Order  $order
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -67,6 +79,10 @@ class OrderController extends Controller
 
     /**
      * Transition order status.
+     *
+     * @param  TransitionOrderRequest  $request
+     * @param  Order  $order
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -88,6 +104,9 @@ class OrderController extends Controller
 
     /**
      * Cancel an order and release inventory reservations.
+     *
+     * @param  Order  $order
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

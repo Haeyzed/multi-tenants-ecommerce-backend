@@ -29,9 +29,16 @@ class TenantPaymentGatewayService
         'password',
     ];
 
+    /**
+     * Create a new class instance.
+     *
+     * @param  PaymentManager  $paymentManager
+     */
     public function __construct(private readonly PaymentManager $paymentManager) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @return Collection<int, array<string, mixed>>
      */
     public function list(): Collection
@@ -44,6 +51,8 @@ class TenantPaymentGatewayService
     }
 
     /**
+     * gateway: string, is_enabled?: bool|null, credentials?: array<string, mixed>|null, settings?: array<string, mixed>|null, sort_order?: int|null }  $data
+     *
      * @param  array{
      *     gateway: string,
      *     is_enabled?: bool|null,
@@ -91,6 +100,7 @@ class TenantPaymentGatewayService
     /**
      * Raw (decrypted) credentials for a gateway, or empty when unset / table missing.
      *
+     * @param  string  $gateway
      * @return array<string, mixed>
      */
     public function credentialsFor(string $gateway): array
@@ -106,11 +116,23 @@ class TenantPaymentGatewayService
         return is_array($record?->credentials) ? $record->credentials : [];
     }
 
+    /**
+     * Enable.
+     *
+     * @param  string  $gateway
+     * @return array
+     */
     public function enable(string $gateway): array
     {
         return $this->setEnabled($gateway, true);
     }
 
+    /**
+     * Disable.
+     *
+     * @param  string  $gateway
+     * @return array
+     */
     public function disable(string $gateway): array
     {
         return $this->setEnabled($gateway, false);
@@ -118,6 +140,9 @@ class TenantPaymentGatewayService
 
     /**
      * Resolve the preferred driver for a currency from enabled tenant gateways.
+     *
+     * @param  string  $currency
+     * @return string
      */
     public function resolveDriverForCurrency(string $currency): string
     {
@@ -154,6 +179,10 @@ class TenantPaymentGatewayService
     }
 
     /**
+     * Set enabled.
+     *
+     * @param  string  $gateway
+     * @param  bool  $enabled
      * @return array<string, mixed>
      */
     protected function setEnabled(string $gateway, bool $enabled): array
@@ -179,6 +208,8 @@ class TenantPaymentGatewayService
     }
 
     /**
+     * Sanitize incoming credentials.
+     *
      * @param  array<string, mixed>  $credentials
      * @return array<string, mixed>
      */
@@ -202,6 +233,9 @@ class TenantPaymentGatewayService
     }
 
     /**
+     * To public array.
+     *
+     * @param  TenantPaymentGateway  $gateway
      * @return array<string, mixed>
      */
     protected function toPublicArray(TenantPaymentGateway $gateway): array
@@ -219,6 +253,8 @@ class TenantPaymentGatewayService
     }
 
     /**
+     * Mask credentials.
+     *
      * @param  array<string, mixed>  $credentials
      * @return array<string, mixed>
      */
@@ -245,6 +281,12 @@ class TenantPaymentGatewayService
         return $masked;
     }
 
+    /**
+     * Is secret key.
+     *
+     * @param  string  $key
+     * @return bool
+     */
     protected function isSecretKey(string $key): bool
     {
         $normalized = Str::lower($key);
@@ -258,6 +300,12 @@ class TenantPaymentGatewayService
         return false;
     }
 
+    /**
+     * Mask secret.
+     *
+     * @param  string  $value
+     * @return string
+     */
     protected function maskSecret(string $value): string
     {
         $length = Str::length($value);
@@ -269,6 +317,12 @@ class TenantPaymentGatewayService
         return str_repeat('*', max(4, $length - 4)).Str::substr($value, -4);
     }
 
+    /**
+     * Looks masked.
+     *
+     * @param  string  $value
+     * @return bool
+     */
     protected function looksMasked(string $value): bool
     {
         return Str::contains($value, '*');

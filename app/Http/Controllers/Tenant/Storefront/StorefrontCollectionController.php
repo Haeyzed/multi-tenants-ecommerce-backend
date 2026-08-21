@@ -17,10 +17,18 @@ use Illuminate\Http\JsonResponse;
  */
 class StorefrontCollectionController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  StorefrontCatalogService  $catalogService
+     */
     public function __construct(private readonly StorefrontCatalogService $catalogService) {}
 
     /**
      * List storefront-visible collections.
+     *
+     * @param  IndexStorefrontRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -40,6 +48,9 @@ class StorefrontCollectionController extends Controller
 
     /**
      * Show a storefront collection by slug or id.
+     *
+     * @param  string  $collection
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

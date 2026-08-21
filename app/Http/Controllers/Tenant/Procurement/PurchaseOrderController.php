@@ -24,11 +24,23 @@ use Illuminate\Support\Facades\Auth;
  */
 class PurchaseOrderController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PurchaseOrderService  $purchaseOrderService
+     * @param  GoodsReceiptService  $goodsReceiptService
+     */
     public function __construct(
         private readonly PurchaseOrderService $purchaseOrderService,
         private readonly GoodsReceiptService $goodsReceiptService,
     ) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated purchase orders.', type: 'array{success: true, message: string, data: PurchaseOrderResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -43,6 +55,12 @@ class PurchaseOrderController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StorePurchaseOrderRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created purchase order.', type: 'array{success: true, message: string, data: PurchaseOrderResource, meta: null, errors: null}')]
     public function store(StorePurchaseOrderRequest $request): JsonResponse
     {
@@ -54,6 +72,12 @@ class PurchaseOrderController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A purchase order.', type: 'array{success: true, message: string, data: PurchaseOrderResource, meta: null, errors: null}')]
     public function show(PurchaseOrder $purchaseOrder): JsonResponse
     {
@@ -65,6 +89,12 @@ class PurchaseOrderController extends Controller
         );
     }
 
+    /**
+     * Approve.
+     *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Approved purchase order.', type: 'array{success: true, message: string, data: PurchaseOrderResource, meta: null, errors: null}')]
     public function approve(PurchaseOrder $purchaseOrder): JsonResponse
     {
@@ -76,6 +106,12 @@ class PurchaseOrderController extends Controller
         );
     }
 
+    /**
+     * Mark ordered.
+     *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Marked purchase order as ordered.', type: 'array{success: true, message: string, data: PurchaseOrderResource, meta: null, errors: null}')]
     public function markOrdered(PurchaseOrder $purchaseOrder): JsonResponse
     {
@@ -87,6 +123,12 @@ class PurchaseOrderController extends Controller
         );
     }
 
+    /**
+     * Cancel.
+     *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Cancelled purchase order.', type: 'array{success: true, message: string, data: PurchaseOrderResource, meta: null, errors: null}')]
     public function cancel(PurchaseOrder $purchaseOrder): JsonResponse
     {
@@ -98,6 +140,12 @@ class PurchaseOrderController extends Controller
         );
     }
 
+    /**
+     * Close.
+     *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Closed purchase order.', type: 'array{success: true, message: string, data: PurchaseOrderResource, meta: null, errors: null}')]
     public function close(PurchaseOrder $purchaseOrder): JsonResponse
     {
@@ -109,6 +157,12 @@ class PurchaseOrderController extends Controller
         );
     }
 
+    /**
+     * Receipts.
+     *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Goods receipts for a purchase order.', type: 'array{success: true, message: string, data: GoodsReceiptResource[], meta: null, errors: null}')]
     public function receipts(PurchaseOrder $purchaseOrder): JsonResponse
     {
@@ -122,6 +176,13 @@ class PurchaseOrderController extends Controller
         );
     }
 
+    /**
+     * Receive.
+     *
+     * @param  ReceiveGoodsRequest  $request
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Goods receipt created.', type: 'array{success: true, message: string, data: GoodsReceiptResource, meta: null, errors: null}')]
     public function receive(ReceiveGoodsRequest $request, PurchaseOrder $purchaseOrder): JsonResponse
     {

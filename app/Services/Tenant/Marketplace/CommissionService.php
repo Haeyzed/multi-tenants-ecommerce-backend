@@ -23,6 +23,12 @@ use Illuminate\Validation\ValidationException;
  */
 class CommissionService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceSettingService  $commerceSettings
+     * @param  SellerOrderService  $sellerOrders
+     */
     public function __construct(
         private readonly CommerceSettingService $commerceSettings,
         private readonly SellerOrderService $sellerOrders,
@@ -30,6 +36,9 @@ class CommissionService
 
     /**
      * Create commission records for all seller orders on a paid order.
+     *
+     * @param  Order  $order
+     * @return void
      */
     public function createForOrder(Order $order): void
     {
@@ -88,13 +97,11 @@ class CommissionService
     }
 
     /**
+     * commission_type: CommissionType, commission_rate: string|null, commission_fixed_amount: string|null, commission_amount: string, seller_amount: string }
+     *
+     * @param  Seller  $seller
+     * @param  string  $subtotal
      * @return array{
-     *     commission_type: CommissionType,
-     *     commission_rate: string|null,
-     *     commission_fixed_amount: string|null,
-     *     commission_amount: string,
-     *     seller_amount: string
-     * }
      */
     public function calculate(Seller $seller, string $subtotal): array
     {
@@ -132,12 +139,15 @@ class CommissionService
     }
 
     /**
+     * seller_id?: int|null, order_id?: int|null, status?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     seller_id?: int|null,
      *     order_id?: int|null,
      *     status?: string|null,
      *     per_page?: int|null
      * }  $params
+     * @param  ?Authenticatable  $actor
      * @return LengthAwarePaginator<int, SellerCommission>
      */
     public function list(array $params = [], ?Authenticatable $actor = null): LengthAwarePaginator
@@ -163,12 +173,23 @@ class CommissionService
         return $query->paginate(max(1, min((int) ($params['per_page'] ?? 15), 100)));
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  SellerCommission  $commission
+     * @return SellerCommission
+     */
     public function show(SellerCommission $commission): SellerCommission
     {
         return $commission->load(['seller', 'order', 'sellerOrder', 'payouts']);
     }
 
     /**
+     * Assert eligible for payout.
+     *
+     * @param  SellerCommission  $commission
+     * @return void
+     *
      * @throws ValidationException
      */
     public function assertEligibleForPayout(SellerCommission $commission): void

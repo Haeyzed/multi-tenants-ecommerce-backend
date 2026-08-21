@@ -51,6 +51,18 @@ class PosSaleService
 {
     private const array OFFLINE_METHODS = ['cash', 'card', 'bank_transfer', 'offline_card', 'offline_bank'];
 
+    /**
+     * Create a new class instance.
+     *
+     * @param  AccountingService  $accounting
+     * @param  CartService  $cartService
+     * @param  CommerceSettingService  $commerceSettings
+     * @param  OrderInventoryService  $orderInventory
+     * @param  PaymentManager  $paymentManager
+     * @param  RefundService  $refundService
+     * @param  InventoryStockableResolver  $stockables
+     * @param  TaxService  $taxService
+     */
     public function __construct(
         private readonly AccountingService $accounting,
         private readonly CartService $cartService,
@@ -63,6 +75,9 @@ class PosSaleService
     ) {}
 
     /**
+     * customer_id?: int|null, items: list<array{product_id: int, product_variant_id?: int|null, quantity: int}>, payments: list<array{method: string, amount: string|float, gateway?: string|null}>, discount_percent?: string|float|null, discount_fixed?: string|float|null, notes?: string|null, idempotency_key?: string|null, currency?: string|null }  $data
+     *
+     * @param  PosSession  $session
      * @param  array{
      *     customer_id?: int|null,
      *     items: list<array{product_id: int, product_variant_id?: int|null, quantity: int}>,
@@ -73,6 +88,7 @@ class PosSaleService
      *     idempotency_key?: string|null,
      *     currency?: string|null
      * }  $data
+     * @return Order
      */
     public function createSale(PosSession $session, array $data): Order
     {
@@ -264,11 +280,13 @@ class PosSaleService
     /**
      * Refund a POS order (gateway via RefundService; offline cash/card locally).
      *
+     * @param  Order  $order
      * @param  array{
      *     amount?: string|float|null,
      *     reason?: string|null,
      *     order_payment_id?: int|null
      * }  $data
+     * @return Refund
      */
     public function refund(Order $order, array $data = []): Refund
     {
@@ -312,6 +330,8 @@ class PosSaleService
 
     /**
      * Ensure the tenant walk-in customer exists.
+     *
+     * @return Customer
      */
     public function ensureWalkInCustomer(): Customer
     {
@@ -335,7 +355,12 @@ class PosSaleService
     }
 
     /**
+     * Refund offline.
+     *
+     * @param  Order  $order
+     * @param  OrderPayment  $payment
      * @param  array{amount?: string|float|null, reason?: string|null}  $data
+     * @return Refund
      */
     protected function refundOffline(Order $order, OrderPayment $payment, array $data): Refund
     {
@@ -409,6 +434,12 @@ class PosSaleService
         });
     }
 
+    /**
+     * Resolve customer.
+     *
+     * @param  ?int  $customerId
+     * @return Customer
+     */
     protected function resolveCustomer(?int $customerId): Customer
     {
         if ($customerId !== null) {
@@ -426,17 +457,13 @@ class PosSaleService
     }
 
     /**
+     * product_id: int, product_variant_id: int|null, product_name: string, sku: string|null, quantity: int, unit_price: string, subtotal: string, inventory_id: int|null }>
+     *
      * @param  list<array{product_id: int, product_variant_id?: int|null, quantity: int}>  $items
+     * @param  string  $currency
+     * @param  Customer  $customer
+     * @param  int  $warehouseId
      * @return list<array{
-     *     product_id: int,
-     *     product_variant_id: int|null,
-     *     product_name: string,
-     *     sku: string|null,
-     *     quantity: int,
-     *     unit_price: string,
-     *     subtotal: string,
-     *     inventory_id: int|null
-     * }>
      */
     protected function buildLineItems(array $items, string $currency, Customer $customer, int $warehouseId): array
     {
@@ -495,6 +522,15 @@ class PosSaleService
         return $lines;
     }
 
+    /**
+     * Find inventory for warehouse.
+     *
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
+     * @param  int  $quantity
+     * @param  int  $warehouseId
+     * @return ?Inventory
+     */
     protected function findInventoryForWarehouse(
         Product $product,
         ?ProductVariant $variant,
@@ -527,7 +563,11 @@ class PosSaleService
     }
 
     /**
+     * Resolve discount.
+     *
+     * @param  string  $subtotal
      * @param  array<string, mixed>  $data
+     * @return string
      */
     protected function resolveDiscount(string $subtotal, array $data): string
     {
@@ -563,7 +603,10 @@ class PosSaleService
     }
 
     /**
+     * Normalize payments.
+     *
      * @param  list<array{method: string, amount: string|float, gateway?: string|null}>  $payments
+     * @param  string  $grandTotal
      * @return list<array{method: string, amount: string, gateway: string}>
      */
     protected function normalizePayments(array $payments, string $grandTotal): array
@@ -607,7 +650,15 @@ class PosSaleService
     }
 
     /**
+     * Record payment.
+     *
+     * @param  Order  $order
+     * @param  Customer  $customer
+     * @param  PosSession  $session
+     * @param  int  $cashierId
      * @param  array{method: string, amount: string, gateway: string}  $payment
+     * @param  bool  $markSuccessful
+     * @return OrderPayment
      */
     protected function recordPayment(
         Order $order,
@@ -681,7 +732,10 @@ class PosSaleService
     }
 
     /**
+     * Create order with unique number.
+     *
      * @param  array<string, mixed>  $attributes
+     * @return Order
      */
     protected function createOrderWithUniqueNumber(array $attributes): Order
     {

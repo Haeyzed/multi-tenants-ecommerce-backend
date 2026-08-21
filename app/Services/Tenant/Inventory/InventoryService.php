@@ -24,6 +24,12 @@ use Illuminate\Validation\ValidationException;
  */
 class InventoryService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  BackInStockNotificationService  $backInStock
+     * @param  InventoryStockableResolver  $stockables
+     */
     public function __construct(
         private readonly BackInStockNotificationService $backInStock,
         private readonly InventoryStockableResolver $stockables,
@@ -57,6 +63,9 @@ class InventoryService
 
     /**
      * Retrieve an inventory record with relations.
+     *
+     * @param  Inventory  $inventory
+     * @return Inventory
      */
     public function show(Inventory $inventory): Inventory
     {
@@ -65,6 +74,11 @@ class InventoryService
 
     /**
      * Find or create an inventory row for a warehouse and inventoryable.
+     *
+     * @param  Warehouse  $warehouse
+     * @param  Model  $inventoryable
+     * @param  ?WarehouseLocation  $location
+     * @return Inventory
      */
     public function getOrCreate(
         Warehouse $warehouse,
@@ -88,12 +102,17 @@ class InventoryService
     /**
      * Assign a product or variant to a warehouse without duplicating the catalogue record.
      *
+     * @param  Warehouse  $warehouse
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
      * @param  array{
      *     warehouse_location_id?: int|null,
      *     quantity?: int|null,
      *     reorder_level?: int|null,
      *     reorder_quantity?: int|null
      * }  $data
+     * @param  ?User  $actor
+     * @return Inventory
      *
      * @throws ValidationException
      */
@@ -160,6 +179,9 @@ class InventoryService
     /**
      * Remove a zero-stock inventory assignment from a warehouse.
      *
+     * @param  Inventory  $inventory
+     * @return void
+     *
      * @throws ValidationException
      */
     public function unassign(Inventory $inventory): void
@@ -176,6 +198,10 @@ class InventoryService
     /**
      * Resolve the catalogue record that should own warehouse inventory.
      *
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
+     * @return Product|ProductVariant
+     *
      * @throws ValidationException
      */
     public function stockableFor(Product $product, ?ProductVariant $variant = null): Product|ProductVariant
@@ -185,6 +211,15 @@ class InventoryService
 
     /**
      * Adjust inventory quantity and record a movement.
+     *
+     * @param  Inventory  $inventory
+     * @param  int  $delta
+     * @param  InventoryMovementType  $type
+     * @param  ?string  $reason
+     * @param  ?string  $notes
+     * @param  ?User  $actor
+     * @param  ?Model  $reference
+     * @return Inventory
      *
      * @throws ValidationException
      */
@@ -241,6 +276,15 @@ class InventoryService
 
     /**
      * Increase inventory quantity.
+     *
+     * @param  Inventory  $inventory
+     * @param  int  $quantity
+     * @param  InventoryMovementType  $type
+     * @param  ?string  $reason
+     * @param  ?string  $notes
+     * @param  ?User  $actor
+     * @param  ?Model  $reference
+     * @return Inventory
      */
     public function increase(
         Inventory $inventory,
@@ -256,6 +300,15 @@ class InventoryService
 
     /**
      * Decrease inventory quantity.
+     *
+     * @param  Inventory  $inventory
+     * @param  int  $quantity
+     * @param  InventoryMovementType  $type
+     * @param  ?string  $reason
+     * @param  ?string  $notes
+     * @param  ?User  $actor
+     * @param  ?Model  $reference
+     * @return Inventory
      */
     public function decrease(
         Inventory $inventory,
@@ -271,6 +324,10 @@ class InventoryService
 
     /**
      * Reserve stock for an order or hold.
+     *
+     * @param  Inventory  $inventory
+     * @param  int  $qty
+     * @return Inventory
      *
      * @throws ValidationException
      */
@@ -302,6 +359,10 @@ class InventoryService
     /**
      * Release previously reserved stock.
      *
+     * @param  Inventory  $inventory
+     * @param  int  $qty
+     * @return Inventory
+     *
      * @throws ValidationException
      */
     public function release(Inventory $inventory, int $qty): Inventory
@@ -331,6 +392,15 @@ class InventoryService
 
     /**
      * Atomically convert a reservation into an on-hand decrease (single lock).
+     *
+     * @param  Inventory  $inventory
+     * @param  int  $qty
+     * @param  InventoryMovementType  $type
+     * @param  ?string  $reason
+     * @param  ?string  $notes
+     * @param  ?User  $actor
+     * @param  ?Model  $reference
+     * @return Inventory
      *
      * @throws ValidationException
      */
@@ -390,6 +460,12 @@ class InventoryService
 
     /**
      * Transfer stock between warehouses for the same inventoryable.
+     *
+     * @param  Inventory  $from
+     * @param  Warehouse  $toWarehouse
+     * @param  int  $qty
+     * @param  ?User  $actor
+     * @return array
      *
      * @throws ValidationException
      */
@@ -456,7 +532,11 @@ class InventoryService
     }
 
     /**
+     * Constrain catalogue.
+     *
+     * @param  Builder  $query
      * @param  array{product_id?: int|null, product_variant_id?: int|null}  $params
+     * @return void
      */
     protected function constrainCatalogue(Builder $query, array $params): void
     {
@@ -501,6 +581,12 @@ class InventoryService
     }
 
     /**
+     * Resolve location.
+     *
+     * @param  Warehouse  $warehouse
+     * @param  mixed  $locationId
+     * @return ?WarehouseLocation
+     *
      * @throws ValidationException
      */
     protected function resolveLocation(Warehouse $warehouse, mixed $locationId): ?WarehouseLocation
@@ -521,7 +607,10 @@ class InventoryService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

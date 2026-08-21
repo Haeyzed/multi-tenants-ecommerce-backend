@@ -16,8 +16,20 @@ use Illuminate\Support\Facades\Schema;
  */
 class CarrierWebhookController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CarrierWebhookManager  $webhooks
+     */
     public function __construct(private readonly CarrierWebhookManager $webhooks) {}
 
+    /**
+     * __invoke.
+     *
+     * @param  Request  $request
+     * @param  string  $carrier
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Webhook acknowledged.',

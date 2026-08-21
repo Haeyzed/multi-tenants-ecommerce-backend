@@ -24,10 +24,19 @@ use Illuminate\Http\UploadedFile;
  */
 class ProductVariantController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductVariantService  $variantService
+     */
     public function __construct(private readonly ProductVariantService $variantService) {}
 
     /**
      * List variants for a product.
+     *
+     * @param  IndexProductVariantRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -47,6 +56,10 @@ class ProductVariantController extends Controller
 
     /**
      * Create a product variant.
+     *
+     * @param  StoreProductVariantRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -74,6 +87,10 @@ class ProductVariantController extends Controller
 
     /**
      * Show a product variant.
+     *
+     * @param  Product  $product
+     * @param  ProductVariant  $variant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -92,6 +109,11 @@ class ProductVariantController extends Controller
 
     /**
      * Update a product variant.
+     *
+     * @param  UpdateProductVariantRequest  $request
+     * @param  Product  $product
+     * @param  ProductVariant  $variant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -121,6 +143,10 @@ class ProductVariantController extends Controller
 
     /**
      * Delete a product variant.
+     *
+     * @param  Product  $product
+     * @param  ProductVariant  $variant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -138,6 +164,11 @@ class ProductVariantController extends Controller
 
     /**
      * Upload or replace a variant image.
+     *
+     * @param  BaseRequest  $request
+     * @param  Product  $product
+     * @param  ProductVariant  $variant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -163,6 +194,10 @@ class ProductVariantController extends Controller
 
     /**
      * Remove a variant image.
+     *
+     * @param  Product  $product
+     * @param  ProductVariant  $variant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

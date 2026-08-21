@@ -16,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 class DepartmentService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, is_active?: bool|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Department>
      */
@@ -29,6 +31,8 @@ class DepartmentService
     }
 
     /**
+     * Return options for select inputs.
+     *
      * @return Collection<int, array{label: string, value: int}>
      */
     public function options(): Collection
@@ -45,7 +49,10 @@ class DepartmentService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array{name: string, code?: string|null, description?: string|null, manager_id?: int|null, is_active?: bool}  $data
+     * @return Department
      *
      * @throws ValidationException
      */
@@ -63,13 +70,23 @@ class DepartmentService
         ])->load('manager.user');
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Department  $department
+     * @return Department
+     */
     public function show(Department $department): Department
     {
         return $department->loadCount('employees')->load('manager.user');
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  Department  $department
      * @param  array{name?: string, code?: string|null, description?: string|null, manager_id?: int|null, is_active?: bool}  $data
+     * @return Department
      *
      * @throws ValidationException
      */
@@ -89,12 +106,24 @@ class DepartmentService
         return $department->fresh(['manager.user']) ?? $department;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Department  $department
+     * @return void
+     */
     public function destroy(Department $department): void
     {
         $department->delete();
     }
 
     /**
+     * Assert unique name.
+     *
+     * @param  string  $name
+     * @param  ?int  $ignoreId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertUniqueName(string $name, ?int $ignoreId = null): void
@@ -112,6 +141,11 @@ class DepartmentService
     }
 
     /**
+     * Assert manager.
+     *
+     * @param  mixed  $managerId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertManager(mixed $managerId): void
@@ -128,7 +162,10 @@ class DepartmentService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

@@ -16,12 +16,20 @@ use Illuminate\Validation\ValidationException;
  */
 class PayrollRunAccountingService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  JournalEntryService  $journalEntryService
+     * @param  HrSettingsService  $hrSettings
+     */
     public function __construct(
         private readonly JournalEntryService $journalEntryService,
         private readonly HrSettingsService $hrSettings,
     ) {}
 
     /**
+     * post_to_accounting?: bool|null, expense_account_id?: int|null, payable_account_id?: int|null, tax_payable_account_id?: int|null, deduction_payable_account_id?: int|null }  $options
+     *
      * @param  array{
      *     post_to_accounting?: bool|null,
      *     expense_account_id?: int|null,
@@ -29,6 +37,7 @@ class PayrollRunAccountingService
      *     tax_payable_account_id?: int|null,
      *     deduction_payable_account_id?: int|null
      * }  $options
+     * @return bool
      */
     public function shouldPost(array $options): bool
     {
@@ -41,12 +50,16 @@ class PayrollRunAccountingService
     }
 
     /**
+     * expense_account_id?: int|null, payable_account_id?: int|null, tax_payable_account_id?: int|null, deduction_payable_account_id?: int|null }  $options
+     *
+     * @param  PayrollRun  $payrollRun
      * @param  array{
      *     expense_account_id?: int|null,
      *     payable_account_id?: int|null,
      *     tax_payable_account_id?: int|null,
      *     deduction_payable_account_id?: int|null
      * }  $options
+     * @return void
      *
      * @throws ValidationException
      */

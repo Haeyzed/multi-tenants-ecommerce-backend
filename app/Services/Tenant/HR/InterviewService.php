@@ -25,6 +25,13 @@ use Illuminate\Validation\ValidationException;
  */
 class InterviewService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     * @param  RecruitmentActivityService  $activities
+     * @param  InterviewMeetingService  $meetings
+     */
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly RecruitmentActivityService $activities,
@@ -32,6 +39,8 @@ class InterviewService
     ) {}
 
     /**
+     * from?: string|null, to?: string|null, status?: string|null, job_application_id?: int|null, job_opening_id?: int|null, interviewer_id?: int|null, sort?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     from?: string|null,
      *     to?: string|null,
@@ -56,7 +65,10 @@ class InterviewService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return Interview
      */
     public function store(array $data): Interview
     {
@@ -107,6 +119,12 @@ class InterviewService
         return $interview;
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Interview  $interview
+     * @return Interview
+     */
     public function show(Interview $interview): Interview
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -115,7 +133,11 @@ class InterviewService
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  Interview  $interview
      * @param  array<string, mixed>  $data
+     * @return Interview
      */
     public function update(Interview $interview, array $data): Interview
     {
@@ -170,18 +192,35 @@ class InterviewService
         return $fresh;
     }
 
+    /**
+     * Complete.
+     *
+     * @param  Interview  $interview
+     * @return Interview
+     */
     public function complete(Interview $interview): Interview
     {
         return $this->update($interview, ['status' => InterviewStatus::Completed]);
     }
 
+    /**
+     * Cancel.
+     *
+     * @param  Interview  $interview
+     * @return Interview
+     */
     public function cancel(Interview $interview): Interview
     {
         return $this->update($interview, ['status' => InterviewStatus::Cancelled]);
     }
 
     /**
+     * Submit feedback.
+     *
+     * @param  Interview  $interview
+     * @param  User  $interviewer
      * @param  array<string, mixed>  $data
+     * @return InterviewFeedback
      *
      * @throws ValidationException
      */
@@ -220,6 +259,12 @@ class InterviewService
         return $feedback->load('interviewer');
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Interview  $interview
+     * @return void
+     */
     public function destroy(Interview $interview): void
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -229,7 +274,11 @@ class InterviewService
     }
 
     /**
+     * Sync interviewers.
+     *
+     * @param  Interview  $interview
      * @param  list<int>  $interviewerIds
+     * @return void
      *
      * @throws ValidationException
      */
@@ -274,6 +323,8 @@ class InterviewService
     }
 
     /**
+     * Extract meeting input.
+     *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
@@ -291,7 +342,10 @@ class InterviewService
     }
 
     /**
+     * Has explicit meeting input.
+     *
      * @param  array<string, mixed>  $input
+     * @return bool
      */
     protected function hasExplicitMeetingInput(array $input): bool
     {
@@ -311,7 +365,10 @@ class InterviewService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {
@@ -319,6 +376,11 @@ class InterviewService
     }
 
     /**
+     * Assert application open.
+     *
+     * @param  JobApplication  $application
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertApplicationOpen(JobApplication $application): void

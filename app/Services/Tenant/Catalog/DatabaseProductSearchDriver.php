@@ -27,6 +27,9 @@ class DatabaseProductSearchDriver implements ProductSearchDriver
 
     /**
      * {@inheritDoc}
+     *
+     * @param  array  $params
+     * @return LengthAwarePaginator
      */
     public function search(array $params = []): LengthAwarePaginator
     {
@@ -82,7 +85,10 @@ class DatabaseProductSearchDriver implements ProductSearchDriver
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array<string, mixed>  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

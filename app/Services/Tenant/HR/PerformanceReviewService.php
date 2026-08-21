@@ -16,9 +16,16 @@ use Illuminate\Validation\ValidationException;
  */
 class PerformanceReviewService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     */
     public function __construct(private readonly HrSettingsService $hrSettings) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{employee_id?: int|null, performance_cycle_id?: int|null, status?: string|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, PerformanceReview>
      */
@@ -34,7 +41,10 @@ class PerformanceReviewService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return PerformanceReview
      *
      * @throws ValidationException
      */
@@ -61,6 +71,12 @@ class PerformanceReviewService
         ])->load(['cycle', 'employee.user', 'reviewer.user']);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PerformanceReview  $review
+     * @return PerformanceReview
+     */
     public function show(PerformanceReview $review): PerformanceReview
     {
         $this->hrSettings->assertPerformanceEnabled();
@@ -69,7 +85,11 @@ class PerformanceReviewService
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  PerformanceReview  $review
      * @param  array<string, mixed>  $data
+     * @return PerformanceReview
      */
     public function update(PerformanceReview $review, array $data): PerformanceReview
     {
@@ -90,6 +110,12 @@ class PerformanceReviewService
         return $review->fresh(['cycle', 'employee.user', 'reviewer.user']) ?? $review;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  PerformanceReview  $review
+     * @return void
+     */
     public function destroy(PerformanceReview $review): void
     {
         $this->hrSettings->assertPerformanceEnabled();
@@ -99,6 +125,11 @@ class PerformanceReviewService
     }
 
     /**
+     * Assert cycle writable.
+     *
+     * @param  PerformanceCycle  $cycle
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertCycleWritable(PerformanceCycle $cycle): void
@@ -111,6 +142,13 @@ class PerformanceReviewService
     }
 
     /**
+     * Assert unique.
+     *
+     * @param  int  $cycleId
+     * @param  int  $employeeId
+     * @param  ?int  $ignoreId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertUnique(int $cycleId, int $employeeId, ?int $ignoreId = null): void
@@ -129,7 +167,10 @@ class PerformanceReviewService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

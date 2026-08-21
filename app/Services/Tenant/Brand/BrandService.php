@@ -18,6 +18,11 @@ use Illuminate\Validation\ValidationException;
  */
 class BrandService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
     /**
@@ -69,6 +74,8 @@ class BrandService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @param  ?UploadedFile  $logo
+     * @return Brand
      */
     public function store(array $data, ?UploadedFile $logo = null): Brand
     {
@@ -91,6 +98,9 @@ class BrandService
 
     /**
      * Retrieve a brand with media loaded.
+     *
+     * @param  Brand  $brand
+     * @return Brand
      */
     public function show(Brand $brand): Brand
     {
@@ -100,12 +110,15 @@ class BrandService
     /**
      * Update a brand and optionally replace its logo.
      *
+     * @param  Brand  $brand
      * @param  array{
      *     name?: string,
      *     description?: string|null,
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @param  ?UploadedFile  $logo
+     * @return Brand
      */
     public function update(Brand $brand, array $data, ?UploadedFile $logo = null): Brand
     {
@@ -124,8 +137,8 @@ class BrandService
     /**
      * Delete a brand when no products are associated.
      *
-     * Product module is not implemented yet; once products exist,
-     * deletion must be blocked while products reference the brand.
+     * @param  Brand  $brand
+     * @return void
      *
      * @throws ValidationException
      */
@@ -145,6 +158,10 @@ class BrandService
 
     /**
      * Replace the brand logo.
+     *
+     * @param  Brand  $brand
+     * @param  UploadedFile  $logo
+     * @return Brand
      */
     public function storeLogo(Brand $brand, UploadedFile $logo): Brand
     {
@@ -155,6 +172,9 @@ class BrandService
 
     /**
      * Remove the brand logo.
+     *
+     * @param  Brand  $brand
+     * @return Brand
      */
     public function destroyLogo(Brand $brand): Brand
     {
@@ -165,6 +185,9 @@ class BrandService
 
     /**
      * Whether the brand has associated products.
+     *
+     * @param  Brand  $brand
+     * @return bool
      */
     protected function hasAssociatedProducts(Brand $brand): bool
     {
@@ -172,7 +195,10 @@ class BrandService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

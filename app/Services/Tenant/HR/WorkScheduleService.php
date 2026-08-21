@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 class WorkScheduleService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, is_active?: bool|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, WorkSchedule>
      */
@@ -28,6 +30,8 @@ class WorkScheduleService
     }
 
     /**
+     * Return options for select inputs.
+     *
      * @return Collection<int, array{label: string, value: int, id: int}>
      */
     public function options(): Collection
@@ -46,6 +50,8 @@ class WorkScheduleService
     }
 
     /**
+     * name: string, code?: string|null, is_default?: bool, is_active?: bool, overtime_policy_id?: int|null, days?: list<array{weekday: int, start_time: string, end_time: string, break_minutes?: int}> }  $data
+     *
      * @param  array{
      *     name: string,
      *     code?: string|null,
@@ -54,6 +60,7 @@ class WorkScheduleService
      *     overtime_policy_id?: int|null,
      *     days?: list<array{weekday: int, start_time: string, end_time: string, break_minutes?: int}>
      * }  $data
+     * @return WorkSchedule
      */
     public function store(array $data): WorkSchedule
     {
@@ -71,13 +78,23 @@ class WorkScheduleService
         return $this->show($schedule);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  WorkSchedule  $schedule
+     * @return WorkSchedule
+     */
     public function show(WorkSchedule $schedule): WorkSchedule
     {
         return $schedule->load(['days', 'overtimePolicy']);
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  WorkSchedule  $schedule
      * @param  array<string, mixed>  $data
+     * @return WorkSchedule
      */
     public function update(WorkSchedule $schedule, array $data): WorkSchedule
     {
@@ -101,6 +118,11 @@ class WorkScheduleService
     }
 
     /**
+     * Delete a resource.
+     *
+     * @param  WorkSchedule  $schedule
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(WorkSchedule $schedule): void
@@ -116,7 +138,11 @@ class WorkScheduleService
     }
 
     /**
+     * Sync days.
+     *
+     * @param  WorkSchedule  $schedule
      * @param  list<array{weekday: int, start_time: string, end_time: string, break_minutes?: int}>  $days
+     * @return void
      */
     protected function syncDays(WorkSchedule $schedule, array $days): void
     {
@@ -132,6 +158,12 @@ class WorkScheduleService
         }
     }
 
+    /**
+     * Ensure single default.
+     *
+     * @param  WorkSchedule  $schedule
+     * @return void
+     */
     protected function ensureSingleDefault(WorkSchedule $schedule): void
     {
         if (! $schedule->is_default) {
@@ -141,6 +173,12 @@ class WorkScheduleService
         WorkSchedule::query()->whereKeyNot($schedule->id)->update(['is_default' => false]);
     }
 
+    /**
+     * Nullable code.
+     *
+     * @param  mixed  $code
+     * @return ?string
+     */
     protected function nullableCode(mixed $code): ?string
     {
         $code = is_string($code) ? strtolower(trim($code)) : '';
@@ -149,7 +187,10 @@ class WorkScheduleService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

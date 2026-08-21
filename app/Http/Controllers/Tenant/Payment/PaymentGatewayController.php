@@ -17,8 +17,19 @@ use Illuminate\Http\Request;
  */
 class PaymentGatewayController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  TenantPaymentGatewayService  $gateways
+     */
     public function __construct(private readonly TenantPaymentGatewayService $gateways) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Configured payment gateways.', type: 'array{success: true, message: string, data: TenantPaymentGatewayResource[], meta: null, errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -35,6 +46,12 @@ class PaymentGatewayController extends Controller
         );
     }
 
+    /**
+     * Upsert.
+     *
+     * @param  UpsertPaymentGatewayRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Upserted payment gateway.', type: 'array{success: true, message: string, data: TenantPaymentGatewayResource, meta: null, errors: null}')]
     public function upsert(UpsertPaymentGatewayRequest $request): JsonResponse
     {
@@ -44,6 +61,13 @@ class PaymentGatewayController extends Controller
         );
     }
 
+    /**
+     * Enable.
+     *
+     * @param  Request  $request
+     * @param  string  $gateway
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Enabled payment gateway.', type: 'array{success: true, message: string, data: TenantPaymentGatewayResource, meta: null, errors: null}')]
     public function enable(Request $request, string $gateway): JsonResponse
     {
@@ -59,6 +83,13 @@ class PaymentGatewayController extends Controller
         );
     }
 
+    /**
+     * Disable.
+     *
+     * @param  Request  $request
+     * @param  string  $gateway
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Disabled payment gateway.', type: 'array{success: true, message: string, data: TenantPaymentGatewayResource, meta: null, errors: null}')]
     public function disable(Request $request, string $gateway): JsonResponse
     {

@@ -11,15 +11,19 @@ use App\Support\Money;
  */
 class StatutoryContributionService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     */
     public function __construct(private readonly HrSettingsService $hrSettings) {}
 
     /**
+     * pension: string, employer_pension: string, nhf: string, employer_nsitf: string }
+     *
+     * @param  string  $basicSalary
+     * @param  string  $grossPay
      * @return array{
-     *     pension: string,
-     *     employer_pension: string,
-     *     nhf: string,
-     *     employer_nsitf: string
-     * }
      */
     public function forPayslip(string $basicSalary, string $grossPay): array
     {

@@ -53,6 +53,9 @@ class ProductAttributeService
 
     /**
      * Retrieve an attribute with values.
+     *
+     * @param  ProductAttribute  $attribute
+     * @return ProductAttribute
      */
     public function show(ProductAttribute $attribute): ProductAttribute
     {
@@ -63,6 +66,7 @@ class ProductAttributeService
      * Create an attribute.
      *
      * @param  array{name: string, slug?: string|null, sort_order?: int}  $data
+     * @return ProductAttribute
      */
     public function store(array $data): ProductAttribute
     {
@@ -79,7 +83,9 @@ class ProductAttributeService
     /**
      * Update an attribute.
      *
+     * @param  ProductAttribute  $attribute
      * @param  array{name?: string, slug?: string|null, sort_order?: int}  $data
+     * @return ProductAttribute
      */
     public function update(ProductAttribute $attribute, array $data): ProductAttribute
     {
@@ -91,6 +97,9 @@ class ProductAttributeService
 
     /**
      * Delete an attribute and its values.
+     *
+     * @param  ProductAttribute  $attribute
+     * @return void
      */
     public function destroy(ProductAttribute $attribute): void
     {
@@ -103,7 +112,9 @@ class ProductAttributeService
     /**
      * Create a value under an attribute.
      *
+     * @param  ProductAttribute  $attribute
      * @param  array{value: string, sort_order?: int}  $data
+     * @return ProductAttributeValue
      */
     public function storeValue(ProductAttribute $attribute, array $data): ProductAttributeValue
     {
@@ -119,7 +130,10 @@ class ProductAttributeService
     /**
      * Update an attribute value scoped to its parent attribute.
      *
+     * @param  ProductAttribute  $attribute
+     * @param  ProductAttributeValue  $value
      * @param  array{value?: string, sort_order?: int}  $data
+     * @return ProductAttributeValue
      *
      * @throws ValidationException
      */
@@ -136,6 +150,10 @@ class ProductAttributeService
     /**
      * Delete an attribute value scoped to its parent attribute.
      *
+     * @param  ProductAttribute  $attribute
+     * @param  ProductAttributeValue  $value
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroyValue(ProductAttribute $attribute, ProductAttributeValue $value): void
@@ -145,6 +163,12 @@ class ProductAttributeService
     }
 
     /**
+     * Assert value belongs.
+     *
+     * @param  ProductAttribute  $attribute
+     * @param  ProductAttributeValue  $value
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertValueBelongs(ProductAttribute $attribute, ProductAttributeValue $value): void
@@ -157,7 +181,10 @@ class ProductAttributeService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

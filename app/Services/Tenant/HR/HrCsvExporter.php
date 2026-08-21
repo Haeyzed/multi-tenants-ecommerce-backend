@@ -12,8 +12,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class HrCsvExporter
 {
     /**
+     * Rows.
+     *
+     * @param  string  $filename
+     * @param  list<array<string, scalar|null>>  $rows
      * @param  list<array<string, scalar|null>>  $rows
      * @param  list<string>|null  $headings
+     * @return StreamedResponse
      */
     public function rows(string $filename, array $rows, ?array $headings = null): StreamedResponse
     {

@@ -21,8 +21,19 @@ use Illuminate\Http\Request;
  */
 class SellerOfferController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  SellerOfferService  $sellerOfferService
+     */
     public function __construct(private readonly SellerOfferService $sellerOfferService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated offers.', type: 'array{success: true, message: string, data: SellerOfferResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -43,6 +54,12 @@ class SellerOfferController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreSellerOfferRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created offer.', type: 'array{success: true, message: string, data: SellerOfferResource, meta: null, errors: null}')]
     public function store(StoreSellerOfferRequest $request): JsonResponse
     {
@@ -57,6 +74,12 @@ class SellerOfferController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  SellerOffer  $seller_offer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'An offer.', type: 'array{success: true, message: string, data: SellerOfferResource, meta: null, errors: null}')]
     public function show(SellerOffer $seller_offer): JsonResponse
     {
@@ -68,6 +91,13 @@ class SellerOfferController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateSellerOfferRequest  $request
+     * @param  SellerOffer  $seller_offer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated offer.', type: 'array{success: true, message: string, data: SellerOfferResource, meta: null, errors: null}')]
     public function update(UpdateSellerOfferRequest $request, SellerOffer $seller_offer): JsonResponse
     {
@@ -82,6 +112,13 @@ class SellerOfferController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Request  $request
+     * @param  SellerOffer  $seller_offer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted offer.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Request $request, SellerOffer $seller_offer): JsonResponse
     {

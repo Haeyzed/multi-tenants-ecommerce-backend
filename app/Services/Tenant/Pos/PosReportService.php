@@ -16,17 +16,11 @@ use Illuminate\Database\Eloquent\Builder;
 class PosReportService
 {
     /**
+     * session_id: int, status: string, opening_cash: string, expected_cash: string, actual_cash: string|null, cash_difference: string|null, sales_count: int, sales_total: string, cash_movements: list<array{type: string, total: string}> }
+     *
+     * @param  PosSession  $session
+     * @param  PosSessionService  $sessions
      * @return array{
-     *     session_id: int,
-     *     status: string,
-     *     opening_cash: string,
-     *     expected_cash: string,
-     *     actual_cash: string|null,
-     *     cash_difference: string|null,
-     *     sales_count: int,
-     *     sales_total: string,
-     *     cash_movements: list<array{type: string, total: string}>
-     * }
      */
     public function sessionSummary(PosSession $session, PosSessionService $sessions): array
     {
@@ -65,6 +59,8 @@ class PosReportService
     }
 
     /**
+     * Sales by terminal.
+     *
      * @param  array{from?: string|null, to?: string|null}  $params
      * @return list<array{pos_terminal_id: int, sales_count: int, sales_total: string}>
      */
@@ -85,6 +81,8 @@ class PosReportService
     }
 
     /**
+     * Sales by cashier.
+     *
      * @param  array{from?: string|null, to?: string|null}  $params
      * @return list<array{user_id: int, sales_count: int, sales_total: string}>
      */
@@ -109,6 +107,8 @@ class PosReportService
     }
 
     /**
+     * Payment method totals.
+     *
      * @param  array{from?: string|null, to?: string|null}  $params
      * @return list<array{gateway: string, payments_count: int, payments_total: string}>
      */
@@ -132,6 +132,8 @@ class PosReportService
     }
 
     /**
+     * Pos orders query.
+     *
      * @param  array{from?: string|null, to?: string|null}  $params
      * @return Builder<Order>
      */

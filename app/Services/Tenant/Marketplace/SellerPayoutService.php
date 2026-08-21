@@ -23,6 +23,14 @@ use Illuminate\Validation\ValidationException;
  */
 class SellerPayoutService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommissionService  $commissions
+     * @param  CommerceSettingService  $commerceSettings
+     * @param  AccountingService  $accounting
+     * @param  SellerPayoutDriverInterface  $driver
+     */
     public function __construct(
         private readonly CommissionService $commissions,
         private readonly CommerceSettingService $commerceSettings,
@@ -31,11 +39,15 @@ class SellerPayoutService
     ) {}
 
     /**
+     * seller_id: int, commission_ids: list<int>, idempotency_key: string }  $data
+     *
      * @param  array{
      *     seller_id: int,
      *     commission_ids: list<int>,
      *     idempotency_key: string
      * }  $data
+     * @param  ?Authenticatable  $actor
+     * @return SellerPayout
      *
      * @throws ValidationException
      */
@@ -111,6 +123,9 @@ class SellerPayoutService
 
     /**
      * Execute payout via driver, post accounting, and mark commissions paid.
+     *
+     * @param  SellerPayout  $payout
+     * @return SellerPayout
      */
     public function process(SellerPayout $payout): SellerPayout
     {
@@ -146,11 +161,14 @@ class SellerPayoutService
     }
 
     /**
+     * seller_id?: int|null, status?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     seller_id?: int|null,
      *     status?: string|null,
      *     per_page?: int|null
      * }  $params
+     * @param  ?Authenticatable  $actor
      * @return LengthAwarePaginator<int, SellerPayout>
      */
     public function list(array $params = [], ?Authenticatable $actor = null): LengthAwarePaginator
@@ -172,6 +190,12 @@ class SellerPayoutService
         return $query->paginate(max(1, min((int) ($params['per_page'] ?? 15), 100)));
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  SellerPayout  $payout
+     * @return SellerPayout
+     */
     public function show(SellerPayout $payout): SellerPayout
     {
         return $payout->load(['seller', 'commissions.sellerOrder']);

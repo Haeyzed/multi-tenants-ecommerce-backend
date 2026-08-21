@@ -18,8 +18,19 @@ use Illuminate\Http\JsonResponse;
  */
 class PosCatalogController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PosCatalogService  $catalog
+     */
     public function __construct(private readonly PosCatalogService $catalog) {}
 
+    /**
+     * Search.
+     *
+     * @param  PosCatalogSearchRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Catalog search results.',
@@ -38,6 +49,12 @@ class PosCatalogController extends Controller
         );
     }
 
+    /**
+     * Barcode.
+     *
+     * @param  PosCatalogSearchRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Barcode lookup result.',
@@ -57,6 +74,9 @@ class PosCatalogController extends Controller
     }
 
     /**
+     * Map catalog item.
+     *
+     * @param  ProductVariant|Product  $item
      * @return array<string, mixed>
      */
     protected function mapCatalogItem(ProductVariant|Product $item): array

@@ -17,6 +17,12 @@ use Illuminate\Support\Collection;
  */
 class PayslipPdfService
 {
+    /**
+     * Download.
+     *
+     * @param  PayrollItem  $item
+     * @return Response
+     */
     public function download(PayrollItem $item): Response
     {
         $item = $item->loadMissing(['employee.user', 'lines', 'payrollRun']);
@@ -26,6 +32,12 @@ class PayslipPdfService
         return Pdf::loadView('hr.payslip', $this->viewData($item))->download($filename);
     }
 
+    /**
+     * Output.
+     *
+     * @param  PayrollItem  $item
+     * @return string
+     */
     public function output(PayrollItem $item): string
     {
         $item = $item->loadMissing(['employee.user', 'lines', 'payrollRun']);
@@ -34,6 +46,9 @@ class PayslipPdfService
     }
 
     /**
+     * View data.
+     *
+     * @param  PayrollItem  $item
      * @return array{item: PayrollItem, employee: Employee|null, run: PayrollRun|null, lines: Collection<int, PayrollItemLine>}
      */
     protected function viewData(PayrollItem $item): array

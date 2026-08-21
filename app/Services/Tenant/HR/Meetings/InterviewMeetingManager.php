@@ -13,8 +13,19 @@ use Illuminate\Contracts\Container\Container;
  */
 class InterviewMeetingManager
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  Container  $container
+     */
     public function __construct(private readonly Container $container) {}
 
+    /**
+     * Driver.
+     *
+     * @param  ?string  $name
+     * @return InterviewMeetingProvider
+     */
     public function driver(?string $name = null): InterviewMeetingProvider
     {
         $name ??= (string) config('interview_meetings.default', 'manual');
@@ -31,6 +42,8 @@ class InterviewMeetingManager
     }
 
     /**
+     * Drivers.
+     *
      * @return list<string>
      */
     public function drivers(): array

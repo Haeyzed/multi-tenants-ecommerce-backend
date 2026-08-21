@@ -22,10 +22,18 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class CustomerSegmentController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CustomerSegmentationService  $segmentation
+     */
     public function __construct(private readonly CustomerSegmentationService $segmentation) {}
 
     /**
      * List configured customer segments with their current membership counts.
+     *
+     * @param  IndexCustomerSegmentRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -51,6 +59,9 @@ class CustomerSegmentController extends Controller
 
     /**
      * Create a customer segment.
+     *
+     * @param  StoreCustomerSegmentRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -69,6 +80,9 @@ class CustomerSegmentController extends Controller
 
     /**
      * Show a customer segment.
+     *
+     * @param  CustomerSegment  $segment
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -85,6 +99,10 @@ class CustomerSegmentController extends Controller
 
     /**
      * Update a customer segment.
+     *
+     * @param  UpdateCustomerSegmentRequest  $request
+     * @param  CustomerSegment  $segment
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -103,6 +121,9 @@ class CustomerSegmentController extends Controller
 
     /**
      * Delete a customer segment.
+     *
+     * @param  CustomerSegment  $segment
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -118,6 +139,10 @@ class CustomerSegmentController extends Controller
 
     /**
      * List the customers currently matching a segment's rules.
+     *
+     * @param  IndexCustomerSegmentRequest  $request
+     * @param  string  $slug
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

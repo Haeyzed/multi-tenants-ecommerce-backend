@@ -53,6 +53,9 @@ class ProductOptionService
 
     /**
      * Retrieve an option with values.
+     *
+     * @param  ProductOption  $option
+     * @return ProductOption
      */
     public function show(ProductOption $option): ProductOption
     {
@@ -63,6 +66,7 @@ class ProductOptionService
      * Create an option.
      *
      * @param  array{name: string, slug?: string|null, sort_order?: int}  $data
+     * @return ProductOption
      */
     public function store(array $data): ProductOption
     {
@@ -79,7 +83,9 @@ class ProductOptionService
     /**
      * Update an option.
      *
+     * @param  ProductOption  $option
      * @param  array{name?: string, slug?: string|null, sort_order?: int}  $data
+     * @return ProductOption
      */
     public function update(ProductOption $option, array $data): ProductOption
     {
@@ -91,6 +97,9 @@ class ProductOptionService
 
     /**
      * Delete an option and its values.
+     *
+     * @param  ProductOption  $option
+     * @return void
      */
     public function destroy(ProductOption $option): void
     {
@@ -103,7 +112,9 @@ class ProductOptionService
     /**
      * Create a value under an option.
      *
+     * @param  ProductOption  $option
      * @param  array{value: string, slug?: string|null, sort_order?: int}  $data
+     * @return ProductOptionValue
      */
     public function storeValue(ProductOption $option, array $data): ProductOptionValue
     {
@@ -120,7 +131,10 @@ class ProductOptionService
     /**
      * Update an option value scoped to its parent option.
      *
+     * @param  ProductOption  $option
+     * @param  ProductOptionValue  $value
      * @param  array{value?: string, slug?: string|null, sort_order?: int}  $data
+     * @return ProductOptionValue
      *
      * @throws ValidationException
      */
@@ -137,6 +151,10 @@ class ProductOptionService
     /**
      * Delete an option value scoped to its parent option.
      *
+     * @param  ProductOption  $option
+     * @param  ProductOptionValue  $value
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroyValue(ProductOption $option, ProductOptionValue $value): void
@@ -146,6 +164,12 @@ class ProductOptionService
     }
 
     /**
+     * Assert value belongs.
+     *
+     * @param  ProductOption  $option
+     * @param  ProductOptionValue  $value
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertValueBelongs(ProductOption $option, ProductOptionValue $value): void
@@ -158,7 +182,10 @@ class ProductOptionService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

@@ -17,10 +17,18 @@ use Illuminate\Http\JsonResponse;
  */
 class ProductSpecificationController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductSpecificationService  $specificationService
+     */
     public function __construct(private readonly ProductSpecificationService $specificationService) {}
 
     /**
      * List product specifications.
+     *
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -37,6 +45,10 @@ class ProductSpecificationController extends Controller
 
     /**
      * Sync product specifications.
+     *
+     * @param  SyncProductSpecificationsRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

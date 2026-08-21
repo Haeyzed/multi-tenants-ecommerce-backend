@@ -12,7 +12,12 @@ use App\Models\Tenant\Coupon;
 final readonly class DiscountResult
 {
     /**
-     * @param  array<int, string>  $lineDiscounts  Cart item ID => discount amount
+     * Create a new class instance.
+     *
+     * @param  string  $amount
+     * @param  ?Coupon  $coupon
+     * @param  array  $lineDiscounts
+     * @param  ?string  $message
      */
     public function __construct(
         public string $amount,
@@ -21,6 +26,11 @@ final readonly class DiscountResult
         public ?string $message = null,
     ) {}
 
+    /**
+     * Is valid.
+     *
+     * @return bool
+     */
     public function isValid(): bool
     {
         return $this->coupon !== null && bccomp($this->amount, '0', 2) >= 0;

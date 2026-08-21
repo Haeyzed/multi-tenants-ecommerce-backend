@@ -21,12 +21,25 @@ use Illuminate\Http\Request;
  */
 class PublicCmsController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PageService  $pageService
+     * @param  BlogPostService  $blogPostService
+     * @param  BlogCategoryService  $blogCategoryService
+     */
     public function __construct(
         private readonly PageService $pageService,
         private readonly BlogPostService $blogPostService,
         private readonly BlogCategoryService $blogCategoryService,
     ) {}
 
+    /**
+     * Show page.
+     *
+     * @param  string  $slug
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Published page by slug.', type: 'array{success: true, message: string, data: PageResource, meta: null, errors: null}')]
     public function showPage(string $slug): JsonResponse
     {
@@ -36,6 +49,12 @@ class PublicCmsController extends Controller
         );
     }
 
+    /**
+     * Index posts.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Published blog posts.', type: 'array{success: true, message: string, data: BlogPostResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function indexPosts(Request $request): JsonResponse
     {
@@ -48,6 +67,12 @@ class PublicCmsController extends Controller
         );
     }
 
+    /**
+     * Show post.
+     *
+     * @param  string  $slug
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Published blog post by slug.', type: 'array{success: true, message: string, data: BlogPostResource, meta: null, errors: null}')]
     public function showPost(string $slug): JsonResponse
     {
@@ -57,6 +82,11 @@ class PublicCmsController extends Controller
         );
     }
 
+    /**
+     * Index categories.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Active blog categories.', type: 'array{success: true, message: string, data: BlogCategoryResource[], meta: null, errors: null}')]
     public function indexCategories(): JsonResponse
     {

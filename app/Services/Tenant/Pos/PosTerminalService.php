@@ -16,9 +16,16 @@ use Illuminate\Validation\ValidationException;
  */
 class PosTerminalService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  UsageLimiter  $usageLimiter
+     */
     public function __construct(private readonly UsageLimiter $usageLimiter) {}
 
     /**
+     * search?: string|null, status?: string|null, sort?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     search?: string|null,
      *     status?: string|null,
@@ -37,6 +44,8 @@ class PosTerminalService
     }
 
     /**
+     * Return options for select inputs.
+     *
      * @param  array{search?: string|null, status?: string|null}  $params
      * @return list<array{value: int, label: string}>
      */
@@ -55,6 +64,8 @@ class PosTerminalService
     }
 
     /**
+     * name: string, code: string, status?: PosTerminalStatus|string|null, warehouse_id?: int|null, location_label?: string|null }  $data
+     *
      * @param  array{
      *     name: string,
      *     code: string,
@@ -62,6 +73,7 @@ class PosTerminalService
      *     warehouse_id?: int|null,
      *     location_label?: string|null
      * }  $data
+     * @return PosTerminal
      */
     public function store(array $data): PosTerminal
     {
@@ -79,12 +91,21 @@ class PosTerminalService
         ]);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PosTerminal  $terminal
+     * @return PosTerminal
+     */
     public function show(PosTerminal $terminal): PosTerminal
     {
         return $terminal->loadMissing(['warehouse', 'openSession']);
     }
 
     /**
+     * name?: string, code?: string, status?: PosTerminalStatus|string, warehouse_id?: int|null, location_label?: string|null }  $data
+     *
+     * @param  PosTerminal  $terminal
      * @param  array{
      *     name?: string,
      *     code?: string,
@@ -92,6 +113,7 @@ class PosTerminalService
      *     warehouse_id?: int|null,
      *     location_label?: string|null
      * }  $data
+     * @return PosTerminal
      */
     public function update(PosTerminal $terminal, array $data): PosTerminal
     {
@@ -101,6 +123,12 @@ class PosTerminalService
         return $terminal->fresh(['warehouse']) ?? $terminal;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  PosTerminal  $terminal
+     * @return void
+     */
     public function destroy(PosTerminal $terminal): void
     {
         if ($terminal->sessions()->where('status', 'open')->exists()) {
@@ -113,7 +141,10 @@ class PosTerminalService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

@@ -20,10 +20,18 @@ use Illuminate\Http\JsonResponse;
  */
 class SellerGroupController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  SellerGroupService  $sellerGroupService
+     */
     public function __construct(private readonly SellerGroupService $sellerGroupService) {}
 
     /**
      * List seller groups with pagination, search, and filters.
+     *
+     * @param  IndexSellerGroupRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -43,6 +51,9 @@ class SellerGroupController extends Controller
 
     /**
      * Seller group options for select inputs.
+     *
+     * @param  IndexSellerGroupRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -59,6 +70,9 @@ class SellerGroupController extends Controller
 
     /**
      * Create a seller group.
+     *
+     * @param  StoreSellerGroupRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -77,6 +91,9 @@ class SellerGroupController extends Controller
 
     /**
      * Show a seller group.
+     *
+     * @param  SellerGroup  $sellerGroup
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -93,6 +110,10 @@ class SellerGroupController extends Controller
 
     /**
      * Update a seller group.
+     *
+     * @param  UpdateSellerGroupRequest  $request
+     * @param  SellerGroup  $sellerGroup
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -111,6 +132,9 @@ class SellerGroupController extends Controller
 
     /**
      * Delete a seller group.
+     *
+     * @param  SellerGroup  $sellerGroup
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

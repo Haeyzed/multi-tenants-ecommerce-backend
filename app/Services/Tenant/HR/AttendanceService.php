@@ -17,6 +17,13 @@ use Illuminate\Validation\ValidationException;
  */
 class AttendanceService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     * @param  WorkCalendarService  $calendar
+     * @param  OvertimeEngine  $overtime
+     */
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly WorkCalendarService $calendar,
@@ -24,6 +31,8 @@ class AttendanceService
     ) {}
 
     /**
+     * employee_id?: int|null, status?: string|null, from?: string|null, to?: string|null, sort?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     employee_id?: int|null,
      *     status?: string|null,
@@ -44,6 +53,8 @@ class AttendanceService
     }
 
     /**
+     * employee_id: int, work_date?: string|null, status?: AttendanceStatus|string|null, checked_in_at?: string|null, checked_out_at?: string|null, notes?: string|null }  $data
+     *
      * @param  array{
      *     employee_id: int,
      *     work_date?: string|null,
@@ -52,6 +63,7 @@ class AttendanceService
      *     checked_out_at?: string|null,
      *     notes?: string|null
      * }  $data
+     * @return Attendance
      *
      * @throws ValidationException
      */
@@ -86,18 +98,28 @@ class AttendanceService
         ])->load(['employee.user']);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Attendance  $attendance
+     * @return Attendance
+     */
     public function show(Attendance $attendance): Attendance
     {
         return $attendance->load(['employee.user']);
     }
 
     /**
+     * status?: AttendanceStatus|string, checked_in_at?: string|null, checked_out_at?: string|null, notes?: string|null }  $data
+     *
+     * @param  Attendance  $attendance
      * @param  array{
      *     status?: AttendanceStatus|string,
      *     checked_in_at?: string|null,
      *     checked_out_at?: string|null,
      *     notes?: string|null
      * }  $data
+     * @return Attendance
      */
     public function update(Attendance $attendance, array $data): Attendance
     {
@@ -111,6 +133,12 @@ class AttendanceService
         return $attendance->fresh(['employee.user']) ?? $attendance;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Attendance  $attendance
+     * @return void
+     */
     public function destroy(Attendance $attendance): void
     {
         $this->hrSettings->assertAttendanceEnabled();
@@ -121,7 +149,9 @@ class AttendanceService
     /**
      * Clock the employee in for today.
      *
+     * @param  Employee  $employee
      * @param  array<string, mixed>  $data
+     * @return Attendance
      *
      * @throws ValidationException
      */
@@ -172,7 +202,9 @@ class AttendanceService
     /**
      * Clock the employee out for today.
      *
+     * @param  Employee  $employee
      * @param  array<string, mixed>  $data
+     * @return Attendance
      *
      * @throws ValidationException
      */
@@ -211,6 +243,13 @@ class AttendanceService
         return $attendance->fresh(['employee.user']) ?? $attendance;
     }
 
+    /**
+     * Clock in status.
+     *
+     * @param  Employee  $employee
+     * @param  Carbon  $now
+     * @return AttendanceStatus
+     */
     protected function clockInStatus(Employee $employee, Carbon $now): AttendanceStatus
     {
         $start = Carbon::parse($now->toDateString().' '.$this->calendar->startTime($employee, $now));
@@ -220,6 +259,8 @@ class AttendanceService
     }
 
     /**
+     * Clock evidence.
+     *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      *
@@ -267,6 +308,12 @@ class AttendanceService
     }
 
     /**
+     * Assert within geofence.
+     *
+     * @param  ?float  $latitude
+     * @param  ?float  $longitude
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertWithinGeofence(?float $latitude, ?float $longitude): void
@@ -286,6 +333,15 @@ class AttendanceService
         }
     }
 
+    /**
+     * Meters between.
+     *
+     * @param  float  $lat1
+     * @param  float  $lng1
+     * @param  float  $lat2
+     * @param  float  $lng2
+     * @return float
+     */
     protected function metersBetween(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
         $earth = 6371000.0;
@@ -298,7 +354,10 @@ class AttendanceService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

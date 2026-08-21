@@ -24,6 +24,12 @@ use RuntimeException;
  */
 class AccountingService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  JournalEntryService  $journals
+     * @param  CommerceSettingService  $commerceSettings
+     */
     public function __construct(
         private readonly JournalEntryService $journals,
         private readonly CommerceSettingService $commerceSettings,
@@ -32,10 +38,8 @@ class AccountingService
     /**
      * Post a sale journal for an order (idempotent via entry_type=sale).
      *
-     * Checkout stores `grand_total` as the gateway/cash portion still owed after prepaid
-     * tenders; `gift_card_amount` / `store_credit_amount` are separate liability drawdowns.
-     * Debits therefore split cash vs liability accounts, while credits use the full
-     * recognized economic total (grand + prepaid).
+     * @param  Order  $order
+     * @return ?JournalEntry
      */
     public function postSale(Order $order): ?JournalEntry
     {
@@ -101,9 +105,8 @@ class AccountingService
     /**
      * Post a marketplace sale journal splitting seller payable and commission revenue.
      *
-     * After seller/commission/tax/shipping credit lines are built, any gap versus tender
-     * debits (empty commissions, rounding, platform residual) is balanced on
-     * `accounting.sales` — credit when under-credited, debit when over-credited.
+     * @param  Order  $order
+     * @return ?JournalEntry
      */
     public function postMarketplaceSale(Order $order): ?JournalEntry
     {
@@ -181,6 +184,9 @@ class AccountingService
 
     /**
      * Post a seller payout journal (debit seller payable, credit cash).
+     *
+     * @param  SellerPayout  $payout
+     * @return ?JournalEntry
      */
     public function postPayout(SellerPayout $payout): ?JournalEntry
     {
@@ -217,6 +223,9 @@ class AccountingService
 
     /**
      * Post inventory / AP for a goods receipt (idempotent via entry_type=goods_receipt).
+     *
+     * @param  GoodsReceipt  $receipt
+     * @return ?JournalEntry
      */
     public function postGoodsReceipt(GoodsReceipt $receipt): ?JournalEntry
     {
@@ -266,6 +275,9 @@ class AccountingService
 
     /**
      * Reverse the sale journal for an order refund (idempotent via entry_type=refund).
+     *
+     * @param  Order  $order
+     * @return ?JournalEntry
      */
     public function postRefund(Order $order): ?JournalEntry
     {
@@ -313,9 +325,10 @@ class AccountingService
     /**
      * Post a partial refund journal (idempotent per refund id, not per amount).
      *
-     * Allocates the refund across sales, tax, and shipping by their share of the
-     * recognized order total. Any rounding residual is applied to the sales debit so
-     * debits always equal the cash credit `$amount`.
+     * @param  Order  $order
+     * @param  string  $amount
+     * @param  Refund  $refund
+     * @return ?JournalEntry
      */
     public function postPartialRefund(Order $order, string $amount, Refund $refund): ?JournalEntry
     {
@@ -393,6 +406,9 @@ class AccountingService
     /**
      * Resolve a commerce setting account key to an account id (value may be id or code).
      *
+     * @param  string  $settingKey
+     * @return int
+     *
      * @throws RuntimeException
      */
     public function accountId(string $settingKey): int
@@ -421,6 +437,9 @@ class AccountingService
 
     /**
      * Economic total for journals: gateway amount due plus prepaid gift card / store credit.
+     *
+     * @param  Order  $order
+     * @return string
      */
     protected function recognizedOrderTotal(Order $order): string
     {
@@ -440,6 +459,8 @@ class AccountingService
     /**
      * Debit cash for gateway `grand_total` and liability accounts for prepaid tenders.
      *
+     * @param  Order  $order
+     * @param  string  $contextLabel
      * @return list<array{account_id: int, debit: string, credit: string, description: string}>
      */
     protected function tenderDebitLines(Order $order, string $contextLabel): array
@@ -487,6 +508,8 @@ class AccountingService
      * Balance marketplace sale lines on sales revenue when credits do not match tender debits.
      *
      * @param  list<array{account_id: int, debit: string, credit: string, description: string}>  $lines
+     * @param  int  $salesId
+     * @param  string  $orderNumber
      * @return list<array{account_id: int, debit: string, credit: string, description: string}>
      */
     protected function balanceMarketplaceResidual(array $lines, int $salesId, string $orderNumber): array

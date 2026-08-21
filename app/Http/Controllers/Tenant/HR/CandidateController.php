@@ -21,11 +21,25 @@ use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 
+/**
+ * Tenant CandidateController endpoints.
+ */
 #[Group('HR / Candidates')]
 class CandidateController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CandidateService  $candidates
+     */
     public function __construct(private readonly CandidateService $candidates) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexCandidateRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated candidates.', type: 'array{success: true, message: string, data: CandidateResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexCandidateRequest $request): JsonResponse
     {
@@ -40,6 +54,12 @@ class CandidateController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreCandidateRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created candidate.', type: 'array{success: true, message: string, data: CandidateResource, meta: null, errors: null}')]
     public function store(StoreCandidateRequest $request): JsonResponse
     {
@@ -51,6 +71,12 @@ class CandidateController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Candidate  $candidate
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A candidate.', type: 'array{success: true, message: string, data: CandidateResource, meta: null, errors: null}')]
     public function show(Candidate $candidate): JsonResponse
     {
@@ -62,6 +88,13 @@ class CandidateController extends Controller
         );
     }
 
+    /**
+     * Activities.
+     *
+     * @param  IndexRecruitmentActivityRequest  $request
+     * @param  Candidate  $candidate
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Candidate activity feed.', type: 'array{success: true, message: string, data: RecruitmentActivityResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function activities(IndexRecruitmentActivityRequest $request, Candidate $candidate): JsonResponse
     {
@@ -76,6 +109,13 @@ class CandidateController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateCandidateRequest  $request
+     * @param  Candidate  $candidate
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated candidate.', type: 'array{success: true, message: string, data: CandidateResource, meta: null, errors: null}')]
     public function update(UpdateCandidateRequest $request, Candidate $candidate): JsonResponse
     {
@@ -87,6 +127,13 @@ class CandidateController extends Controller
         );
     }
 
+    /**
+     * Resume.
+     *
+     * @param  StoreCandidateResumeRequest  $request
+     * @param  Candidate  $candidate
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Candidate resume.', type: 'array{success: true, message: string, data: MediaResource, meta: null, errors: null}')]
     public function resume(StoreCandidateResumeRequest $request, Candidate $candidate): JsonResponse
     {
@@ -101,6 +148,12 @@ class CandidateController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Candidate  $candidate
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted candidate.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Candidate $candidate): JsonResponse
     {

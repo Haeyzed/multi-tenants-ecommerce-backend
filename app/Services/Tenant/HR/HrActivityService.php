@@ -20,7 +20,13 @@ use Illuminate\Support\Facades\Schema;
 class HrActivityService
 {
     /**
+     * Record.
+     *
+     * @param  Model  $subject
+     * @param  string  $action
+     * @param  ?User  $actor
      * @param  array<string, mixed>  $meta
+     * @return void
      */
     public function record(Model $subject, string $action, ?User $actor = null, array $meta = []): void
     {
@@ -38,6 +44,9 @@ class HrActivityService
     }
 
     /**
+     * List for employee.
+     *
+     * @param  Employee  $employee
      * @param  array{sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, HrActivity>
      */
@@ -80,6 +89,9 @@ class HrActivityService
     }
 
     /**
+     * List for payroll run.
+     *
+     * @param  PayrollRun  $payrollRun
      * @param  array{sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, HrActivity>
      */
@@ -101,6 +113,8 @@ class HrActivityService
     }
 
     /**
+     * Sanitize.
+     *
      * @param  array<string, mixed>  $meta
      * @return array<string, mixed>
      */

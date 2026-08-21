@@ -22,8 +22,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class WorkLocationController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  WorkLocationService  $locations
+     */
     public function __construct(private readonly WorkLocationService $locations) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexWorkLocationRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated work locations.', type: 'array{success: true, message: string, data: WorkLocationResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexWorkLocationRequest $request): JsonResponse
     {
@@ -38,6 +49,11 @@ class WorkLocationController extends Controller
         );
     }
 
+    /**
+     * Return options for select inputs.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Work location options.', type: ApiResponseSchema::OPTIONS)]
     public function options(): JsonResponse
     {
@@ -49,6 +65,12 @@ class WorkLocationController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreWorkLocationRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created work location.', type: 'array{success: true, message: string, data: WorkLocationResource, meta: null, errors: null}')]
     public function store(StoreWorkLocationRequest $request): JsonResponse
     {
@@ -60,6 +82,12 @@ class WorkLocationController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  WorkLocation  $work_location
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A work location.', type: 'array{success: true, message: string, data: WorkLocationResource, meta: null, errors: null}')]
     public function show(WorkLocation $work_location): JsonResponse
     {
@@ -71,6 +99,13 @@ class WorkLocationController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateWorkLocationRequest  $request
+     * @param  WorkLocation  $work_location
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated work location.', type: 'array{success: true, message: string, data: WorkLocationResource, meta: null, errors: null}')]
     public function update(UpdateWorkLocationRequest $request, WorkLocation $work_location): JsonResponse
     {
@@ -82,6 +117,12 @@ class WorkLocationController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  WorkLocation  $work_location
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted work location.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(WorkLocation $work_location): JsonResponse
     {

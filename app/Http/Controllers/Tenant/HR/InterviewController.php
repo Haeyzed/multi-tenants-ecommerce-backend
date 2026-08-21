@@ -19,11 +19,25 @@ use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 
+/**
+ * Tenant InterviewController endpoints.
+ */
 #[Group('HR / Interviews')]
 class InterviewController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  InterviewService  $interviews
+     */
     public function __construct(private readonly InterviewService $interviews) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexInterviewRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated interviews.', type: 'array{success: true, message: string, data: InterviewResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexInterviewRequest $request): JsonResponse
     {
@@ -53,6 +67,12 @@ class InterviewController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreInterviewRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Scheduled interview.', type: 'array{success: true, message: string, data: InterviewResource, meta: null, errors: null}')]
     public function store(StoreInterviewRequest $request): JsonResponse
     {
@@ -64,6 +84,12 @@ class InterviewController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Interview  $interview
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'An interview.', type: 'array{success: true, message: string, data: InterviewResource, meta: null, errors: null}')]
     public function show(Interview $interview): JsonResponse
     {
@@ -75,6 +101,13 @@ class InterviewController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateInterviewRequest  $request
+     * @param  Interview  $interview
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated interview.', type: 'array{success: true, message: string, data: InterviewResource, meta: null, errors: null}')]
     public function update(UpdateInterviewRequest $request, Interview $interview): JsonResponse
     {
@@ -86,6 +119,12 @@ class InterviewController extends Controller
         );
     }
 
+    /**
+     * Complete.
+     *
+     * @param  Interview  $interview
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Completed interview.', type: 'array{success: true, message: string, data: InterviewResource, meta: null, errors: null}')]
     public function complete(Interview $interview): JsonResponse
     {
@@ -97,6 +136,12 @@ class InterviewController extends Controller
         );
     }
 
+    /**
+     * Cancel.
+     *
+     * @param  Interview  $interview
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Cancelled interview.', type: 'array{success: true, message: string, data: InterviewResource, meta: null, errors: null}')]
     public function cancel(Interview $interview): JsonResponse
     {
@@ -108,6 +153,13 @@ class InterviewController extends Controller
         );
     }
 
+    /**
+     * Feedback.
+     *
+     * @param  StoreInterviewFeedbackRequest  $request
+     * @param  Interview  $interview
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Interview feedback.', type: 'array{success: true, message: string, data: InterviewFeedbackResource, meta: null, errors: null}')]
     public function feedback(StoreInterviewFeedbackRequest $request, Interview $interview): JsonResponse
     {
@@ -122,6 +174,12 @@ class InterviewController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Interview  $interview
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted interview.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Interview $interview): JsonResponse
     {

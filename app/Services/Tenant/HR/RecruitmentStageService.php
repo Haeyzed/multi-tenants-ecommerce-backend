@@ -29,9 +29,16 @@ class RecruitmentStageService
         ['name' => 'Withdrawn', 'slug' => 'withdrawn', 'kind' => JobApplicationStatus::Withdrawn, 'sort_order' => 80, 'is_default' => false, 'is_terminal' => true],
     ];
 
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     */
     public function __construct(private readonly HrSettingsService $hrSettings) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @return Collection<int, RecruitmentStage>
      */
     public function list(): Collection
@@ -43,7 +50,10 @@ class RecruitmentStageService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return RecruitmentStage
      */
     public function store(array $data): RecruitmentStage
     {
@@ -66,6 +76,12 @@ class RecruitmentStageService
         return $stage;
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  RecruitmentStage  $stage
+     * @return RecruitmentStage
+     */
     public function show(RecruitmentStage $stage): RecruitmentStage
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -74,7 +90,11 @@ class RecruitmentStageService
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  RecruitmentStage  $stage
      * @param  array<string, mixed>  $data
+     * @return RecruitmentStage
      */
     public function update(RecruitmentStage $stage, array $data): RecruitmentStage
     {
@@ -95,6 +115,11 @@ class RecruitmentStageService
     }
 
     /**
+     * Delete a resource.
+     *
+     * @param  RecruitmentStage  $stage
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(RecruitmentStage $stage): void
@@ -116,6 +141,11 @@ class RecruitmentStageService
         $stage->delete();
     }
 
+    /**
+     * Default stage.
+     *
+     * @return RecruitmentStage
+     */
     public function defaultStage(): RecruitmentStage
     {
         $this->ensureDefaults();
@@ -125,6 +155,12 @@ class RecruitmentStageService
         return $stage ?? RecruitmentStage::query()->orderBy('sort_order')->firstOrFail();
     }
 
+    /**
+     * Stage for kind.
+     *
+     * @param  JobApplicationStatus  $kind
+     * @return RecruitmentStage
+     */
     public function stageForKind(JobApplicationStatus $kind): RecruitmentStage
     {
         $this->ensureDefaults();
@@ -134,6 +170,11 @@ class RecruitmentStageService
         return $stage ?? $this->defaultStage();
     }
 
+    /**
+     * Ensure defaults.
+     *
+     * @return void
+     */
     public function ensureDefaults(): void
     {
         if (RecruitmentStage::query()->exists()) {
@@ -152,11 +193,25 @@ class RecruitmentStageService
         }
     }
 
+    /**
+     * Clear other defaults.
+     *
+     * @param  RecruitmentStage  $stage
+     * @return void
+     */
     protected function clearOtherDefaults(RecruitmentStage $stage): void
     {
         RecruitmentStage::query()->whereKeyNot($stage->id)->update(['is_default' => false]);
     }
 
+    /**
+     * Unique slug.
+     *
+     * @param  ?string  $slug
+     * @param  string  $name
+     * @param  ?int  $ignoreId
+     * @return string
+     */
     protected function uniqueSlug(?string $slug, string $name, ?int $ignoreId = null): string
     {
         $base = Str::slug((string) ($slug ?: $name));

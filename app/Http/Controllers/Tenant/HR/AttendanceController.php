@@ -27,8 +27,19 @@ use Illuminate\Validation\ValidationException;
 #[Group('HR')]
 class AttendanceController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  AttendanceService  $attendanceService
+     */
     public function __construct(private readonly AttendanceService $attendanceService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexAttendanceRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated attendance records.', type: 'array{success: true, message: string, data: AttendanceResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexAttendanceRequest $request): JsonResponse
     {
@@ -50,6 +61,12 @@ class AttendanceController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreAttendanceRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created attendance record.', type: 'array{success: true, message: string, data: AttendanceResource, meta: null, errors: null}')]
     public function store(StoreAttendanceRequest $request): JsonResponse
     {
@@ -61,6 +78,12 @@ class AttendanceController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Attendance  $attendance
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'An attendance record.', type: 'array{success: true, message: string, data: AttendanceResource, meta: null, errors: null}')]
     public function show(Attendance $attendance): JsonResponse
     {
@@ -72,6 +95,13 @@ class AttendanceController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateAttendanceRequest  $request
+     * @param  Attendance  $attendance
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated attendance record.', type: 'array{success: true, message: string, data: AttendanceResource, meta: null, errors: null}')]
     public function update(UpdateAttendanceRequest $request, Attendance $attendance): JsonResponse
     {
@@ -83,6 +113,12 @@ class AttendanceController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Attendance  $attendance
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted attendance record.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Attendance $attendance): JsonResponse
     {
@@ -92,6 +128,12 @@ class AttendanceController extends Controller
         return $this->deleted('Attendance deleted successfully.');
     }
 
+    /**
+     * Clock in.
+     *
+     * @param  ClockAttendanceRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Clock-in record.', type: 'array{success: true, message: string, data: AttendanceResource, meta: null, errors: null}')]
     public function clockIn(ClockAttendanceRequest $request): JsonResponse
     {
@@ -110,6 +152,12 @@ class AttendanceController extends Controller
         );
     }
 
+    /**
+     * Clock out.
+     *
+     * @param  ClockAttendanceRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Clock-out record.', type: 'array{success: true, message: string, data: AttendanceResource, meta: null, errors: null}')]
     public function clockOut(ClockAttendanceRequest $request): JsonResponse
     {
@@ -129,6 +177,11 @@ class AttendanceController extends Controller
     }
 
     /**
+     * Resolve employee.
+     *
+     * @param  ?int  $employeeId
+     * @return Employee
+     *
      * @throws ValidationException
      */
     protected function resolveEmployee(?int $employeeId): Employee
@@ -156,6 +209,11 @@ class AttendanceController extends Controller
         return $employee;
     }
 
+    /**
+     * Resolve the authenticated tenant user.
+     *
+     * @return User
+     */
     protected function actor(): User
     {
         /** @var User $user */

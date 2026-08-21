@@ -29,9 +29,16 @@ use Illuminate\Support\Facades\Schema;
  */
 class HrSummaryService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrReportQuery  $queries
+     */
     public function __construct(private readonly HrReportQuery $queries) {}
 
     /**
+     * Summary.
+     *
      * @return array<string, mixed>
      */
     public function summary(): array
@@ -72,6 +79,8 @@ class HrSummaryService
     }
 
     /**
+     * Recruitment summary.
+     *
      * @return array<string, int>
      */
     protected function recruitmentSummary(): array

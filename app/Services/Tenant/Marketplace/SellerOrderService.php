@@ -22,7 +22,8 @@ class SellerOrderService
     /**
      * Split a customer order into seller sub-orders grouped by seller_id.
      *
-     * Idempotent: skips sellers that already have a seller_order for this order.
+     * @param  Order  $order
+     * @return void
      */
     public function splitFromOrder(Order $order): void
     {
@@ -77,6 +78,9 @@ class SellerOrderService
 
     /**
      * Confirm all seller orders after payment success.
+     *
+     * @param  Order  $order
+     * @return void
      */
     public function confirmForPaidOrder(Order $order): void
     {
@@ -87,12 +91,15 @@ class SellerOrderService
     }
 
     /**
+     * seller_id?: int|null, order_id?: int|null, status?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     seller_id?: int|null,
      *     order_id?: int|null,
      *     status?: string|null,
      *     per_page?: int|null
      * }  $params
+     * @param  ?Authenticatable  $actor
      * @return LengthAwarePaginator<int, SellerOrder>
      */
     public function list(array $params = [], ?Authenticatable $actor = null): LengthAwarePaginator
@@ -118,6 +125,12 @@ class SellerOrderService
         return $query->paginate($this->perPage($params));
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  SellerOrder  $sellerOrder
+     * @return SellerOrder
+     */
     public function show(SellerOrder $sellerOrder): SellerOrder
     {
         return $sellerOrder->load([
@@ -130,7 +143,10 @@ class SellerOrderService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

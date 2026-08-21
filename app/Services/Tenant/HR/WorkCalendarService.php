@@ -21,8 +21,19 @@ class WorkCalendarService
      */
     protected ?Collection $holidays = null;
 
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     */
     public function __construct(private readonly HrSettingsService $hrSettings) {}
 
+    /**
+     * Schedule for.
+     *
+     * @param  ?Employee  $employee
+     * @return ?WorkSchedule
+     */
     public function scheduleFor(?Employee $employee): ?WorkSchedule
     {
         $schedule = $employee?->work_schedule_id
@@ -46,6 +57,13 @@ class WorkCalendarService
         return $default;
     }
 
+    /**
+     * Day for.
+     *
+     * @param  ?Employee  $employee
+     * @param  Carbon  $date
+     * @return ?WorkScheduleDay
+     */
     public function dayFor(?Employee $employee, Carbon $date): ?WorkScheduleDay
     {
         $schedule = $this->scheduleFor($employee);
@@ -59,6 +77,13 @@ class WorkCalendarService
         );
     }
 
+    /**
+     * Is working date.
+     *
+     * @param  ?Employee  $employee
+     * @param  Carbon  $date
+     * @return bool
+     */
     public function isWorkingDate(?Employee $employee, Carbon $date): bool
     {
         $schedule = $this->scheduleFor($employee);
@@ -70,6 +95,13 @@ class WorkCalendarService
         return $this->dayFor($employee, $date) !== null;
     }
 
+    /**
+     * Scheduled minutes.
+     *
+     * @param  ?Employee  $employee
+     * @param  Carbon  $date
+     * @return int
+     */
     public function scheduledMinutes(?Employee $employee, Carbon $date): int
     {
         $day = $this->dayFor($employee, $date);
@@ -87,6 +119,13 @@ class WorkCalendarService
             : 0;
     }
 
+    /**
+     * Start time.
+     *
+     * @param  ?Employee  $employee
+     * @param  Carbon  $date
+     * @return string
+     */
     public function startTime(?Employee $employee, Carbon $date): string
     {
         $day = $this->dayFor($employee, $date);
@@ -98,6 +137,12 @@ class WorkCalendarService
         return $this->hrSettings->workStartTime();
     }
 
+    /**
+     * Is public holiday.
+     *
+     * @param  Carbon  $date
+     * @return bool
+     */
     public function isPublicHoliday(Carbon $date): bool
     {
         return $this->holidays()->contains(function (PublicHoliday $holiday) use ($date): bool {
@@ -112,6 +157,8 @@ class WorkCalendarService
     }
 
     /**
+     * Holidays.
+     *
      * @return Collection<int, PublicHoliday>
      */
     protected function holidays(): Collection

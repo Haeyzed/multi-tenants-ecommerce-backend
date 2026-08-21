@@ -16,8 +16,18 @@ use Illuminate\Http\JsonResponse;
  */
 class LoyaltyProgramController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  LoyaltyService  $loyalty
+     */
     public function __construct(private readonly LoyaltyService $loyalty) {}
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Loyalty program settings.', type: 'array{success: true, message: string, data: LoyaltyProgramResource, meta: null, errors: null}')]
     public function show(): JsonResponse
     {
@@ -30,6 +40,12 @@ class LoyaltyProgramController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateLoyaltyProgramRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated loyalty program.', type: 'array{success: true, message: string, data: LoyaltyProgramResource, meta: null, errors: null}')]
     public function update(UpdateLoyaltyProgramRequest $request): JsonResponse
     {

@@ -19,6 +19,11 @@ use Illuminate\Validation\ValidationException;
  */
 class ProductBadgeService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
     /**
@@ -64,6 +69,9 @@ class ProductBadgeService
 
     /**
      * Retrieve a badge with media.
+     *
+     * @param  ProductBadge  $badge
+     * @return ProductBadge
      */
     public function show(ProductBadge $badge): ProductBadge
     {
@@ -74,6 +82,8 @@ class ProductBadgeService
      * Create a badge and optionally attach an image.
      *
      * @param  array{name: string, slug?: string|null, color?: string|null, is_active?: bool, sort_order?: int}  $data
+     * @param  ?UploadedFile  $image
+     * @return ProductBadge
      */
     public function store(array $data, ?UploadedFile $image = null): ProductBadge
     {
@@ -98,7 +108,10 @@ class ProductBadgeService
     /**
      * Update a badge and optionally replace its image.
      *
+     * @param  ProductBadge  $badge
      * @param  array{name?: string, slug?: string|null, color?: string|null, is_active?: bool, sort_order?: int}  $data
+     * @param  ?UploadedFile  $image
+     * @return ProductBadge
      */
     public function update(ProductBadge $badge, array $data, ?UploadedFile $image = null): ProductBadge
     {
@@ -116,6 +129,9 @@ class ProductBadgeService
 
     /**
      * Delete a badge and its image.
+     *
+     * @param  ProductBadge  $badge
+     * @return void
      */
     public function destroy(ProductBadge $badge): void
     {
@@ -128,7 +144,9 @@ class ProductBadgeService
     /**
      * Replace-set badges on a product.
      *
+     * @param  Product  $product
      * @param  list<array{badge_id: int, sort_order?: int}|int>  $items
+     * @return Product
      *
      * @throws ValidationException
      */
@@ -173,7 +191,10 @@ class ProductBadgeService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

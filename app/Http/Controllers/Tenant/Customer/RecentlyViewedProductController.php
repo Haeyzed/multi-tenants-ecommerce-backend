@@ -19,10 +19,18 @@ use Illuminate\Support\Facades\Auth;
  */
 class RecentlyViewedProductController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductViewService  $productViewService
+     */
     public function __construct(private readonly ProductViewService $productViewService) {}
 
     /**
      * List the customer's recently viewed products, most recent first.
+     *
+     * @param  IndexStorefrontRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

@@ -17,10 +17,18 @@ use Illuminate\Http\JsonResponse;
  */
 class StorefrontCategoryController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  StorefrontCatalogService  $catalogService
+     */
     public function __construct(private readonly StorefrontCatalogService $catalogService) {}
 
     /**
      * List active categories.
+     *
+     * @param  IndexStorefrontRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -40,6 +48,8 @@ class StorefrontCategoryController extends Controller
 
     /**
      * Active category tree.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -56,6 +66,9 @@ class StorefrontCategoryController extends Controller
 
     /**
      * Show an active category by slug or id.
+     *
+     * @param  string  $category
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

@@ -19,8 +19,20 @@ use Illuminate\Http\JsonResponse;
  */
 class PosSaleController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PosSaleService  $sales
+     */
     public function __construct(private readonly PosSaleService $sales) {}
 
+    /**
+     * Create a resource.
+     *
+     * @param  CreatePosSaleRequest  $request
+     * @param  PosSession  $pos_session
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'POS sale created.',
@@ -38,6 +50,13 @@ class PosSaleController extends Controller
         );
     }
 
+    /**
+     * Refund.
+     *
+     * @param  RefundPosSaleRequest  $request
+     * @param  Order  $order
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'POS refund created.',

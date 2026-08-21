@@ -24,6 +24,8 @@ use Illuminate\Validation\ValidationException;
 class PosSessionService
 {
     /**
+     * status?: string|null, pos_terminal_id?: int|null, user_id?: int|null, sort?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     status?: string|null,
      *     pos_terminal_id?: int|null,
@@ -42,6 +44,12 @@ class PosSessionService
             ->paginate(max(1, min((int) ($params['per_page'] ?? 15), 100)));
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PosSession  $session
+     * @return PosSession
+     */
     public function show(PosSession $session): PosSession
     {
         return $session->loadMissing(['terminal.warehouse', 'user', 'cashMovements']);
@@ -49,6 +57,12 @@ class PosSessionService
 
     /**
      * Open a cashier session on a terminal (one open session per terminal).
+     *
+     * @param  PosTerminal  $terminal
+     * @param  User  $user
+     * @param  string  $openingCash
+     * @param  ?string  $notes
+     * @return PosSession
      */
     public function open(PosTerminal $terminal, User $user, string $openingCash, ?string $notes = null): PosSession
     {
@@ -105,6 +119,11 @@ class PosSessionService
 
     /**
      * Close a session, computing expected cash and variance.
+     *
+     * @param  PosSession  $session
+     * @param  string  $actualCash
+     * @param  ?string  $notes
+     * @return PosSession
      */
     public function close(PosSession $session, string $actualCash, ?string $notes = null): PosSession
     {
@@ -155,6 +174,12 @@ class PosSessionService
 
     /**
      * Record a cash-in movement on an open session.
+     *
+     * @param  PosSession  $session
+     * @param  User  $user
+     * @param  string  $amount
+     * @param  ?string  $reason
+     * @return PosCashMovement
      */
     public function cashIn(PosSession $session, User $user, string $amount, ?string $reason = null): PosCashMovement
     {
@@ -163,6 +188,12 @@ class PosSessionService
 
     /**
      * Record a cash-out movement on an open session.
+     *
+     * @param  PosSession  $session
+     * @param  User  $user
+     * @param  string  $amount
+     * @param  ?string  $reason
+     * @return PosCashMovement
      */
     public function cashOut(PosSession $session, User $user, string $amount, ?string $reason = null): PosCashMovement
     {
@@ -171,6 +202,9 @@ class PosSessionService
 
     /**
      * Expected drawer cash: opening + cash_in + sale_cash − cash_out − refund_cash.
+     *
+     * @param  PosSession  $session
+     * @return string
      */
     public function expectedCash(PosSession $session): string
     {
@@ -192,6 +226,16 @@ class PosSessionService
         );
     }
 
+    /**
+     * Record movement.
+     *
+     * @param  PosSession  $session
+     * @param  User  $user
+     * @param  PosCashMovementType  $type
+     * @param  string  $amount
+     * @param  ?string  $reason
+     * @return PosCashMovement
+     */
     protected function recordMovement(
         PosSession $session,
         User $user,

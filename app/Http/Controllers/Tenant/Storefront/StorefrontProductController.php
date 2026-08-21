@@ -21,6 +21,12 @@ use Illuminate\Support\Facades\Auth;
  */
 class StorefrontProductController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  StorefrontCatalogService  $catalogService
+     * @param  ProductViewService  $productViewService
+     */
     public function __construct(
         private readonly StorefrontCatalogService $catalogService,
         private readonly ProductViewService $productViewService,
@@ -28,6 +34,9 @@ class StorefrontProductController extends Controller
 
     /**
      * Search, filter, and sort storefront products.
+     *
+     * @param  SearchStorefrontProductsRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -47,6 +56,10 @@ class StorefrontProductController extends Controller
 
     /**
      * Show a storefront product by slug or id and record the view.
+     *
+     * @param  ShowStorefrontProductRequest  $request
+     * @param  string  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

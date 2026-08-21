@@ -35,6 +35,10 @@ class OrderReturnTransitionService
     /**
      * Transition a return to a new status.
      *
+     * @param  OrderReturn  $return
+     * @param  ReturnStatus  $to
+     * @return OrderReturn
+     *
      * @throws ValidationException
      */
     public function transition(OrderReturn $return, ReturnStatus $to): OrderReturn

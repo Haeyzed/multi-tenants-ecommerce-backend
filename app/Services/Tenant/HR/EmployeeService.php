@@ -24,6 +24,14 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class EmployeeService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     * @param  HrSettingsService  $hrSettings
+     * @param  WorkLocationService  $workLocations
+     * @param  HrActivityService  $activities
+     */
     public function __construct(
         private readonly MediaService $mediaService,
         private readonly HrSettingsService $hrSettings,
@@ -32,6 +40,8 @@ class EmployeeService
     ) {}
 
     /**
+     * search?: string|null, department_id?: int|null, designation_id?: int|null, employment_status?: string|null, sort?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     search?: string|null,
      *     department_id?: int|null,
@@ -52,6 +62,8 @@ class EmployeeService
     }
 
     /**
+     * user_id: int, department_id?: int|null, designation_id?: int|null, manager_id?: int|null, work_schedule_id?: int|null, job_title?: string|null, employee_number?: string|null, employment_status?: EmploymentStatus|string|null, employment_type?: string|null, work_location?: string|null, hired_at?: string|null, notes?: string|null, bank_name?: string|null, bank_code?: string|null, account_number?: string|null, account_name?: string|null, tax_id?: string|null }  $data
+     *
      * @param  array{
      *     user_id: int,
      *     department_id?: int|null,
@@ -71,6 +83,7 @@ class EmployeeService
      *     account_name?: string|null,
      *     tax_id?: string|null
      * }  $data
+     * @return Employee
      *
      * @throws ValidationException
      */
@@ -129,12 +142,21 @@ class EmployeeService
         return $employee;
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Employee  $employee
+     * @return Employee
+     */
     public function show(Employee $employee): Employee
     {
         return $employee->load($this->employeeRelations());
     }
 
     /**
+     * department_id?: int|null, designation_id?: int|null, manager_id?: int|null, work_schedule_id?: int|null, job_title?: string|null, employee_number?: string|null, employment_status?: EmploymentStatus|string, employment_type?: string|null, work_location?: string|null, hired_at?: string|null, notes?: string|null, bank_name?: string|null, bank_code?: string|null, account_number?: string|null, account_name?: string|null, tax_id?: string|null }  $data
+     *
+     * @param  Employee  $employee
      * @param  array{
      *     department_id?: int|null,
      *     designation_id?: int|null,
@@ -153,6 +175,7 @@ class EmployeeService
      *     account_name?: string|null,
      *     tax_id?: string|null
      * }  $data
+     * @return Employee
      *
      * @throws ValidationException
      */
@@ -212,6 +235,12 @@ class EmployeeService
         return $employee;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Employee  $employee
+     * @return void
+     */
     public function destroy(Employee $employee): void
     {
         $employee->clearMediaCollection();
@@ -221,7 +250,10 @@ class EmployeeService
     /**
      * Attach an HR document to the employee profile.
      *
+     * @param  Employee  $employee
+     * @param  UploadedFile  $file
      * @param  array{name?: string|null}  $options
+     * @return Media
      */
     public function addDocument(Employee $employee, UploadedFile $file, array $options = []): Media
     {
@@ -230,6 +262,10 @@ class EmployeeService
 
     /**
      * Remove an HR document from the employee profile.
+     *
+     * @param  Employee  $employee
+     * @param  Media  $media
+     * @return void
      */
     public function removeDocument(Employee $employee, Media $media): void
     {
@@ -237,7 +273,10 @@ class EmployeeService
     }
 
     /**
+     * Sync designation department.
+     *
      * @param  array<string, mixed>  $data
+     * @param  ?Employee  $employee
      * @return array<string, mixed>
      *
      * @throws ValidationException
@@ -278,6 +317,9 @@ class EmployeeService
     }
 
     /**
+     * Employment history.
+     *
+     * @param  Employee  $employee
      * @return list<EmploymentRecord>
      */
     public function employmentHistory(Employee $employee): array
@@ -290,6 +332,14 @@ class EmployeeService
             ->all();
     }
 
+    /**
+     * Record employment.
+     *
+     * @param  Employee  $employee
+     * @param  EmploymentChangeType  $changeType
+     * @param  ?string  $effectiveOn
+     * @return void
+     */
     protected function recordEmployment(Employee $employee, EmploymentChangeType $changeType, ?string $effectiveOn = null): void
     {
         EmploymentRecord::query()->create([
@@ -307,6 +357,9 @@ class EmployeeService
     }
 
     /**
+     * Assignment snapshot.
+     *
+     * @param  Employee  $employee
      * @return array{department_id: int|null, designation_id: int|null, manager_id: int|null, work_schedule_id: int|null, work_location_id: int|null, job_title: string|null, employment_type: string|null, work_location: string|null}
      */
     protected function assignmentSnapshot(Employee $employee): array
@@ -324,6 +377,8 @@ class EmployeeService
     }
 
     /**
+     * Employee relations.
+     *
      * @return list<string>
      */
     protected function employeeRelations(): array
@@ -338,6 +393,12 @@ class EmployeeService
     }
 
     /**
+     * Assert status transition.
+     *
+     * @param  Employee  $employee
+     * @param  EmploymentStatus|string  $status
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertStatusTransition(Employee $employee, EmploymentStatus|string $status): void
@@ -354,6 +415,12 @@ class EmployeeService
     }
 
     /**
+     * Assert manager.
+     *
+     * @param  mixed  $managerId
+     * @param  ?int  $employeeId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertManager(mixed $managerId, ?int $employeeId = null): void
@@ -377,6 +444,11 @@ class EmployeeService
         }
     }
 
+    /**
+     * Next employee number.
+     *
+     * @return string
+     */
     protected function nextEmployeeNumber(): string
     {
         $prefix = $this->hrSettings->employeeCodePrefix();
@@ -395,7 +467,10 @@ class EmployeeService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

@@ -21,10 +21,18 @@ use Illuminate\Http\JsonResponse;
  */
 class CollectionController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductCollectionService  $collectionService
+     */
     public function __construct(private readonly ProductCollectionService $collectionService) {}
 
     /**
      * List collections with pagination, search, and filters.
+     *
+     * @param  IndexProductCollectionRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -44,6 +52,9 @@ class CollectionController extends Controller
 
     /**
      * Create a collection.
+     *
+     * @param  StoreProductCollectionRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -63,6 +74,9 @@ class CollectionController extends Controller
 
     /**
      * Show a collection.
+     *
+     * @param  ProductCollection  $collection
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -79,6 +93,10 @@ class CollectionController extends Controller
 
     /**
      * Update a collection.
+     *
+     * @param  UpdateProductCollectionRequest  $request
+     * @param  ProductCollection  $collection
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -98,6 +116,9 @@ class CollectionController extends Controller
 
     /**
      * Delete a collection.
+     *
+     * @param  ProductCollection  $collection
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -113,6 +134,10 @@ class CollectionController extends Controller
 
     /**
      * Sync products in a collection.
+     *
+     * @param  SyncCollectionProductsRequest  $request
+     * @param  ProductCollection  $collection
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

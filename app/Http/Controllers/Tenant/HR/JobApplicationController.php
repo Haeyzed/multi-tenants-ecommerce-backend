@@ -30,11 +30,23 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR / Applications')]
 class JobApplicationController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  JobApplicationService  $applications
+     * @param  HiringService  $hiring
+     */
     public function __construct(
         private readonly JobApplicationService $applications,
         private readonly HiringService $hiring,
     ) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexJobApplicationRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated job applications.', type: 'array{success: true, message: string, data: JobApplicationResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexJobApplicationRequest $request): JsonResponse
     {
@@ -49,6 +61,12 @@ class JobApplicationController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreJobApplicationRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created job application.', type: 'array{success: true, message: string, data: JobApplicationResource, meta: null, errors: null}')]
     public function store(StoreJobApplicationRequest $request): JsonResponse
     {
@@ -63,6 +81,12 @@ class JobApplicationController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  JobApplication  $job_application
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A job application.', type: 'array{success: true, message: string, data: JobApplicationResource, meta: null, errors: null}')]
     public function show(JobApplication $job_application): JsonResponse
     {
@@ -74,6 +98,13 @@ class JobApplicationController extends Controller
         );
     }
 
+    /**
+     * Activities.
+     *
+     * @param  IndexRecruitmentActivityRequest  $request
+     * @param  JobApplication  $job_application
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Application activity feed.', type: 'array{success: true, message: string, data: RecruitmentActivityResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function activities(IndexRecruitmentActivityRequest $request, JobApplication $job_application): JsonResponse
     {
@@ -88,6 +119,13 @@ class JobApplicationController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateJobApplicationRequest  $request
+     * @param  JobApplication  $job_application
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated job application.', type: 'array{success: true, message: string, data: JobApplicationResource, meta: null, errors: null}')]
     public function update(UpdateJobApplicationRequest $request, JobApplication $job_application): JsonResponse
     {
@@ -102,6 +140,13 @@ class JobApplicationController extends Controller
         );
     }
 
+    /**
+     * Move stage.
+     *
+     * @param  MoveApplicationStageRequest  $request
+     * @param  JobApplication  $job_application
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Moved application stage.', type: 'array{success: true, message: string, data: JobApplicationResource, meta: null, errors: null}')]
     public function moveStage(MoveApplicationStageRequest $request, JobApplication $job_application): JsonResponse
     {
@@ -124,6 +169,13 @@ class JobApplicationController extends Controller
         );
     }
 
+    /**
+     * Hire.
+     *
+     * @param  HireCandidateRequest  $request
+     * @param  JobApplication  $job_application
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Hired employee.', type: 'array{success: true, message: string, data: EmployeeResource, meta: null, errors: null}')]
     public function hire(HireCandidateRequest $request, JobApplication $job_application): JsonResponse
     {
@@ -138,6 +190,12 @@ class JobApplicationController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  JobApplication  $job_application
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted job application.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(JobApplication $job_application): JsonResponse
     {

@@ -22,6 +22,11 @@ use Laravel\Sanctum\PersonalAccessToken;
  */
 class CustomerAuthService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  UsageLimiter  $usageLimiter
+     */
     public function __construct(private readonly UsageLimiter $usageLimiter) {}
 
     /**
@@ -89,6 +94,9 @@ class CustomerAuthService
 
     /**
      * Revoke the current Sanctum access token for the given customer.
+     *
+     * @param  Customer  $customer
+     * @return void
      */
     public function logout(Customer $customer): void
     {
@@ -101,6 +109,9 @@ class CustomerAuthService
 
     /**
      * Send a password reset link without revealing whether the email exists.
+     *
+     * @param  string  $email
+     * @return void
      */
     public function forgotPassword(string $email): void
     {
@@ -119,6 +130,7 @@ class CustomerAuthService
      * Reset a customer's password using the password broker.
      *
      * @param  array{email: string, password: string, password_confirmation: string, token: string}  $data
+     * @return void
      *
      * @throws ValidationException
      */
@@ -147,6 +159,10 @@ class CustomerAuthService
     /**
      * Verify a customer's email using a cached token.
      *
+     * @param  Customer  $customer
+     * @param  string  $token
+     * @return void
+     *
      * @throws ValidationException
      */
     public function verifyEmail(Customer $customer, string $token): void
@@ -167,6 +183,9 @@ class CustomerAuthService
 
     /**
      * Resend the email verification notification with throttling.
+     *
+     * @param  Customer  $customer
+     * @return void
      *
      * @throws ValidationException
      */
@@ -194,7 +213,9 @@ class CustomerAuthService
     /**
      * Change the authenticated customer's password and revoke all tokens.
      *
+     * @param  Customer  $customer
      * @param  array{current_password: string, password: string}  $data
+     * @return void
      *
      * @throws ValidationException
      */

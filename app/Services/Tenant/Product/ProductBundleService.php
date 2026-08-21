@@ -20,6 +20,7 @@ class ProductBundleService
     /**
      * List bundle items with product and variant.
      *
+     * @param  Product  $bundle
      * @return Collection<int, ProductBundleItem>
      */
     public function listItems(Product $bundle): Collection
@@ -30,6 +31,7 @@ class ProductBundleService
     /**
      * Replace-set bundle items.
      *
+     * @param  Product  $bundle
      * @param  list<array{product_id: int, product_variant_id?: int|null, quantity?: int, sort_order?: int}>  $items
      * @return Collection<int, ProductBundleItem>
      *

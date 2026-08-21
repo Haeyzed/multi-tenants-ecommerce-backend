@@ -33,6 +33,14 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 #[Group('HR')]
 class PayrollRunController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PayrollRunService  $payrollRunService
+     * @param  PayslipPdfService  $payslips
+     * @param  HrCsvExporter  $csv
+     * @param  NibssPayrollProcessor  $nibss
+     */
     public function __construct(
         private readonly PayrollRunService $payrollRunService,
         private readonly PayslipPdfService $payslips,
@@ -40,6 +48,12 @@ class PayrollRunController extends Controller
         private readonly NibssPayrollProcessor $nibss,
     ) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexPayrollRunRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated payroll runs.', type: 'array{success: true, message: string, data: PayrollRunResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexPayrollRunRequest $request): JsonResponse
     {
@@ -54,6 +68,12 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StorePayrollRunRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created payroll run.', type: 'array{success: true, message: string, data: PayrollRunResource, meta: null, errors: null}')]
     public function store(StorePayrollRunRequest $request): JsonResponse
     {
@@ -65,6 +85,12 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PayrollRun  $payroll_run
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A payroll run.', type: 'array{success: true, message: string, data: PayrollRunResource, meta: null, errors: null}')]
     public function show(PayrollRun $payroll_run): JsonResponse
     {
@@ -76,6 +102,12 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Generate.
+     *
+     * @param  PayrollRun  $payroll_run
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Regenerated payroll run.', type: 'array{success: true, message: string, data: PayrollRunResource, meta: null, errors: null}')]
     public function generate(PayrollRun $payroll_run): JsonResponse
     {
@@ -87,6 +119,12 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Process.
+     *
+     * @param  PayrollRun  $payroll_run
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Processed payroll run.', type: 'array{success: true, message: string, data: PayrollRunResource, meta: null, errors: null}')]
     public function process(PayrollRun $payroll_run): JsonResponse
     {
@@ -98,6 +136,13 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Pay.
+     *
+     * @param  PayPayrollRunRequest  $request
+     * @param  PayrollRun  $payroll_run
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paid payroll run.', type: 'array{success: true, message: string, data: PayrollRunResource, meta: null, errors: null}')]
     public function pay(PayPayrollRunRequest $request, PayrollRun $payroll_run): JsonResponse
     {
@@ -113,6 +158,12 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Approve.
+     *
+     * @param  PayrollRun  $payroll_run
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Approved payroll run.', type: 'array{success: true, message: string, data: PayrollRunResource, meta: null, errors: null}')]
     public function approve(PayrollRun $payroll_run): JsonResponse
     {
@@ -124,6 +175,12 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Cancel.
+     *
+     * @param  PayrollRun  $payroll_run
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Cancelled payroll run.', type: 'array{success: true, message: string, data: PayrollRunResource, meta: null, errors: null}')]
     public function cancel(PayrollRun $payroll_run): JsonResponse
     {
@@ -135,6 +192,13 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Show item.
+     *
+     * @param  PayrollRun  $payroll_run
+     * @param  PayrollItem  $payroll_item
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A payslip.', type: 'array{success: true, message: string, data: PayrollItemResource, meta: null, errors: null}')]
     public function showItem(PayrollRun $payroll_run, PayrollItem $payroll_item): JsonResponse
     {
@@ -148,6 +212,13 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Download item.
+     *
+     * @param  PayrollRun  $payroll_run
+     * @param  PayrollItem  $payroll_item
+     * @return HttpResponse
+     */
     public function downloadItem(PayrollRun $payroll_run, PayrollItem $payroll_item): HttpResponse
     {
         abort_unless($payroll_item->payroll_run_id === $payroll_run->id, 404);
@@ -157,6 +228,13 @@ class PayrollRunController extends Controller
         return $this->payslips->download($this->payrollRunService->showItem($payroll_item));
     }
 
+    /**
+     * Payment register.
+     *
+     * @param  Request  $request
+     * @param  PayrollRun  $payroll_run
+     * @return JsonResponse|StreamedResponse
+     */
     public function paymentRegister(Request $request, PayrollRun $payroll_run): JsonResponse|StreamedResponse
     {
         $this->authorize('view', $payroll_run);
@@ -170,6 +248,12 @@ class PayrollRunController extends Controller
         return $this->success($rows, 'Payment register retrieved successfully.');
     }
 
+    /**
+     * Nibss file.
+     *
+     * @param  PayrollRun  $payroll_run
+     * @return StreamedResponse
+     */
     public function nibssFile(PayrollRun $payroll_run): StreamedResponse
     {
         $this->authorize('view', $payroll_run);
@@ -177,6 +261,12 @@ class PayrollRunController extends Controller
         return $this->nibss->download($payroll_run);
     }
 
+    /**
+     * Nibss submit.
+     *
+     * @param  PayrollRun  $payroll_run
+     * @return JsonResponse
+     */
     public function nibssSubmit(PayrollRun $payroll_run): JsonResponse
     {
         $this->authorize('pay', $payroll_run);
@@ -187,6 +277,12 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Employee items.
+     *
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Employee payslips.', type: 'array{success: true, message: string, data: PayrollItemResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function employeeItems(Employee $employee): JsonResponse
     {
@@ -201,6 +297,11 @@ class PayrollRunController extends Controller
         );
     }
 
+    /**
+     * Resolve the authenticated tenant user.
+     *
+     * @return User
+     */
     protected function actor(): User
     {
         /** @var User $user */

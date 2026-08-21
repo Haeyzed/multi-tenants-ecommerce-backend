@@ -22,8 +22,19 @@ use Illuminate\Http\Request;
  */
 class ShipmentController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ShipmentService  $shipmentService
+     */
     public function __construct(private readonly ShipmentService $shipmentService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated shipments.', type: 'array{success: true, message: string, data: ShipmentResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -38,6 +49,12 @@ class ShipmentController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreShipmentRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created shipment.', type: 'array{success: true, message: string, data: ShipmentResource, meta: null, errors: null}')]
     public function store(StoreShipmentRequest $request): JsonResponse
     {
@@ -53,6 +70,12 @@ class ShipmentController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Shipment  $shipment
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A shipment.', type: 'array{success: true, message: string, data: ShipmentResource, meta: null, errors: null}')]
     public function show(Shipment $shipment): JsonResponse
     {
@@ -64,6 +87,13 @@ class ShipmentController extends Controller
         );
     }
 
+    /**
+     * Update status.
+     *
+     * @param  TransitionShipmentRequest  $request
+     * @param  Shipment  $shipment
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated shipment status.', type: 'array{success: true, message: string, data: ShipmentResource, meta: null, errors: null}')]
     public function updateStatus(TransitionShipmentRequest $request, Shipment $shipment): JsonResponse
     {

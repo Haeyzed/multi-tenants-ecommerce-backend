@@ -18,12 +18,20 @@ use Illuminate\Support\Facades\Schema;
  */
 class ProductViewService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceAnalyticsService  $analytics
+     */
     public function __construct(private readonly CommerceAnalyticsService $analytics) {}
 
     /**
      * Record a product view for a customer and/or anonymous session.
      *
-     * Returns null when the view cannot be attributed to any viewer.
+     * @param  Product  $product
+     * @param  ?Customer  $customer
+     * @param  ?string  $sessionKey
+     * @return ?ProductView
      */
     public function record(Product $product, ?Customer $customer = null, ?string $sessionKey = null): ?ProductView
     {
@@ -51,6 +59,10 @@ class ProductViewService
     /**
      * Distinct recently viewed products, most recent first.
      *
+     * @param  ?Customer  $customer
+     * @param  ?string  $sessionKey
+     * @param  int  $limit
+     * @param  ?int  $excludeProductId
      * @return Collection<int, Product>
      */
     public function recentlyViewed(
@@ -67,6 +79,9 @@ class ProductViewService
     /**
      * Paginated recently viewed products.
      *
+     * @param  ?Customer  $customer
+     * @param  ?string  $sessionKey
+     * @param  int  $perPage
      * @return LengthAwarePaginator<int, Product>
      */
     public function paginateRecentlyViewed(
@@ -81,6 +96,9 @@ class ProductViewService
     /**
      * Build the distinct recently viewed products query.
      *
+     * @param  ?Customer  $customer
+     * @param  ?string  $sessionKey
+     * @param  ?int  $excludeProductId
      * @return Builder<Product>
      */
     protected function recentlyViewedQuery(

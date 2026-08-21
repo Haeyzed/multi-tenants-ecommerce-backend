@@ -16,6 +16,11 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class OrderService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  OrderTransitionService  $transitions
+     */
     public function __construct(
         private readonly OrderTransitionService $transitions,
     ) {}
@@ -23,6 +28,7 @@ class OrderService
     /**
      * Paginate orders for a customer.
      *
+     * @param  Customer  $customer
      * @param  array{status?: string|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Order>
      */
@@ -38,6 +44,10 @@ class OrderService
 
     /**
      * Show a customer-owned order.
+     *
+     * @param  Customer  $customer
+     * @param  Order  $order
+     * @return Order
      */
     public function customerShow(Customer $customer, Order $order): Order
     {
@@ -70,6 +80,9 @@ class OrderService
 
     /**
      * Show an order for admin.
+     *
+     * @param  Order  $order
+     * @return Order
      */
     public function adminShow(Order $order): Order
     {
@@ -78,6 +91,10 @@ class OrderService
 
     /**
      * Cancel a customer-owned unpaid-eligible order.
+     *
+     * @param  Customer  $customer
+     * @param  Order  $order
+     * @return Order
      */
     public function customerCancel(Customer $customer, Order $order): Order
     {
@@ -89,6 +106,8 @@ class OrderService
     /**
      * Paginate refunds for a customer-owned order.
      *
+     * @param  Customer  $customer
+     * @param  Order  $order
      * @param  array{per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Refund>
      */
@@ -103,12 +122,22 @@ class OrderService
 
     /**
      * Cancel an order via status transition.
+     *
+     * @param  Order  $order
+     * @return Order
      */
     public function cancel(Order $order): Order
     {
         return $this->transitions->transition($order, OrderStatus::Cancelled);
     }
 
+    /**
+     * Assert customer ownership.
+     *
+     * @param  Customer  $customer
+     * @param  Order  $order
+     * @return void
+     */
     protected function assertCustomerOwnership(Customer $customer, Order $order): void
     {
         if ((int) $order->customer_id !== (int) $customer->id) {
@@ -117,7 +146,10 @@ class OrderService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

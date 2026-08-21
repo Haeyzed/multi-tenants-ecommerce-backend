@@ -22,10 +22,18 @@ use Illuminate\Http\UploadedFile;
  */
 class ProductController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductService  $productService
+     */
     public function __construct(private readonly ProductService $productService) {}
 
     /**
      * List products with pagination, search, and filters.
+     *
+     * @param  IndexProductRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -45,6 +53,9 @@ class ProductController extends Controller
 
     /**
      * Product options for select inputs.
+     *
+     * @param  IndexProductRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -61,6 +72,9 @@ class ProductController extends Controller
 
     /**
      * Create a product (supports multipart image uploads).
+     *
+     * @param  StoreProductRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -89,6 +103,9 @@ class ProductController extends Controller
 
     /**
      * Show a product.
+     *
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -105,6 +122,10 @@ class ProductController extends Controller
 
     /**
      * Update a product (supports multipart image uploads).
+     *
+     * @param  UpdateProductRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -134,6 +155,9 @@ class ProductController extends Controller
 
     /**
      * Delete a product.
+     *
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -149,6 +173,10 @@ class ProductController extends Controller
 
     /**
      * Upload product gallery images.
+     *
+     * @param  StoreProductImagesRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -174,6 +202,10 @@ class ProductController extends Controller
 
     /**
      * Remove product gallery images.
+     *
+     * @param  StoreProductImagesRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

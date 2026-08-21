@@ -21,8 +21,19 @@ use Illuminate\Http\Request;
  */
 class RefundController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  RefundService  $refundService
+     */
     public function __construct(private readonly RefundService $refundService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated refunds.', type: 'array{success: true, message: string, data: RefundResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -37,6 +48,13 @@ class RefundController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreRefundRequest  $request
+     * @param  Order  $order
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created refund.', type: 'array{success: true, message: string, data: RefundResource, meta: null, errors: null}')]
     public function store(StoreRefundRequest $request, Order $order): JsonResponse
     {
@@ -51,6 +69,12 @@ class RefundController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Refund  $refund
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A refund.', type: 'array{success: true, message: string, data: RefundResource, meta: null, errors: null}')]
     public function show(Refund $refund): JsonResponse
     {

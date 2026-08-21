@@ -20,10 +20,19 @@ use Illuminate\Support\Facades\Auth;
  */
 class StorefrontRecommendationController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductRecommendationService  $recommendations
+     */
     public function __construct(private readonly ProductRecommendationService $recommendations) {}
 
     /**
      * Recommended products for a storefront product, grouped by recommendation type.
+     *
+     * @param  ProductRecommendationRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

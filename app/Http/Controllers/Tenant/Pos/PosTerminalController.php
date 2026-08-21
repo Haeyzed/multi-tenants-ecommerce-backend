@@ -20,8 +20,19 @@ use Illuminate\Http\JsonResponse;
  */
 class PosTerminalController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PosTerminalService  $terminals
+     */
     public function __construct(private readonly PosTerminalService $terminals) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexPosTerminalRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Paginated POS terminals.',
@@ -40,6 +51,12 @@ class PosTerminalController extends Controller
         );
     }
 
+    /**
+     * Return options for select inputs.
+     *
+     * @param  IndexPosTerminalRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Terminal options.', type: ApiResponseSchema::OPTIONS)]
     public function options(IndexPosTerminalRequest $request): JsonResponse
     {
@@ -51,6 +68,12 @@ class PosTerminalController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StorePosTerminalRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'Created terminal.',
@@ -66,6 +89,12 @@ class PosTerminalController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PosTerminal  $pos_terminal
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'A terminal.',
@@ -81,6 +110,13 @@ class PosTerminalController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdatePosTerminalRequest  $request
+     * @param  PosTerminal  $pos_terminal
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Updated terminal.',
@@ -96,6 +132,12 @@ class PosTerminalController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  PosTerminal  $pos_terminal
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Terminal deleted.',

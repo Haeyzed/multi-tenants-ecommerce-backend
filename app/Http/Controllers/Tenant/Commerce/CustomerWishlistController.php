@@ -22,10 +22,17 @@ use Illuminate\Support\Facades\Auth;
  */
 class CustomerWishlistController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  WishlistService  $wishlistService
+     */
     public function __construct(private readonly WishlistService $wishlistService) {}
 
     /**
      * Get the authenticated customer's wishlist.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -45,6 +52,9 @@ class CustomerWishlistController extends Controller
 
     /**
      * Add a product to the wishlist.
+     *
+     * @param  StoreWishlistItemRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -71,6 +81,9 @@ class CustomerWishlistController extends Controller
 
     /**
      * Remove an item from the wishlist.
+     *
+     * @param  WishlistItem  $item
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -89,6 +102,10 @@ class CustomerWishlistController extends Controller
 
     /**
      * Check whether a product is in the customer's wishlist.
+     *
+     * @param  CheckWishlistProductRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

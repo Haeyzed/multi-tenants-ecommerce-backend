@@ -21,6 +21,14 @@ use Illuminate\Validation\ValidationException;
  */
 class LeaveRequestService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     * @param  LeaveTypeService  $leaveTypeService
+     * @param  WorkCalendarService  $calendar
+     * @param  HrActivityService  $activities
+     */
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly LeaveTypeService $leaveTypeService,
@@ -29,6 +37,8 @@ class LeaveRequestService
     ) {}
 
     /**
+     * employee_id?: int|null, type?: string|null, status?: string|null, from?: string|null, to?: string|null, sort?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     employee_id?: int|null,
      *     type?: string|null,
@@ -50,6 +60,8 @@ class LeaveRequestService
     }
 
     /**
+     * employee_id: int, leave_type_id?: int|null, type?: string|null, start_date: string, end_date: string, reason?: string|null }  $data
+     *
      * @param  array{
      *     employee_id: int,
      *     leave_type_id?: int|null,
@@ -58,6 +70,7 @@ class LeaveRequestService
      *     end_date: string,
      *     reason?: string|null
      * }  $data
+     * @return LeaveRequest
      *
      * @throws ValidationException
      */
@@ -113,6 +126,12 @@ class LeaveRequestService
         return $leaveRequest;
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  LeaveRequest  $leaveRequest
+     * @return LeaveRequest
+     */
     public function show(LeaveRequest $leaveRequest): LeaveRequest
     {
         return $leaveRequest->load(['employee.user', 'reviewer', 'leaveType']);
@@ -120,6 +139,12 @@ class LeaveRequestService
 
     /**
      * Approve or reject a pending leave request.
+     *
+     * @param  LeaveRequest  $leaveRequest
+     * @param  LeaveStatus  $status
+     * @param  User  $reviewer
+     * @param  ?string  $notes
+     * @return LeaveRequest
      *
      * @throws ValidationException
      */
@@ -179,6 +204,9 @@ class LeaveRequestService
     /**
      * Cancel a pending leave request.
      *
+     * @param  LeaveRequest  $leaveRequest
+     * @return LeaveRequest
+     *
      * @throws ValidationException
      */
     public function cancel(LeaveRequest $leaveRequest): LeaveRequest
@@ -204,6 +232,10 @@ class LeaveRequestService
     }
 
     /**
+     * Balances for.
+     *
+     * @param  Employee  $employee
+     * @param  ?int  $year
      * @return list<LeaveBalance>
      */
     public function balancesFor(Employee $employee, ?int $year = null): array
@@ -223,7 +255,10 @@ class LeaveRequestService
     }
 
     /**
+     * Resolve leave type.
+     *
      * @param  array{leave_type_id?: int|null, type?: string|null}  $data
+     * @return LeaveType
      *
      * @throws ValidationException
      */
@@ -243,6 +278,14 @@ class LeaveRequestService
     }
 
     /**
+     * Assert no approved overlap.
+     *
+     * @param  Employee  $employee
+     * @param  string  $startDate
+     * @param  string  $endDate
+     * @param  ?int  $ignoreId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertNoApprovedOverlap(Employee $employee, string $startDate, string $endDate, ?int $ignoreId = null): void
@@ -263,6 +306,14 @@ class LeaveRequestService
     }
 
     /**
+     * Assert balance available.
+     *
+     * @param  Employee  $employee
+     * @param  LeaveType  $leaveType
+     * @param  string  $startDate
+     * @param  int  $days
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertBalanceAvailable(Employee $employee, LeaveType $leaveType, string $startDate, int $days): void
@@ -281,6 +332,15 @@ class LeaveRequestService
         }
     }
 
+    /**
+     * Consume balance.
+     *
+     * @param  Employee  $employee
+     * @param  LeaveType  $leaveType
+     * @param  string  $startDate
+     * @param  int  $days
+     * @return void
+     */
     protected function consumeBalance(Employee $employee, LeaveType $leaveType, string $startDate, int $days): void
     {
         if ($leaveType->default_days <= 0 || $days <= 0) {
@@ -293,6 +353,14 @@ class LeaveRequestService
         $balance->save();
     }
 
+    /**
+     * Balance for.
+     *
+     * @param  Employee  $employee
+     * @param  LeaveType  $leaveType
+     * @param  int  $year
+     * @return LeaveBalance
+     */
     protected function balanceFor(Employee $employee, LeaveType $leaveType, int $year): LeaveBalance
     {
         $existing = LeaveBalance::query()
@@ -317,6 +385,14 @@ class LeaveRequestService
         ]);
     }
 
+    /**
+     * Carry over days.
+     *
+     * @param  Employee  $employee
+     * @param  LeaveType  $leaveType
+     * @param  int  $year
+     * @return int
+     */
     protected function carryOverDays(Employee $employee, LeaveType $leaveType, int $year): int
     {
         if (! $this->hrSettings->leaveCarryOverEnabled() || ! $leaveType->allow_carry_over) {
@@ -343,6 +419,14 @@ class LeaveRequestService
         return $remaining;
     }
 
+    /**
+     * Count working days.
+     *
+     * @param  string  $startDate
+     * @param  string  $endDate
+     * @param  ?Employee  $employee
+     * @return int
+     */
     protected function countWorkingDays(string $startDate, string $endDate, ?Employee $employee = null): int
     {
         $start = Carbon::parse($startDate)->startOfDay();
@@ -361,7 +445,10 @@ class LeaveRequestService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

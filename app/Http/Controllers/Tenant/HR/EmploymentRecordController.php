@@ -18,8 +18,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class EmploymentRecordController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  EmployeeService  $employeeService
+     */
     public function __construct(private readonly EmployeeService $employeeService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Employee  $employee
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Employment history.', type: 'array{success: true, message: string, data: EmploymentRecordResource[], meta: null, errors: null}')]
     public function index(Employee $employee): JsonResponse
     {

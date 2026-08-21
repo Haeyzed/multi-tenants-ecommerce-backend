@@ -16,10 +16,18 @@ use Illuminate\Http\JsonResponse;
  */
 class SettingsController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  TenantSettingsService  $settings
+     */
     public function __construct(private readonly TenantSettingsService $settings) {}
 
     /**
      * Retrieve settings for a domain.
+     *
+     * @param  string  $domain
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -39,6 +47,10 @@ class SettingsController extends Controller
 
     /**
      * Update settings for a mutable domain.
+     *
+     * @param  UpdateSettingsDomainRequest  $request
+     * @param  string  $domain
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

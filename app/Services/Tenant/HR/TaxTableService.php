@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 class TaxTableService
 {
     /**
+     * search?: string|null, country_code?: string|null, year?: int|null, is_active?: bool|null, sort?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     search?: string|null,
      *     country_code?: string|null,
@@ -36,6 +38,8 @@ class TaxTableService
     }
 
     /**
+     * country_code: string, name: string, year: int, currency?: string|null, is_active?: bool, relief_percent?: string|float|int, relief_fixed?: string|float|int, relief_minimum_percent?: string|float|int, personal_allowance?: string|float|int, bands?: list<array{min_amount: string|float|int, max_amount?: string|float|int|null, rate_percent: string|float|int, sort_order?: int}> }  $data
+     *
      * @param  array{
      *     country_code: string,
      *     name: string,
@@ -48,6 +52,7 @@ class TaxTableService
      *     personal_allowance?: string|float|int,
      *     bands?: list<array{min_amount: string|float|int, max_amount?: string|float|int|null, rate_percent: string|float|int, sort_order?: int}>
      * }  $data
+     * @return TaxTable
      */
     public function store(array $data): TaxTable
     {
@@ -61,13 +66,23 @@ class TaxTableService
         });
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  TaxTable  $table
+     * @return TaxTable
+     */
     public function show(TaxTable $table): TaxTable
     {
         return $table->load('bands');
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  TaxTable  $table
      * @param  array<string, mixed>  $data
+     * @return TaxTable
      */
     public function update(TaxTable $table, array $data): TaxTable
     {
@@ -83,6 +98,12 @@ class TaxTableService
         });
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  TaxTable  $table
+     * @return void
+     */
     public function destroy(TaxTable $table): void
     {
         $table->bands()->delete();
@@ -91,6 +112,8 @@ class TaxTableService
 
     /**
      * Seed Nigeria PAYE (Finance Act style) when the tenant has no tax tables.
+     *
+     * @return void
      */
     public function ensureDefaults(): void
     {
@@ -123,7 +146,10 @@ class TaxTableService
     }
 
     /**
+     * Table payload.
+     *
      * @param  array<string, mixed>  $data
+     * @param  ?TaxTable  $table
      * @return array<string, mixed>
      */
     protected function tablePayload(array $data, ?TaxTable $table = null): array
@@ -152,7 +178,11 @@ class TaxTableService
     }
 
     /**
+     * Sync bands.
+     *
+     * @param  TaxTable  $table
      * @param  list<array{min_amount: string|float|int, max_amount?: string|float|int|null, rate_percent: string|float|int, sort_order?: int}>  $bands
+     * @return void
      */
     protected function syncBands(TaxTable $table, array $bands): void
     {
@@ -169,7 +199,10 @@ class TaxTableService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

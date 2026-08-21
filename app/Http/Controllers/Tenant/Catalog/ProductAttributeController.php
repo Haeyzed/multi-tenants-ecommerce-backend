@@ -23,10 +23,18 @@ use Illuminate\Http\JsonResponse;
  */
 class ProductAttributeController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductAttributeService  $attributeService
+     */
     public function __construct(private readonly ProductAttributeService $attributeService) {}
 
     /**
      * List attributes.
+     *
+     * @param  IndexCatalogDefinitionRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -46,6 +54,9 @@ class ProductAttributeController extends Controller
 
     /**
      * Attribute select options.
+     *
+     * @param  IndexCatalogDefinitionRequest  $request
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Attribute options.', type: ApiResponseSchema::OPTIONS)]
     public function options(IndexCatalogDefinitionRequest $request): JsonResponse
@@ -58,6 +69,9 @@ class ProductAttributeController extends Controller
 
     /**
      * Create an attribute.
+     *
+     * @param  StoreProductAttributeRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -74,6 +88,9 @@ class ProductAttributeController extends Controller
 
     /**
      * Show an attribute.
+     *
+     * @param  ProductAttribute  $attribute
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -90,6 +107,10 @@ class ProductAttributeController extends Controller
 
     /**
      * Update an attribute.
+     *
+     * @param  UpdateProductAttributeRequest  $request
+     * @param  ProductAttribute  $attribute
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -106,6 +127,9 @@ class ProductAttributeController extends Controller
 
     /**
      * Delete an attribute.
+     *
+     * @param  ProductAttribute  $attribute
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -121,6 +145,10 @@ class ProductAttributeController extends Controller
 
     /**
      * Create an attribute value.
+     *
+     * @param  StoreProductAttributeValueRequest  $request
+     * @param  ProductAttribute  $attribute
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -136,6 +164,11 @@ class ProductAttributeController extends Controller
 
     /**
      * Update an attribute value.
+     *
+     * @param  UpdateProductAttributeValueRequest  $request
+     * @param  ProductAttribute  $attribute
+     * @param  ProductAttributeValue  $value
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -154,6 +187,10 @@ class ProductAttributeController extends Controller
 
     /**
      * Delete an attribute value.
+     *
+     * @param  ProductAttribute  $attribute
+     * @param  ProductAttributeValue  $value
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

@@ -12,6 +12,12 @@ use App\Models\Tenant\SellerPayout;
  */
 class ManualPayoutDriver implements SellerPayoutDriverInterface
 {
+    /**
+     * Process.
+     *
+     * @param  SellerPayout  $payout
+     * @return string
+     */
     public function process(SellerPayout $payout): string
     {
         return 'MANUAL-'.$payout->id;

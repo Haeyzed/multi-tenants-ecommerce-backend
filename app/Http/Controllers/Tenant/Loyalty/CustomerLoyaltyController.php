@@ -22,6 +22,12 @@ use Illuminate\Support\Facades\Auth;
  */
 class CustomerLoyaltyController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CartService  $cartService
+     * @param  LoyaltyService  $loyalty
+     */
     public function __construct(
         private readonly CartService $cartService,
         private readonly LoyaltyService $loyalty,
@@ -29,6 +35,8 @@ class CustomerLoyaltyController extends Controller
 
     /**
      * Get the authenticated customer's loyalty account.
+     *
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Customer loyalty account.', type: 'array{success: true, message: string, data: LoyaltyAccountResource, meta: null, errors: null}')]
     public function account(): JsonResponse
@@ -41,6 +49,9 @@ class CustomerLoyaltyController extends Controller
 
     /**
      * List the authenticated customer's point movements.
+     *
+     * @param  IndexLoyaltyTransactionRequest  $request
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Paginated loyalty ledger entries.', type: 'array{success: true, message: string, data: LoyaltyTransactionResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function transactions(IndexLoyaltyTransactionRequest $request): JsonResponse
@@ -57,6 +68,9 @@ class CustomerLoyaltyController extends Controller
 
     /**
      * Preview what a point redemption would be worth against the active cart.
+     *
+     * @param  PreviewLoyaltyRedemptionRequest  $request
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Redemption preview.', type: 'array{success: true, message: string, data: array{points: int, money_value: string}, meta: null, errors: null}')]
     public function previewRedemption(PreviewLoyaltyRedemptionRequest $request): JsonResponse
@@ -77,6 +91,11 @@ class CustomerLoyaltyController extends Controller
         );
     }
 
+    /**
+     * Customer.
+     *
+     * @return Customer
+     */
     protected function customer(): Customer
     {
         /** @var Customer $customer */

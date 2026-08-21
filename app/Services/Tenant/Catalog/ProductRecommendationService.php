@@ -22,6 +22,8 @@ class ProductRecommendationService
     protected array $providers = [];
 
     /**
+     * Create a new class instance.
+     *
      * @param  iterable<ProductRecommendationProvider>  $providers
      */
     public function __construct(iterable $providers)
@@ -44,9 +46,11 @@ class ProductRecommendationService
     /**
      * Resolve recommendations grouped by type.
      *
-     * Unknown types are ignored; passing no types runs every registered provider.
-     *
      * @param  list<string>  $types
+     * @param  ?Product  $product
+     * @param  ?Customer  $customer
+     * @param  int  $limit
+     * @param  ?string  $sessionKey
      * @return array<string, Collection<int, Product>>
      */
     public function recommend(

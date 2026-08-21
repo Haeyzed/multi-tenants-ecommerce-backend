@@ -22,8 +22,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class LeaveTypeController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  LeaveTypeService  $leaveTypeService
+     */
     public function __construct(private readonly LeaveTypeService $leaveTypeService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexLeaveTypeRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated leave types.', type: 'array{success: true, message: string, data: LeaveTypeResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexLeaveTypeRequest $request): JsonResponse
     {
@@ -38,6 +49,11 @@ class LeaveTypeController extends Controller
         );
     }
 
+    /**
+     * Return options for select inputs.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Leave type options.', type: ApiResponseSchema::OPTIONS)]
     public function options(): JsonResponse
     {
@@ -49,6 +65,12 @@ class LeaveTypeController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreLeaveTypeRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created leave type.', type: 'array{success: true, message: string, data: LeaveTypeResource, meta: null, errors: null}')]
     public function store(StoreLeaveTypeRequest $request): JsonResponse
     {
@@ -60,6 +82,12 @@ class LeaveTypeController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  LeaveType  $leave_type
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A leave type.', type: 'array{success: true, message: string, data: LeaveTypeResource, meta: null, errors: null}')]
     public function show(LeaveType $leave_type): JsonResponse
     {
@@ -71,6 +99,13 @@ class LeaveTypeController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateLeaveTypeRequest  $request
+     * @param  LeaveType  $leave_type
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated leave type.', type: 'array{success: true, message: string, data: LeaveTypeResource, meta: null, errors: null}')]
     public function update(UpdateLeaveTypeRequest $request, LeaveType $leave_type): JsonResponse
     {
@@ -82,6 +117,12 @@ class LeaveTypeController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  LeaveType  $leave_type
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted leave type.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(LeaveType $leave_type): JsonResponse
     {

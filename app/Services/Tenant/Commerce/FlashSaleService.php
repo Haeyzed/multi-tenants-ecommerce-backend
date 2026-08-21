@@ -32,11 +32,18 @@ use Illuminate\Validation\ValidationException;
  */
 class FlashSaleService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CustomerSegmentationService  $segmentation
+     */
     public function __construct(
         private readonly CustomerSegmentationService $segmentation,
     ) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, is_active?: bool|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, FlashSale>
      */
@@ -82,7 +89,10 @@ class FlashSaleService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return FlashSale
      */
     public function store(array $data): FlashSale
     {
@@ -104,13 +114,23 @@ class FlashSaleService
         return $flashSale;
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  FlashSale  $flashSale
+     * @return FlashSale
+     */
     public function show(FlashSale $flashSale): FlashSale
     {
         return $flashSale->load(['items.product', 'items.productVariant', 'items.customerGroup']);
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  FlashSale  $flashSale
      * @param  array<string, mixed>  $data
+     * @return FlashSale
      */
     public function update(FlashSale $flashSale, array $data): FlashSale
     {
@@ -129,13 +149,23 @@ class FlashSaleService
         return $flashSale;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  FlashSale  $flashSale
+     * @return void
+     */
     public function destroy(FlashSale $flashSale): void
     {
         $flashSale->delete();
     }
 
     /**
+     * Add item.
+     *
+     * @param  FlashSale  $flashSale
      * @param  array<string, mixed>  $data
+     * @return FlashSaleItem
      */
     public function addItem(FlashSale $flashSale, array $data): FlashSaleItem
     {
@@ -143,7 +173,11 @@ class FlashSaleService
     }
 
     /**
+     * Update item.
+     *
+     * @param  FlashSaleItem  $item
      * @param  array<string, mixed>  $data
+     * @return FlashSaleItem
      */
     public function updateItem(FlashSaleItem $item, array $data): FlashSaleItem
     {
@@ -153,6 +187,12 @@ class FlashSaleService
         return $item->fresh(['product', 'productVariant', 'customerGroup']) ?? $item;
     }
 
+    /**
+     * Remove item.
+     *
+     * @param  FlashSaleItem  $item
+     * @return void
+     */
     public function removeItem(FlashSaleItem $item): void
     {
         $item->delete();
@@ -161,7 +201,9 @@ class FlashSaleService
     /**
      * Replace flash sale items from a payload list.
      *
+     * @param  FlashSale  $flashSale
      * @param  list<array<string, mixed>>  $items
+     * @return void
      */
     public function syncItems(FlashSale $flashSale, array $items): void
     {
@@ -179,6 +221,9 @@ class FlashSaleService
     /**
      * Resolve the best active flash sale price for a product/variant.
      *
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
+     * @param  ?Customer  $customer
      * @return array{price: string, item: FlashSaleItem, sale: FlashSale}|null
      */
     public function resolveSalePrice(
@@ -269,6 +314,8 @@ class FlashSaleService
     /**
      * Cart item IDs that are priced by a non-stackable flash sale.
      *
+     * @param  Cart  $cart
+     * @param  ?Customer  $customer
      * @return list<int>
      */
     public function nonStackableFlashCartItemIds(Cart $cart, ?Customer $customer = null): array
@@ -297,6 +344,10 @@ class FlashSaleService
 
     /**
      * Whether the given cart line currently uses a flash sale unit price.
+     *
+     * @param  CartItem  $item
+     * @param  ?Customer  $customer
+     * @return bool
      */
     public function cartItemUsesFlashSale(CartItem $item, ?Customer $customer = null): bool
     {
@@ -315,6 +366,8 @@ class FlashSaleService
     /**
      * Lock flash sale items and increment sold_qty for cart lines on checkout.
      *
+     * @param  Customer  $customer
+     * @param  Cart  $cart
      * @return array<int, array{flash_sale_item_id: int, flash_sale_id: int, sale_price: string}>
      *
      * @throws ValidationException
@@ -413,6 +466,10 @@ class FlashSaleService
 
     /**
      * Quantity already purchased by the customer for a flash sale item (non-cancelled orders).
+     *
+     * @param  Customer  $customer
+     * @param  FlashSaleItem  $item
+     * @return int
      */
     public function customerPurchasedQuantity(Customer $customer, FlashSaleItem $item): int
     {
@@ -430,7 +487,10 @@ class FlashSaleService
     }
 
     /**
+     * Attributes from data.
+     *
      * @param  array<string, mixed>  $data
+     * @param  ?FlashSale  $existing
      * @return array<string, mixed>
      */
     protected function attributesFromData(array $data, ?FlashSale $existing = null): array
@@ -455,7 +515,10 @@ class FlashSaleService
     }
 
     /**
+     * Item attributes from data.
+     *
      * @param  array<string, mixed>  $data
+     * @param  ?FlashSaleItem  $existing
      * @return array<string, mixed>
      */
     protected function itemAttributesFromData(array $data, ?FlashSaleItem $existing = null): array
@@ -485,6 +548,13 @@ class FlashSaleService
         return $attributes;
     }
 
+    /**
+     * Dispatch lifecycle events.
+     *
+     * @param  FlashSale  $flashSale
+     * @param  ?FlashSaleStatus  $previous
+     * @return void
+     */
     protected function dispatchLifecycleEvents(FlashSale $flashSale, ?FlashSaleStatus $previous = null): void
     {
         $current = $flashSale->status();
@@ -502,6 +572,13 @@ class FlashSaleService
         }
     }
 
+    /**
+     * Customer matches segment.
+     *
+     * @param  Customer  $customer
+     * @param  FlashSaleItem  $item
+     * @return bool
+     */
     protected function customerMatchesSegment(Customer $customer, FlashSaleItem $item): bool
     {
         $segment = $item->relationLoaded('customerSegment')
@@ -516,7 +593,10 @@ class FlashSaleService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

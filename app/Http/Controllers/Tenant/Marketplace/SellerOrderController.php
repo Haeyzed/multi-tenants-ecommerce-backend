@@ -21,11 +21,23 @@ use Illuminate\Http\JsonResponse;
  */
 class SellerOrderController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  SellerOrderService  $sellerOrders
+     * @param  SellerOrderTransitionService  $transitions
+     */
     public function __construct(
         private readonly SellerOrderService $sellerOrders,
         private readonly SellerOrderTransitionService $transitions,
     ) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexSellerOrderRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated seller orders.', type: 'array{success: true, message: string, data: SellerOrderResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexSellerOrderRequest $request): JsonResponse
     {
@@ -40,6 +52,12 @@ class SellerOrderController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  SellerOrder  $sellerOrder
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A seller order.', type: 'array{success: true, message: string, data: SellerOrderResource, meta: null, errors: null}')]
     public function show(SellerOrder $sellerOrder): JsonResponse
     {
@@ -51,6 +69,13 @@ class SellerOrderController extends Controller
         );
     }
 
+    /**
+     * Update status.
+     *
+     * @param  TransitionSellerOrderRequest  $request
+     * @param  SellerOrder  $sellerOrder
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated seller order status.', type: 'array{success: true, message: string, data: SellerOrderResource, meta: null, errors: null}')]
     public function updateStatus(TransitionSellerOrderRequest $request, SellerOrder $sellerOrder): JsonResponse
     {

@@ -27,6 +27,11 @@ class RelatedProductsProvider implements ProductRecommendationProvider
         ProductRelationType::CrossSell,
     ];
 
+    /**
+     * Key.
+     *
+     * @return string
+     */
     public function key(): string
     {
         return 'related';
@@ -34,6 +39,12 @@ class RelatedProductsProvider implements ProductRecommendationProvider
 
     /**
      * {@inheritDoc}
+     *
+     * @param  ?Product  $product
+     * @param  ?Customer  $customer
+     * @param  int  $limit
+     * @param  ?string  $sessionKey
+     * @return Collection
      */
     public function recommend(
         ?Product $product = null,

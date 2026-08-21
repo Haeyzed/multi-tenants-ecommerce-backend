@@ -24,6 +24,18 @@ use Spatie\Permission\Models\Role;
  */
 class HiringService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     * @param  EmployeeService  $employees
+     * @param  EmployeeSalaryService  $salaries
+     * @param  UserService  $users
+     * @param  JobApplicationService  $applications
+     * @param  RecruitmentStageService  $stages
+     * @param  JobOfferService  $offers
+     * @param  RecruitmentActivityService  $activities
+     */
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly EmployeeService $employees,
@@ -36,7 +48,12 @@ class HiringService
     ) {}
 
     /**
+     * Convert.
+     *
+     * @param  JobApplication  $application
+     * @param  User  $actor
      * @param  array<string, mixed>  $data
+     * @return Employee
      *
      * @throws ValidationException
      */
@@ -111,6 +128,11 @@ class HiringService
     }
 
     /**
+     * Accepted offer.
+     *
+     * @param  JobApplication  $application
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     protected function acceptedOffer(JobApplication $application): JobOffer
@@ -132,7 +154,11 @@ class HiringService
     }
 
     /**
+     * Resolve user.
+     *
+     * @param  Candidate  $candidate
      * @param  array<string, mixed>  $data
+     * @return User
      */
     protected function resolveUser(Candidate $candidate, array $data): User
     {
@@ -159,6 +185,14 @@ class HiringService
         ]);
     }
 
+    /**
+     * Link application.
+     *
+     * @param  JobApplication  $application
+     * @param  Employee  $employee
+     * @param  User  $actor
+     * @return void
+     */
     protected function linkApplication(JobApplication $application, Employee $employee, User $actor): void
     {
         $fromStage = $application->stage;
@@ -184,7 +218,12 @@ class HiringService
     }
 
     /**
+     * Sync salary.
+     *
+     * @param  Employee  $employee
+     * @param  JobOffer  $offer
      * @param  array<string, mixed>  $data
+     * @return void
      */
     protected function syncSalary(Employee $employee, JobOffer $offer, array $data): void
     {

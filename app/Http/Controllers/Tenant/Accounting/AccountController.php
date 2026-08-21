@@ -18,8 +18,19 @@ use Illuminate\Http\Request;
  */
 class AccountController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  AccountService  $accountService
+     */
     public function __construct(private readonly AccountService $accountService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Paginated accounts.',

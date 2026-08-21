@@ -18,11 +18,23 @@ use InvalidArgumentException;
  */
 class DriverAssignmentManager
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  Container  $container
+     * @param  CommerceSettingService  $commerceSettings
+     */
     public function __construct(
         private readonly Container $container,
         private readonly CommerceSettingService $commerceSettings,
     ) {}
 
+    /**
+     * Strategy.
+     *
+     * @param  ?string  $name
+     * @return DriverAssignmentStrategyInterface
+     */
     public function strategy(?string $name = null): DriverAssignmentStrategyInterface
     {
         $name ??= $this->commerceSettings->deliveryAssignmentStrategy();
@@ -34,6 +46,12 @@ class DriverAssignmentManager
         };
     }
 
+    /**
+     * Assign.
+     *
+     * @param  Delivery  $delivery
+     * @return ?Driver
+     */
     public function assign(Delivery $delivery): ?Driver
     {
         return $this->strategy()->assign($delivery);

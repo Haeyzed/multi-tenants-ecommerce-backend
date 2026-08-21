@@ -22,8 +22,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class DepartmentController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  DepartmentService  $departmentService
+     */
     public function __construct(private readonly DepartmentService $departmentService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexDepartmentRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated departments.', type: 'array{success: true, message: string, data: DepartmentResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexDepartmentRequest $request): JsonResponse
     {
@@ -38,6 +49,11 @@ class DepartmentController extends Controller
         );
     }
 
+    /**
+     * Return options for select inputs.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Department options.', type: ApiResponseSchema::OPTIONS)]
     public function options(): JsonResponse
     {
@@ -49,6 +65,12 @@ class DepartmentController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreDepartmentRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created department.', type: 'array{success: true, message: string, data: DepartmentResource, meta: null, errors: null}')]
     public function store(StoreDepartmentRequest $request): JsonResponse
     {
@@ -60,6 +82,12 @@ class DepartmentController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Department  $department
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A department.', type: 'array{success: true, message: string, data: DepartmentResource, meta: null, errors: null}')]
     public function show(Department $department): JsonResponse
     {
@@ -71,6 +99,13 @@ class DepartmentController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateDepartmentRequest  $request
+     * @param  Department  $department
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated department.', type: 'array{success: true, message: string, data: DepartmentResource, meta: null, errors: null}')]
     public function update(UpdateDepartmentRequest $request, Department $department): JsonResponse
     {
@@ -82,6 +117,12 @@ class DepartmentController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Department  $department
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted department.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Department $department): JsonResponse
     {

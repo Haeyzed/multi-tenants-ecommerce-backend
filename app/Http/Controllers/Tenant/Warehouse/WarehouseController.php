@@ -24,10 +24,18 @@ use Illuminate\Http\JsonResponse;
  */
 class WarehouseController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  WarehouseService  $warehouseService
+     */
     public function __construct(private readonly WarehouseService $warehouseService) {}
 
     /**
      * List warehouses with pagination, search, and filters.
+     *
+     * @param  IndexWarehouseRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -47,6 +55,9 @@ class WarehouseController extends Controller
 
     /**
      * Warehouse options for select inputs.
+     *
+     * @param  IndexWarehouseRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -63,6 +74,9 @@ class WarehouseController extends Controller
 
     /**
      * Create a warehouse.
+     *
+     * @param  StoreWarehouseRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -79,6 +93,9 @@ class WarehouseController extends Controller
 
     /**
      * Show a warehouse.
+     *
+     * @param  Warehouse  $warehouse
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -95,6 +112,10 @@ class WarehouseController extends Controller
 
     /**
      * Update a warehouse.
+     *
+     * @param  UpdateWarehouseRequest  $request
+     * @param  Warehouse  $warehouse
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -111,6 +132,9 @@ class WarehouseController extends Controller
 
     /**
      * Delete a warehouse.
+     *
+     * @param  Warehouse  $warehouse
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -126,6 +150,10 @@ class WarehouseController extends Controller
 
     /**
      * List locations for a warehouse.
+     *
+     * @param  IndexWarehouseRequest  $request
+     * @param  Warehouse  $warehouse
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -145,6 +173,10 @@ class WarehouseController extends Controller
 
     /**
      * Create a warehouse location.
+     *
+     * @param  StoreWarehouseLocationRequest  $request
+     * @param  Warehouse  $warehouse
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -161,6 +193,11 @@ class WarehouseController extends Controller
 
     /**
      * Update a warehouse location.
+     *
+     * @param  UpdateWarehouseLocationRequest  $request
+     * @param  Warehouse  $warehouse
+     * @param  WarehouseLocation  $location
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -182,6 +219,10 @@ class WarehouseController extends Controller
 
     /**
      * Delete a warehouse location.
+     *
+     * @param  Warehouse  $warehouse
+     * @param  WarehouseLocation  $location
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

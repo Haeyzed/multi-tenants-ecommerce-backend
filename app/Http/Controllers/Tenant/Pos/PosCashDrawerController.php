@@ -18,8 +18,20 @@ use Illuminate\Http\JsonResponse;
  */
 class PosCashDrawerController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PosSessionService  $sessions
+     */
     public function __construct(private readonly PosSessionService $sessions) {}
 
+    /**
+     * Cash in.
+     *
+     * @param  PosCashMovementRequest  $request
+     * @param  PosSession  $pos_session
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'Cash in recorded.',
@@ -45,6 +57,13 @@ class PosCashDrawerController extends Controller
         );
     }
 
+    /**
+     * Cash out.
+     *
+     * @param  PosCashMovementRequest  $request
+     * @param  PosSession  $pos_session
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'Cash out recorded.',

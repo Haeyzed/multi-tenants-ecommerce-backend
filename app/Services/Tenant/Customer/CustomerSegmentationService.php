@@ -44,6 +44,9 @@ class CustomerSegmentationService
 
     /**
      * Resolve a segment by slug.
+     *
+     * @param  string  $slug
+     * @return ?CustomerSegment
      */
     public function findBySlug(string $slug): ?CustomerSegment
     {
@@ -61,6 +64,7 @@ class CustomerSegmentationService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @return CustomerSegment
      */
     public function store(array $data): CustomerSegment
     {
@@ -83,6 +87,9 @@ class CustomerSegmentationService
 
     /**
      * Retrieve a segment with a membership count (materialized when available).
+     *
+     * @param  CustomerSegment  $segment
+     * @return CustomerSegment
      */
     public function show(CustomerSegment $segment): CustomerSegment
     {
@@ -94,6 +101,7 @@ class CustomerSegmentationService
     /**
      * Update a customer segment.
      *
+     * @param  CustomerSegment  $segment
      * @param  array{
      *     name?: string,
      *     description?: string|null,
@@ -102,6 +110,7 @@ class CustomerSegmentationService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @return CustomerSegment
      */
     public function update(CustomerSegment $segment, array $data): CustomerSegment
     {
@@ -145,6 +154,9 @@ class CustomerSegmentationService
 
     /**
      * Delete a customer segment.
+     *
+     * @param  CustomerSegment  $segment
+     * @return void
      */
     public function destroy(CustomerSegment $segment): void
     {
@@ -153,6 +165,9 @@ class CustomerSegmentationService
 
     /**
      * Rebuild membership rows for a segment from current rule evaluation.
+     *
+     * @param  CustomerSegment  $segment
+     * @return CustomerSegment
      */
     public function materialize(CustomerSegment $segment): CustomerSegment
     {
@@ -200,6 +215,7 @@ class CustomerSegmentationService
     /**
      * Slugs of every active segment the customer currently belongs to.
      *
+     * @param  Customer  $customer
      * @return list<string>
      */
     public function evaluate(Customer $customer): array
@@ -225,6 +241,10 @@ class CustomerSegmentationService
 
     /**
      * Whether a single customer satisfies a segment (prefer membership when refreshed).
+     *
+     * @param  Customer  $customer
+     * @param  CustomerSegment  $segment
+     * @return bool
      */
     public function matches(Customer $customer, CustomerSegment $segment): bool
     {
@@ -240,6 +260,10 @@ class CustomerSegmentationService
 
     /**
      * Live rule evaluation without reading the membership pivot.
+     *
+     * @param  Customer  $customer
+     * @param  CustomerSegment  $segment
+     * @return bool
      */
     public function matchesLive(Customer $customer, CustomerSegment $segment): bool
     {
@@ -249,6 +273,7 @@ class CustomerSegmentationService
     /**
      * Paginate the customers currently inside a segment (materialized when available).
      *
+     * @param  CustomerSegment  $segment
      * @param  array{search?: string|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Customer>
      */
@@ -271,6 +296,9 @@ class CustomerSegmentationService
 
     /**
      * Number of customers currently inside a segment.
+     *
+     * @param  CustomerSegment  $segment
+     * @return int
      */
     public function count(CustomerSegment $segment): int
     {
@@ -284,6 +312,7 @@ class CustomerSegmentationService
     /**
      * Build the customer query that expresses a segment's rules.
      *
+     * @param  CustomerSegment  $segment
      * @return Builder<Customer>
      */
     public function query(CustomerSegment $segment): Builder
@@ -321,8 +350,8 @@ class CustomerSegmentationService
     /**
      * Queue membership materialization for a segment when tenancy is initialized.
      *
-     * Without a tenant context (e.g. isolated unit tests), leave membership for the
-     * scheduled refresh job so callers are not forced to load the full commerce schema.
+     * @param  CustomerSegment  $segment
+     * @return void
      */
     protected function dispatchMaterialize(CustomerSegment $segment): void
     {
@@ -337,6 +366,8 @@ class CustomerSegmentationService
 
     /**
      * Whether any membership rows exist for the tenant.
+     *
+     * @return bool
      */
     protected function hasAnyMaterializedMembership(): bool
     {
@@ -364,6 +395,9 @@ class CustomerSegmentationService
      * Translate one rule into query constraints.
      *
      * @param  Builder<Customer>  $query
+     * @param  CustomerSegmentRule  $rule
+     * @param  mixed  $value
+     * @return void
      */
     protected function applyRule(Builder $query, CustomerSegmentRule $rule, mixed $value): void
     {
@@ -400,6 +434,7 @@ class CustomerSegmentationService
      * Orders that count towards customer value (cancelled orders are ignored).
      *
      * @param  Builder<Order>  $query
+     * @return void
      */
     protected function countableOrder(Builder $query): void
     {
@@ -408,6 +443,9 @@ class CustomerSegmentationService
 
     /**
      * Sub-select of customer ids whose lifetime spend reaches the threshold.
+     *
+     * @param  string  $threshold
+     * @return QueryBuilder
      */
     protected function lifetimeSpendAtLeast(string $threshold): QueryBuilder
     {

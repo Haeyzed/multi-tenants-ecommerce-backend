@@ -21,8 +21,19 @@ use Illuminate\Http\JsonResponse;
  */
 class LoyaltyAccountController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  LoyaltyService  $loyalty
+     */
     public function __construct(private readonly LoyaltyService $loyalty) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexLoyaltyAccountRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated loyalty accounts.', type: 'array{success: true, message: string, data: LoyaltyAccountResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexLoyaltyAccountRequest $request): JsonResponse
     {
@@ -37,6 +48,13 @@ class LoyaltyAccountController extends Controller
         );
     }
 
+    /**
+     * Transactions.
+     *
+     * @param  IndexLoyaltyTransactionRequest  $request
+     * @param  LoyaltyAccount  $loyalty_account
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated loyalty ledger entries.', type: 'array{success: true, message: string, data: LoyaltyTransactionResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function transactions(IndexLoyaltyTransactionRequest $request, LoyaltyAccount $loyalty_account): JsonResponse
     {
@@ -51,6 +69,13 @@ class LoyaltyAccountController extends Controller
         );
     }
 
+    /**
+     * Store adjustment.
+     *
+     * @param  StoreLoyaltyAdjustmentRequest  $request
+     * @param  LoyaltyAccount  $loyalty_account
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Recorded adjustment.', type: 'array{success: true, message: string, data: LoyaltyTransactionResource, meta: null, errors: null}')]
     public function storeAdjustment(StoreLoyaltyAdjustmentRequest $request, LoyaltyAccount $loyalty_account): JsonResponse
     {

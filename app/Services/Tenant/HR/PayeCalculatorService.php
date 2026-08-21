@@ -14,6 +14,12 @@ use App\Support\Money;
  */
 class PayeCalculatorService
 {
+    /**
+     * Active table.
+     *
+     * @param  ?int  $tableId
+     * @return ?TaxTable
+     */
     public function activeTable(?int $tableId = null): ?TaxTable
     {
         if ($tableId !== null && $tableId > 0) {
@@ -30,6 +36,11 @@ class PayeCalculatorService
 
     /**
      * Tax due for one payroll period from period gross pay.
+     *
+     * @param  string  $periodGross
+     * @param  PayFrequency  $frequency
+     * @param  TaxTable  $table
+     * @return string
      */
     public function periodTax(string $periodGross, PayFrequency $frequency, TaxTable $table): string
     {
@@ -42,6 +53,14 @@ class PayeCalculatorService
 
     /**
      * Cumulative PAYE: tax-to-date on year-to-date income minus tax already withheld.
+     *
+     * @param  string  $periodGross
+     * @param  string  $priorYtdGross
+     * @param  string  $priorYtdPaye
+     * @param  PayFrequency  $frequency
+     * @param  TaxTable  $table
+     * @param  int  $periodsElapsed
+     * @return string
      */
     public function cumulativePeriodTax(
         string $periodGross,
@@ -61,6 +80,13 @@ class PayeCalculatorService
         return bccomp($due, '0', 2) < 0 ? '0.00' : $due;
     }
 
+    /**
+     * Annual tax.
+     *
+     * @param  string  $annualGross
+     * @param  TaxTable  $table
+     * @return string
+     */
     public function annualTax(string $annualGross, TaxTable $table): string
     {
         $percentRelief = Money::percent($annualGross, (string) $table->relief_percent);
@@ -96,6 +122,13 @@ class PayeCalculatorService
         return $tax;
     }
 
+    /**
+     * Band slice.
+     *
+     * @param  TaxTableBand  $band
+     * @param  string  $taxable
+     * @return string
+     */
     protected function bandSlice(TaxTableBand $band, string $taxable): string
     {
         $min = Money::add((string) $band->min_amount, '0');
@@ -113,6 +146,12 @@ class PayeCalculatorService
         return Money::sub($upper, $min);
     }
 
+    /**
+     * Periods per year.
+     *
+     * @param  PayFrequency  $frequency
+     * @return int
+     */
     protected function periodsPerYear(PayFrequency $frequency): int
     {
         return match ($frequency) {

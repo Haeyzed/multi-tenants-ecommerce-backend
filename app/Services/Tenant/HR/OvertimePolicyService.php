@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 class OvertimePolicyService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, is_active?: bool|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, OvertimePolicy>
      */
@@ -27,6 +29,8 @@ class OvertimePolicyService
     }
 
     /**
+     * Return options for select inputs.
+     *
      * @return Collection<int, array{label: string, value: int, id: int}>
      */
     public function options(): Collection
@@ -45,7 +49,10 @@ class OvertimePolicyService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return OvertimePolicy
      */
     public function store(array $data): OvertimePolicy
     {
@@ -69,13 +76,23 @@ class OvertimePolicyService
         return $policy;
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  OvertimePolicy  $policy
+     * @return OvertimePolicy
+     */
     public function show(OvertimePolicy $policy): OvertimePolicy
     {
         return $policy;
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  OvertimePolicy  $policy
      * @param  array<string, mixed>  $data
+     * @return OvertimePolicy
      */
     public function update(OvertimePolicy $policy, array $data): OvertimePolicy
     {
@@ -91,6 +108,11 @@ class OvertimePolicyService
     }
 
     /**
+     * Delete a resource.
+     *
+     * @param  OvertimePolicy  $policy
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(OvertimePolicy $policy): void
@@ -104,6 +126,12 @@ class OvertimePolicyService
         $policy->delete();
     }
 
+    /**
+     * Ensure single default.
+     *
+     * @param  OvertimePolicy  $policy
+     * @return void
+     */
     protected function ensureSingleDefault(OvertimePolicy $policy): void
     {
         if (! $policy->is_default) {
@@ -113,6 +141,12 @@ class OvertimePolicyService
         OvertimePolicy::query()->whereKeyNot($policy->id)->update(['is_default' => false]);
     }
 
+    /**
+     * Nullable code.
+     *
+     * @param  mixed  $code
+     * @return ?string
+     */
     protected function nullableCode(mixed $code): ?string
     {
         $code = is_string($code) ? strtolower(trim($code)) : '';
@@ -121,7 +155,10 @@ class OvertimePolicyService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

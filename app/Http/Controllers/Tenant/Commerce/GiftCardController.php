@@ -21,8 +21,19 @@ use Illuminate\Http\Request;
  */
 class GiftCardController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  GiftCardService  $giftCardService
+     */
     public function __construct(private readonly GiftCardService $giftCardService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated gift cards.', type: 'array{success: true, message: string, data: GiftCardResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -39,6 +50,9 @@ class GiftCardController extends Controller
 
     /**
      * Issue a gift card. The plain code is returned exactly once and never stored.
+     *
+     * @param  StoreGiftCardRequest  $request
+     * @return JsonResponse
      */
     #[Response(status: 201, description: 'Created gift card with its one-time plain code.', type: 'array{success: true, message: string, data: array{gift_card: GiftCardResource, code: string}, meta: null, errors: null}')]
     public function store(StoreGiftCardRequest $request): JsonResponse
@@ -56,6 +70,12 @@ class GiftCardController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  GiftCard  $giftCard
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A gift card with its ledger.', type: 'array{success: true, message: string, data: GiftCardResource, meta: null, errors: null}')]
     public function show(GiftCard $giftCard): JsonResponse
     {
@@ -67,6 +87,13 @@ class GiftCardController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateGiftCardRequest  $request
+     * @param  GiftCard  $giftCard
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated gift card.', type: 'array{success: true, message: string, data: GiftCardResource, meta: null, errors: null}')]
     public function update(UpdateGiftCardRequest $request, GiftCard $giftCard): JsonResponse
     {
@@ -81,6 +108,12 @@ class GiftCardController extends Controller
         );
     }
 
+    /**
+     * Activate.
+     *
+     * @param  GiftCard  $giftCard
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Activated gift card.', type: 'array{success: true, message: string, data: GiftCardResource, meta: null, errors: null}')]
     public function activate(GiftCard $giftCard): JsonResponse
     {
@@ -92,6 +125,13 @@ class GiftCardController extends Controller
         );
     }
 
+    /**
+     * Cancel.
+     *
+     * @param  CancelGiftCardRequest  $request
+     * @param  GiftCard  $giftCard
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Cancelled gift card.', type: 'array{success: true, message: string, data: GiftCardResource, meta: null, errors: null}')]
     public function cancel(CancelGiftCardRequest $request, GiftCard $giftCard): JsonResponse
     {

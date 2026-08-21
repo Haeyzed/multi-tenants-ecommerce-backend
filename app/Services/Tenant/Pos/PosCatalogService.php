@@ -62,6 +62,9 @@ class PosCatalogService
 
     /**
      * Exact barcode match on an active variant (falls back to product SKU).
+     *
+     * @param  string  $barcode
+     * @return ProductVariant|Product
      */
     public function findByBarcode(string $barcode): ProductVariant|Product
     {

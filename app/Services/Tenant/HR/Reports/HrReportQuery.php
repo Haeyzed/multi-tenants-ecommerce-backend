@@ -21,9 +21,17 @@ use Illuminate\Support\Carbon;
  */
 class HrReportQuery
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PayrollPeriodService  $periods
+     */
     public function __construct(private readonly PayrollPeriodService $periods) {}
 
     /**
+     * Period window.
+     *
+     * @param  ?Carbon  $asOf
      * @return array{period_start: string, period_end: string, payment_date: string}
      */
     public function periodWindow(?Carbon $asOf = null): array
@@ -32,6 +40,8 @@ class HrReportQuery
     }
 
     /**
+     * Date window.
+     *
      * @param  array{from?: string|null, to?: string|null}  $params
      * @return array{0: string, 1: string}
      */
@@ -49,6 +59,8 @@ class HrReportQuery
     }
 
     /**
+     * Employees.
+     *
      * @param  array{department_id?: int|null, employee_id?: int|null}  $params
      * @return Builder<Employee>
      */
@@ -63,6 +75,8 @@ class HrReportQuery
      * Employees with attendance counts for a date window, without loading attendance rows.
      *
      * @param  array{from?: string|null, to?: string|null, department_id?: int|null, employee_id?: int|null}  $params
+     * @param  string  $from
+     * @param  string  $to
      * @return Builder<Employee>
      */
     public function employeesWithAttendanceTotals(array $params, string $from, string $to): Builder
@@ -84,7 +98,11 @@ class HrReportQuery
     }
 
     /**
+     * Leave requests.
+     *
      * @param  array{department_id?: int|null, employee_id?: int|null}  $params
+     * @param  string  $from
+     * @param  string  $to
      * @return Builder<LeaveRequest>
      */
     public function leaveRequests(array $params, string $from, string $to): Builder
@@ -100,7 +118,11 @@ class HrReportQuery
     }
 
     /**
+     * Payroll items.
+     *
      * @param  array{department_id?: int|null}  $params
+     * @param  string  $from
+     * @param  string  $to
      * @return Builder<PayrollItem>
      */
     public function payrollItems(array $params, string $from, string $to): Builder
@@ -118,7 +140,11 @@ class HrReportQuery
     }
 
     /**
+     * Overtime attendances.
+     *
      * @param  array{department_id?: int|null, employee_id?: int|null}  $params
+     * @param  string  $from
+     * @param  string  $to
      * @return Builder<Attendance>
      */
     public function overtimeAttendances(array $params, string $from, string $to): Builder
@@ -135,6 +161,10 @@ class HrReportQuery
     }
 
     /**
+     * Overtime payroll lines.
+     *
+     * @param  string  $from
+     * @param  string  $to
      * @return Builder<PayrollItemLine>
      */
     public function overtimePayrollLines(string $from, string $to): Builder
@@ -149,6 +179,9 @@ class HrReportQuery
     }
 
     /**
+     * Headcount employees.
+     *
+     * @param  string  $asOf
      * @return Builder<Employee>
      */
     public function headcountEmployees(string $asOf): Builder
@@ -164,6 +197,10 @@ class HrReportQuery
     }
 
     /**
+     * Applications.
+     *
+     * @param  string  $from
+     * @param  string  $to
      * @return Builder<JobApplication>
      */
     public function applications(string $from, string $to): Builder
@@ -175,7 +212,11 @@ class HrReportQuery
     }
 
     /**
+     * Attendances in window.
+     *
      * @param  array{from?: string|null, to?: string|null, department_id?: int|null, employee_id?: int|null}  $params
+     * @param  string  $from
+     * @param  string  $to
      * @return Builder<Attendance>
      */
     public function attendancesInWindow(array $params, string $from, string $to): Builder
@@ -189,6 +230,12 @@ class HrReportQuery
             ->when($params['employee_id'] ?? null, fn (Builder $query, int $id) => $query->where('employee_id', $id));
     }
 
+    /**
+     * Employee display name.
+     *
+     * @param  ?Employee  $employee
+     * @return string
+     */
     public function employeeDisplayName(?Employee $employee): string
     {
         return trim(($employee?->user?->first_name ?? '').' '.($employee?->user?->last_name ?? ''));

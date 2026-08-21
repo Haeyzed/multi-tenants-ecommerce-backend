@@ -56,6 +56,9 @@ class DriverAuthService
 
     /**
      * Revoke the current Sanctum access token for the given driver.
+     *
+     * @param  Driver  $driver
+     * @return void
      */
     public function logout(Driver $driver): void
     {
@@ -68,6 +71,9 @@ class DriverAuthService
 
     /**
      * Send a password reset link without revealing whether the email exists.
+     *
+     * @param  string  $email
+     * @return void
      */
     public function forgotPassword(string $email): void
     {
@@ -86,6 +92,7 @@ class DriverAuthService
      * Reset a driver's password using the password broker.
      *
      * @param  array{email: string, password: string, password_confirmation: string, token: string}  $data
+     * @return void
      *
      * @throws ValidationException
      */
@@ -114,7 +121,9 @@ class DriverAuthService
     /**
      * Change the authenticated driver's password and revoke all tokens.
      *
+     * @param  Driver  $driver
      * @param  array{current_password: string, password: string}  $data
+     * @return void
      *
      * @throws ValidationException
      */

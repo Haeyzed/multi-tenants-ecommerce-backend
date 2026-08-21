@@ -24,11 +24,15 @@ class SubscriptionController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  SubscriptionService  $subscriptionService
      */
     public function __construct(private readonly SubscriptionService $subscriptionService) {}
 
     /**
      * Show the current tenant subscription.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -47,6 +51,9 @@ class SubscriptionController extends Controller
 
     /**
      * Subscribe the current tenant to a plan.
+     *
+     * @param  SubscribeRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -72,6 +79,9 @@ class SubscriptionController extends Controller
 
     /**
      * Verify a pending payment for the current tenant.
+     *
+     * @param  VerifyPaymentRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -93,6 +103,9 @@ class SubscriptionController extends Controller
 
     /**
      * Cancel the current tenant subscription.
+     *
+     * @param  CancelSubscriptionRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -121,6 +134,9 @@ class SubscriptionController extends Controller
 
     /**
      * Change the current tenant's plan.
+     *
+     * @param  ChangePlanRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -146,6 +162,8 @@ class SubscriptionController extends Controller
 
     /**
      * Resolve the current tenant from tenancy context.
+     *
+     * @return Tenant
      */
     protected function currentTenant(): Tenant
     {

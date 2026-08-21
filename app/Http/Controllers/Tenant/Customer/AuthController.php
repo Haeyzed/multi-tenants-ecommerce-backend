@@ -32,6 +32,12 @@ use Illuminate\Support\Facades\Auth;
  */
 class AuthController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CustomerAuthService  $authService
+     * @param  CustomerService  $customerService
+     */
     public function __construct(
         private readonly CustomerAuthService $authService,
         private readonly CustomerService $customerService,
@@ -39,6 +45,9 @@ class AuthController extends Controller
 
     /**
      * Register a customer and return a Sanctum token.
+     *
+     * @param  RegisterRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -57,6 +66,9 @@ class AuthController extends Controller
 
     /**
      * Authenticate a customer and return a Sanctum token.
+     *
+     * @param  LoginRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -75,6 +87,9 @@ class AuthController extends Controller
 
     /**
      * Revoke the current customer access token.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -93,6 +108,9 @@ class AuthController extends Controller
 
     /**
      * Request a password reset link for a customer.
+     *
+     * @param  ForgotPasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -108,6 +126,9 @@ class AuthController extends Controller
 
     /**
      * Reset a customer's password using a reset token.
+     *
+     * @param  ResetPasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -123,6 +144,9 @@ class AuthController extends Controller
 
     /**
      * Return the authenticated customer.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -142,6 +166,9 @@ class AuthController extends Controller
 
     /**
      * Update the authenticated customer's profile.
+     *
+     * @param  UpdateProfileRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -169,6 +196,9 @@ class AuthController extends Controller
 
     /**
      * Upload or replace the authenticated customer's avatar.
+     *
+     * @param  StoreAvatarRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -190,6 +220,8 @@ class AuthController extends Controller
 
     /**
      * Delete the authenticated customer's avatar.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -208,6 +240,9 @@ class AuthController extends Controller
 
     /**
      * Change the authenticated customer's password.
+     *
+     * @param  ChangePasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -226,6 +261,9 @@ class AuthController extends Controller
 
     /**
      * Verify the authenticated customer's email address.
+     *
+     * @param  VerifyEmailRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -247,6 +285,8 @@ class AuthController extends Controller
 
     /**
      * Resend the email verification notification.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -265,6 +305,8 @@ class AuthController extends Controller
 
     /**
      * Deactivate the authenticated customer's account.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -283,6 +325,8 @@ class AuthController extends Controller
 
     /**
      * List the authenticated customer's addresses.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -302,6 +346,9 @@ class AuthController extends Controller
 
     /**
      * Store a new address for the authenticated customer.
+     *
+     * @param  StoreCustomerAddressRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -323,6 +370,10 @@ class AuthController extends Controller
 
     /**
      * Update an address belonging to the authenticated customer.
+     *
+     * @param  UpdateCustomerAddressRequest  $request
+     * @param  CustomerAddress  $address
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -344,6 +395,9 @@ class AuthController extends Controller
 
     /**
      * Delete an address belonging to the authenticated customer.
+     *
+     * @param  CustomerAddress  $address
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -362,6 +416,9 @@ class AuthController extends Controller
 
     /**
      * Mark an address as the default for the authenticated customer.
+     *
+     * @param  CustomerAddress  $address
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

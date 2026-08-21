@@ -14,6 +14,11 @@ use Illuminate\Validation\ValidationException;
  */
 class TenantSettingsService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceSettingService  $commerceSettings
+     */
     public function __construct(private readonly CommerceSettingService $commerceSettings) {}
 
     /**
@@ -69,6 +74,9 @@ class TenantSettingsService
     }
 
     /**
+     * Get domain.
+     *
+     * @param  string  $domain
      * @return array<string, mixed>
      */
     public function getDomain(string $domain): array
@@ -87,6 +95,9 @@ class TenantSettingsService
     }
 
     /**
+     * Update domain.
+     *
+     * @param  string  $domain
      * @param  array<string, mixed>  $values
      * @return array<string, mixed>
      */
@@ -108,6 +119,8 @@ class TenantSettingsService
     }
 
     /**
+     * Domains.
+     *
      * @return list<string>
      */
     public function domains(): array
@@ -118,6 +131,11 @@ class TenantSettingsService
         ))];
     }
 
+    /**
+     * Resolve profile.
+     *
+     * @return ?TenantProfile
+     */
     protected function resolveProfile(): ?TenantProfile
     {
         if (! function_exists('tenancy') || ! tenancy()->initialized) {

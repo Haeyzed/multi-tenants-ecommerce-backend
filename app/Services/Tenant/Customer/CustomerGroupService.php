@@ -63,6 +63,7 @@ class CustomerGroupService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @return CustomerGroup
      */
     public function store(array $data): CustomerGroup
     {
@@ -76,6 +77,9 @@ class CustomerGroupService
 
     /**
      * Retrieve a customer group with membership count.
+     *
+     * @param  CustomerGroup  $group
+     * @return CustomerGroup
      */
     public function show(CustomerGroup $group): CustomerGroup
     {
@@ -85,12 +89,14 @@ class CustomerGroupService
     /**
      * Update a customer group.
      *
+     * @param  CustomerGroup  $group
      * @param  array{
      *     name?: string,
      *     description?: string|null,
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @return CustomerGroup
      */
     public function update(CustomerGroup $group, array $data): CustomerGroup
     {
@@ -102,6 +108,9 @@ class CustomerGroupService
 
     /**
      * Delete a customer group when no customers are assigned.
+     *
+     * @param  CustomerGroup  $group
+     * @return void
      *
      * @throws ValidationException
      */
@@ -117,7 +126,10 @@ class CustomerGroupService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

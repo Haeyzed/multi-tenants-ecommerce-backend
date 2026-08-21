@@ -10,8 +10,18 @@ namespace App\Services\Tenant\Commerce;
 final readonly class DiscountApplicationResult
 {
     /**
+     * Create a new class instance.
+     *
+     * @param  string  $discountTotal
+     * @param  string  $couponDiscountTotal
+     * @param  ?int  $couponId
+     * @param  ?string  $couponCode
      * @param  array<int, string>  $lineDiscounts  Cart item ID => discount amount
      * @param  list<array<string, mixed>>  $promotionSnapshot
+     * @param  array  $lineDiscounts
+     * @param  string  $shippingTotal
+     * @param  int  $loyaltyPointsRedeemed
+     * @param  string  $loyaltyDiscountTotal
      */
     public function __construct(
         public string $discountTotal,

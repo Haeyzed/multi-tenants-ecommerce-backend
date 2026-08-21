@@ -23,6 +23,12 @@ use Illuminate\Support\Facades\Auth;
  */
 class CartController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CartService  $cartService
+     * @param  DiscountService  $discountService
+     */
     public function __construct(
         private readonly CartService $cartService,
         private readonly DiscountService $discountService,
@@ -30,6 +36,8 @@ class CartController extends Controller
 
     /**
      * Get the authenticated customer's active cart.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -49,6 +57,8 @@ class CartController extends Controller
 
     /**
      * Clear all items from the active cart.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -70,6 +80,9 @@ class CartController extends Controller
 
     /**
      * Add an item to the cart (unit price resolved server-side).
+     *
+     * @param  AddCartItemRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -98,6 +111,10 @@ class CartController extends Controller
 
     /**
      * Update a cart item quantity.
+     *
+     * @param  UpdateCartItemRequest  $request
+     * @param  CartItem  $item
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -123,6 +140,9 @@ class CartController extends Controller
 
     /**
      * Remove a cart item.
+     *
+     * @param  CartItem  $item
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -141,6 +161,9 @@ class CartController extends Controller
 
     /**
      * Preview coupon discount for the active cart.
+     *
+     * @param  ApplyCartCouponRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

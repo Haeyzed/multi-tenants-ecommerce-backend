@@ -20,11 +20,23 @@ use Illuminate\Http\Request;
  */
 class JournalEntryController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  AccountService  $accountService
+     * @param  JournalEntryService  $journalEntryService
+     */
     public function __construct(
         private readonly AccountService $accountService,
         private readonly JournalEntryService $journalEntryService,
     ) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Paginated journal entries.',
@@ -43,6 +55,12 @@ class JournalEntryController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  JournalEntry  $journalEntry
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'A journal entry.',
@@ -58,6 +76,12 @@ class JournalEntryController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreJournalEntryRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'Created (and optionally posted) journal entry.',
@@ -92,6 +116,12 @@ class JournalEntryController extends Controller
         );
     }
 
+    /**
+     * Reverse.
+     *
+     * @param  JournalEntry  $journalEntry
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Reversing journal entry.',

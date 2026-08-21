@@ -19,6 +19,11 @@ use Illuminate\Support\Collection;
  */
 class TaxService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceSettingService  $commerceSettings
+     */
     public function __construct(
         private readonly CommerceSettingService $commerceSettings,
     ) {}
@@ -26,6 +31,7 @@ class TaxService
     /**
      * Calculate tax for a single line amount.
      *
+     * @param  string  $amount
      * @param  array{country_id?: int|null, state_id?: int|null, city_id?: int|null}  $address
      * @return array{tax_amount: string, breakdown: list<array<string, mixed>>}
      */
@@ -37,6 +43,7 @@ class TaxService
     /**
      * Calculate tax for a shipping amount.
      *
+     * @param  string  $amount
      * @param  array{country_id?: int|null, state_id?: int|null, city_id?: int|null}  $address
      * @return array{tax_amount: string, breakdown: list<array<string, mixed>>}
      */
@@ -53,14 +60,10 @@ class TaxService
      * Calculate order-level tax for cart/checkout lines and shipping.
      *
      * @param  list<array{key?: string|int, amount: string}>  $lines
+     * @param  string  $shippingAmount
+     * @param  list<array{key?: string|int, amount: string}>  $lines
      * @param  array{country_id?: int|null, state_id?: int|null, city_id?: int|null}  $address
      * @return array{
-     *     tax_total: string,
-     *     shipping_tax: string,
-     *     line_taxes: list<array{key: string|int, tax_amount: string, breakdown: list<array<string, mixed>>}>,
-     *     snapshot: array<string, mixed>,
-     *     uses_fallback: bool
-     * }
      */
     public function calculateOrderTax(array $lines, string $shippingAmount, array $address = []): array
     {
@@ -106,7 +109,12 @@ class TaxService
     }
 
     /**
+     * Calculate for scope.
+     *
+     * @param  string  $amount
      * @param  array{country_id?: int|null, state_id?: int|null, city_id?: int|null}  $address
+     * @param  TaxAppliesTo  $scope
+     * @param  ?Collection  $rules
      * @return array{tax_amount: string, breakdown: list<array<string, mixed>>}
      */
     protected function calculateForScope(
@@ -163,14 +171,11 @@ class TaxService
     }
 
     /**
+     * tax_total: string, shipping_tax: string, line_taxes: list<array{key: string|int, tax_amount: string, breakdown: list<array<string, mixed>>}>, snapshot: array<string, mixed>, uses_fallback: bool }
+     *
      * @param  list<array{key?: string|int, amount: string}>  $lines
+     * @param  string  $shippingAmount
      * @return array{
-     *     tax_total: string,
-     *     shipping_tax: string,
-     *     line_taxes: list<array{key: string|int, tax_amount: string, breakdown: list<array<string, mixed>>}>,
-     *     snapshot: array<string, mixed>,
-     *     uses_fallback: bool
-     * }
      */
     protected function calculateWithFallback(array $lines, string $shippingAmount): array
     {
@@ -213,6 +218,8 @@ class TaxService
     }
 
     /**
+     * Resolve applicable rules.
+     *
      * @param  array{country_id?: int|null, state_id?: int|null, city_id?: int|null}  $address
      * @return Collection<int, TaxRule>
      */
@@ -235,6 +242,8 @@ class TaxService
     }
 
     /**
+     * Matching zones.
+     *
      * @param  array{country_id?: int|null, state_id?: int|null, city_id?: int|null}  $address
      * @return Collection<int, TaxZone>
      */
@@ -264,6 +273,13 @@ class TaxService
             ->values();
     }
 
+    /**
+     * Location matches.
+     *
+     * @param  ?int  $ruleValue
+     * @param  ?int  $addressValue
+     * @return bool
+     */
     protected function locationMatches(?int $ruleValue, ?int $addressValue): bool
     {
         if ($ruleValue === null) {
@@ -273,6 +289,12 @@ class TaxService
         return $addressValue !== null && $ruleValue === $addressValue;
     }
 
+    /**
+     * Current rate.
+     *
+     * @param  Tax  $tax
+     * @return ?TaxRate
+     */
     protected function currentRate(Tax $tax): ?TaxRate
     {
         $today = Carbon::today();
@@ -293,6 +315,14 @@ class TaxService
             ->first();
     }
 
+    /**
+     * Tax from amount.
+     *
+     * @param  string  $amount
+     * @param  string  $rate
+     * @param  bool  $inclusive
+     * @return string
+     */
     protected function taxFromAmount(string $amount, string $rate, bool $inclusive): string
     {
         if ($inclusive) {

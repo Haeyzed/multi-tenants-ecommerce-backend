@@ -20,10 +20,18 @@ use Illuminate\Support\Carbon;
  */
 class ProductAvailabilityService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  InventoryStockableResolver  $stockables
+     */
     public function __construct(private readonly InventoryStockableResolver $stockables) {}
 
     /**
      * Resolve availability for a catalog product (including bundles).
+     *
+     * @param  Product  $product
+     * @return ProductAvailability
      */
     public function forProduct(Product $product): ProductAvailability
     {
@@ -55,6 +63,10 @@ class ProductAvailabilityService
 
     /**
      * Resolve availability for a single variant.
+     *
+     * @param  ProductVariant  $variant
+     * @param  ?Product  $product
+     * @return ProductAvailability
      */
     public function forVariant(ProductVariant $variant, ?Product $product = null): ProductAvailability
     {
@@ -85,6 +97,14 @@ class ProductAvailabilityService
 
     /**
      * Map stock quantity and flags to an availability state.
+     *
+     * @param  int  $availableQty
+     * @param  ?int  $lowStockThreshold
+     * @param  bool  $allowBackorder
+     * @param  bool  $isPreorder
+     * @param  ?Carbon  $preorderStart
+     * @param  ?Carbon  $preorderEnd
+     * @return ProductAvailability
      */
     public function fromStockable(
         int $availableQty,
@@ -115,6 +135,9 @@ class ProductAvailabilityService
 
     /**
      * Whether the product is visible on the public storefront.
+     *
+     * @param  Product  $product
+     * @return bool
      */
     public function isProductSellable(Product $product): bool
     {
@@ -141,6 +164,9 @@ class ProductAvailabilityService
 
     /**
      * Bundle availability is limited by the weakest component.
+     *
+     * @param  Product  $bundle
+     * @return ProductAvailability
      */
     protected function forBundle(Product $bundle): ProductAvailability
     {
@@ -173,6 +199,12 @@ class ProductAvailabilityService
         return $states[0];
     }
 
+    /**
+     * For bundle item.
+     *
+     * @param  ProductBundleItem  $item
+     * @return ProductAvailability
+     */
     protected function forBundleItem(ProductBundleItem $item): ProductAvailability
     {
         if ($item->variant !== null) {
@@ -186,6 +218,12 @@ class ProductAvailabilityService
         return $this->forProduct($item->product);
     }
 
+    /**
+     * For variable product.
+     *
+     * @param  Product  $product
+     * @return ProductAvailability
+     */
     protected function forVariableProduct(Product $product): ProductAvailability
     {
         $variants = $product->relationLoaded('variants')
@@ -219,6 +257,9 @@ class ProductAvailabilityService
 
     /**
      * Sum available quantity across all warehouse inventory rows.
+     *
+     * @param  Product|ProductVariant  $stockable
+     * @return int
      */
     protected function sumAvailable(Product|ProductVariant $stockable): int
     {
@@ -229,6 +270,12 @@ class ProductAvailabilityService
         return (int) $inventories->sum(fn (Inventory $inventory): int => $inventory->availableQuantity());
     }
 
+    /**
+     * Sum available for product.
+     *
+     * @param  Product  $product
+     * @return int
+     */
     protected function sumAvailableForProduct(Product $product): int
     {
         $total = 0;
@@ -240,6 +287,12 @@ class ProductAvailabilityService
         return $total;
     }
 
+    /**
+     * Product low stock threshold.
+     *
+     * @param  Product  $product
+     * @return ?int
+     */
     protected function productLowStockThreshold(Product $product): ?int
     {
         $levels = collect();
@@ -257,6 +310,13 @@ class ProductAvailabilityService
         return $levels->isEmpty() ? null : (int) $levels->min();
     }
 
+    /**
+     * Is within preorder window.
+     *
+     * @param  ?Carbon  $start
+     * @param  ?Carbon  $end
+     * @return bool
+     */
     protected function isWithinPreorderWindow(?Carbon $start, ?Carbon $end): bool
     {
         $now = now();

@@ -26,6 +26,12 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class ProductService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     * @param  UsageLimiter  $usageLimiter
+     */
     public function __construct(
         private readonly MediaService $mediaService,
         private readonly UsageLimiter $usageLimiter,
@@ -88,9 +94,13 @@ class ProductService
      * Create a product with categories, price, images, and optional default variant.
      *
      * @param  array<string, mixed>  $data
+     * @param  ?UploadedFile  $image
+     * @param  array<string, mixed>  $data
      * @param  list<UploadedFile>  $images
      * @param  list<int>  $categoryIds
+     * @param  list<int>  $categoryIds
      * @param  array<string, mixed>|null  $price
+     * @return Product
      */
     public function store(
         array $data,
@@ -156,6 +166,9 @@ class ProductService
 
     /**
      * Retrieve a product with common relations.
+     *
+     * @param  Product  $product
+     * @return Product
      */
     public function show(Product $product): Product
     {
@@ -185,11 +198,16 @@ class ProductService
     /**
      * Update a product with categories, price, images, and attribute values.
      *
+     * @param  Product  $product
+     * @param  array<string, mixed>  $data
+     * @param  ?UploadedFile  $image
      * @param  array<string, mixed>  $data
      * @param  list<UploadedFile>  $images
      * @param  list<int>  $categoryIds
+     * @param  list<int>  $categoryIds
      * @param  list<int>|null  $attributeValueIds
      * @param  array<string, mixed>|null  $price
+     * @return Product
      */
     public function update(
         Product $product,
@@ -233,6 +251,9 @@ class ProductService
     /**
      * Delete a product when no stock remains on the product or its variants.
      *
+     * @param  Product  $product
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(Product $product): void
@@ -259,7 +280,9 @@ class ProductService
     /**
      * Sync category assignments for a product.
      *
+     * @param  Product  $product
      * @param  list<int>  $categoryIds
+     * @return void
      */
     public function syncCategories(Product $product, array $categoryIds): void
     {
@@ -269,7 +292,9 @@ class ProductService
     /**
      * Sync attribute value assignments for a product.
      *
+     * @param  Product  $product
      * @param  list<int>  $valueIds
+     * @return void
      */
     public function attachAttributeValues(Product $product, array $valueIds): void
     {
@@ -279,7 +304,9 @@ class ProductService
     /**
      * Attach one or more images to a product gallery.
      *
+     * @param  Product  $product
      * @param  list<UploadedFile>  $images
+     * @return Product
      */
     public function storeImage(Product $product, UploadedFile|array $images): Product
     {
@@ -295,7 +322,9 @@ class ProductService
     /**
      * Remove product gallery images by media id.
      *
+     * @param  Product  $product
      * @param  list<int>  $mediaIds
+     * @return Product
      */
     public function destroyImages(Product $product, array $mediaIds): Product
     {
@@ -307,7 +336,11 @@ class ProductService
     }
 
     /**
+     * Create price.
+     *
+     * @param  Product|ProductVariant  $priceable
      * @param  array<string, mixed>  $price
+     * @return ProductPrice
      */
     protected function createPrice(Product|ProductVariant $priceable, array $price): ProductPrice
     {
@@ -323,7 +356,11 @@ class ProductService
     }
 
     /**
+     * Upsert active price.
+     *
+     * @param  Product  $product
      * @param  array<string, mixed>  $price
+     * @return ProductPrice
      */
     protected function upsertActivePrice(Product $product, array $price): ProductPrice
     {
@@ -348,6 +385,12 @@ class ProductService
         return $this->createPrice($product, $price);
     }
 
+    /**
+     * Has stock.
+     *
+     * @param  Product  $product
+     * @return bool
+     */
     protected function hasStock(Product $product): bool
     {
         if ($product->inventories()->where('quantity', '>', 0)->exists()) {
@@ -361,7 +404,10 @@ class ProductService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

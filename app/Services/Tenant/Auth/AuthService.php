@@ -23,6 +23,11 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class AuthService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
     /**
@@ -79,6 +84,9 @@ class AuthService
 
     /**
      * Revoke the current Sanctum access token for the given user.
+     *
+     * @param  User  $user
+     * @return void
      */
     public function logout(User $user): void
     {
@@ -91,6 +99,9 @@ class AuthService
 
     /**
      * Send a password reset link without revealing whether the email exists.
+     *
+     * @param  string  $email
+     * @return void
      */
     public function forgotPassword(string $email): void
     {
@@ -109,6 +120,7 @@ class AuthService
      * Reset a tenant user's password using the password broker.
      *
      * @param  array{email: string, password: string, password_confirmation: string, token: string}  $data
+     * @return void
      *
      * @throws ValidationException
      */
@@ -137,7 +149,10 @@ class AuthService
     /**
      * Update the authenticated tenant user's profile and optional avatar.
      *
+     * @param  User  $user
      * @param  array{first_name?: string, last_name?: string, email?: string, phone?: string|null}  $data
+     * @param  ?UploadedFile  $avatar
+     * @return User
      */
     public function updateProfile(User $user, array $data, ?UploadedFile $avatar = null): User
     {
@@ -153,6 +168,10 @@ class AuthService
 
     /**
      * Replace the authenticated user's avatar.
+     *
+     * @param  User  $user
+     * @param  UploadedFile  $avatar
+     * @return Media
      */
     public function replaceAvatar(User $user, UploadedFile $avatar): Media
     {
@@ -161,6 +180,9 @@ class AuthService
 
     /**
      * Remove the authenticated user's avatar.
+     *
+     * @param  User  $user
+     * @return void
      */
     public function removeAvatar(User $user): void
     {
@@ -170,7 +192,9 @@ class AuthService
     /**
      * Change the authenticated tenant user's password and revoke all tokens.
      *
+     * @param  User  $user
      * @param  array{current_password: string, password: string}  $data
+     * @return void
      *
      * @throws ValidationException
      */

@@ -33,6 +33,16 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class OrderPaymentService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PaymentManager  $paymentManager
+     * @param  OrderInventoryService  $orderInventory
+     * @param  AccountingService  $accounting
+     * @param  CommissionService  $commissions
+     * @param  CommerceSettingService  $commerceSettings
+     * @param  SellerOrderService  $sellerOrders
+     */
     public function __construct(
         private readonly PaymentManager $paymentManager,
         private readonly OrderInventoryService $orderInventory,
@@ -45,8 +55,8 @@ class OrderPaymentService
     /**
      * Initialize a gateway payment for an order.
      *
-     * Reuses an existing pending payment for the same order when present.
-     *
+     * @param  Order  $order
+     * @param  Customer  $customer
      * @return array{initiation: PaymentInitiationResult, payment: OrderPayment}
      *
      * @throws ValidationException
@@ -134,6 +144,10 @@ class OrderPaymentService
     /**
      * Verify a payment reference for an authenticated customer (ownership first).
      *
+     * @param  string  $reference
+     * @param  Customer  $customer
+     * @return OrderPayment
+     *
      * @throws ValidationException
      * @throws AccessDeniedHttpException
      */
@@ -151,6 +165,9 @@ class OrderPaymentService
 
     /**
      * Verify a payment reference with the gateway and mark success/failure.
+     *
+     * @param  string  $reference
+     * @return OrderPayment
      *
      * @throws ValidationException
      */
@@ -180,6 +197,11 @@ class OrderPaymentService
 
     /**
      * Mark payment successful: confirm order, commit stock, post sale, fire OrderPaid.
+     *
+     * @param  OrderPayment  $payment
+     * @param  ?string  $providerTransactionId
+     * @param  ?string  $paidAt
+     * @return OrderPayment
      */
     public function markSuccessful(
         OrderPayment $payment,
@@ -242,6 +264,9 @@ class OrderPaymentService
 
     /**
      * Mark a payment as failed.
+     *
+     * @param  OrderPayment  $payment
+     * @return OrderPayment
      */
     public function markFailed(OrderPayment $payment): OrderPayment
     {
@@ -272,9 +297,12 @@ class OrderPaymentService
     /**
      * Handle a verified provider webhook payload (signature already checked).
      *
-     * Never marks successful without a successful gateway verify + amount/currency match.
-     *
+     * @param  string  $provider
+     * @param  string  $reference
      * @param  array<string, mixed>  $payload
+     * @param  ?string  $eventId
+     * @param  ?string  $eventType
+     * @param  ?string  $rawBody
      * @return array{processed: bool, duplicate?: bool, payment?: OrderPayment|null}
      */
     public function handleVerifiedWebhook(
@@ -313,9 +341,11 @@ class OrderPaymentService
     }
 
     /**
-     * @deprecated Prefer PaymentWebhookManager + handleVerifiedWebhook.
+     * Handle webhook.
      *
      * @param  array<string, mixed>  $payload
+     * @param  ?string  $signature
+     * @param  ?string  $rawBody
      * @return array{processed: bool, duplicate?: bool, payment?: OrderPayment|null}
      */
     public function handleWebhook(array $payload, ?string $signature, ?string $rawBody = null): array
@@ -335,7 +365,12 @@ class OrderPaymentService
     /**
      * Claim a webhook event id before side effects. Returns false when already claimed.
      *
+     * @param  string  $provider
+     * @param  string  $eventId
+     * @param  ?string  $eventType
+     * @param  string  $reference
      * @param  array<string, mixed>  $payload
+     * @return bool
      */
     protected function claimWebhookEvent(
         string $provider,
@@ -368,6 +403,9 @@ class OrderPaymentService
      * Resolve a stable provider event id for idempotency.
      *
      * @param  array<string, mixed>  $payload
+     * @param  ?string  $rawBody
+     * @param  string  $reference
+     * @return string
      */
     protected function resolveWebhookEventId(array $payload, ?string $rawBody, string $reference): string
     {
@@ -394,6 +432,10 @@ class OrderPaymentService
 
     /**
      * Ensure gateway verification matches the stored payment amount and currency.
+     *
+     * @param  OrderPayment  $payment
+     * @param  PaymentVerificationResult  $result
+     * @return void
      *
      * @throws ValidationException
      */

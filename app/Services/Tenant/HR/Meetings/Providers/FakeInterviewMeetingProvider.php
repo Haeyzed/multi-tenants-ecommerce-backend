@@ -29,6 +29,11 @@ class FakeInterviewMeetingProvider implements InterviewMeetingProvider
 
     public static bool $rejectCancel = false;
 
+    /**
+     * Reset.
+     *
+     * @return void
+     */
     public static function reset(): void
     {
         self::$meetings = [];
@@ -38,6 +43,8 @@ class FakeInterviewMeetingProvider implements InterviewMeetingProvider
     }
 
     /**
+     * Meetings.
+     *
      * @return array<string, MeetingResult>
      */
     public static function meetings(): array
@@ -45,11 +52,21 @@ class FakeInterviewMeetingProvider implements InterviewMeetingProvider
         return self::$meetings;
     }
 
+    /**
+     * Name.
+     *
+     * @return string
+     */
     public function name(): string
     {
         return MeetingProvider::Fake->value;
     }
 
+    /**
+     * Capabilities.
+     *
+     * @return MeetingProviderCapabilities
+     */
     public function capabilities(): MeetingProviderCapabilities
     {
         return new MeetingProviderCapabilities(
@@ -63,11 +80,23 @@ class FakeInterviewMeetingProvider implements InterviewMeetingProvider
         );
     }
 
+    /**
+     * Is configured.
+     *
+     * @param  array  $credentials
+     * @return bool
+     */
     public function isConfigured(array $credentials): bool
     {
         return true;
     }
 
+    /**
+     * Test connection.
+     *
+     * @param  array  $credentials
+     * @return void
+     */
     public function testConnection(array $credentials): void
     {
         if (self::$failNext) {
@@ -80,6 +109,12 @@ class FakeInterviewMeetingProvider implements InterviewMeetingProvider
         }
     }
 
+    /**
+     * Create meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return MeetingResult
+     */
     public function createMeeting(MeetingRequest $request): MeetingResult
     {
         $this->throwIfFailing('create');
@@ -101,6 +136,12 @@ class FakeInterviewMeetingProvider implements InterviewMeetingProvider
         return $result;
     }
 
+    /**
+     * Update meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return MeetingResult
+     */
     public function updateMeeting(MeetingRequest $request): MeetingResult
     {
         if (self::$rejectUpdate) {
@@ -131,6 +172,12 @@ class FakeInterviewMeetingProvider implements InterviewMeetingProvider
         return $result;
     }
 
+    /**
+     * Cancel meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return void
+     */
     public function cancelMeeting(MeetingRequest $request): void
     {
         if (self::$rejectCancel) {
@@ -147,6 +194,12 @@ class FakeInterviewMeetingProvider implements InterviewMeetingProvider
         }
     }
 
+    /**
+     * Get meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return ?MeetingResult
+     */
     public function getMeeting(MeetingRequest $request): ?MeetingResult
     {
         if ($request->externalId === null) {
@@ -156,6 +209,12 @@ class FakeInterviewMeetingProvider implements InterviewMeetingProvider
         return self::$meetings[$request->externalId] ?? null;
     }
 
+    /**
+     * Throw if failing.
+     *
+     * @param  string  $operation
+     * @return void
+     */
     protected function throwIfFailing(string $operation): void
     {
         if (! self::$failNext) {

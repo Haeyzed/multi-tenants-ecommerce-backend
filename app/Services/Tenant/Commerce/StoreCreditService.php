@@ -25,10 +25,19 @@ use Illuminate\Validation\ValidationException;
  */
 class StoreCreditService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceSettingService  $commerceSettings
+     */
     public function __construct(private readonly CommerceSettingService $commerceSettings) {}
 
     /**
      * Fetch the customer's wallet, creating an active one on first use.
+     *
+     * @param  Customer  $customer
+     * @param  ?string  $currency
+     * @return StoreCreditAccount
      */
     public function getOrCreateAccount(Customer $customer, ?string $currency = null): StoreCreditAccount
     {
@@ -48,6 +57,8 @@ class StoreCreditService
     }
 
     /**
+     * List accounts.
+     *
      * @param  array{status?: string|null, customer_id?: int|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, StoreCreditAccount>
      */
@@ -61,12 +72,22 @@ class StoreCreditService
             ->paginate(max(1, min((int) ($params['per_page'] ?? 15), 100)));
     }
 
+    /**
+     * Balance.
+     *
+     * @param  Customer  $customer
+     * @param  ?string  $currency
+     * @return string
+     */
     public function balance(Customer $customer, ?string $currency = null): string
     {
         return (string) $this->getOrCreateAccount($customer, $currency)->balance;
     }
 
     /**
+     * Transactions.
+     *
+     * @param  Customer  $customer
      * @param  array{type?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, StoreCreditTransaction>
      */
@@ -83,6 +104,13 @@ class StoreCreditService
 
     /**
      * Add funds to a customer's wallet.
+     *
+     * @param  Customer  $customer
+     * @param  string  $amount
+     * @param  StoreCreditTransactionType  $type
+     * @param  ?string  $description
+     * @param  ?Model  $reference
+     * @return StoreCreditTransaction
      *
      * @throws ValidationException
      */
@@ -116,8 +144,11 @@ class StoreCreditService
     /**
      * Spend part of a customer's wallet, typically on a checkout.
      *
-     * The account row is locked for the duration of the transaction so concurrent
-     * checkouts cannot overspend the same balance.
+     * @param  Customer  $customer
+     * @param  string  $amount
+     * @param  ?string  $description
+     * @param  ?Model  $reference
+     * @return StoreCreditTransaction
      *
      * @throws ValidationException
      */
@@ -163,8 +194,11 @@ class StoreCreditService
     /**
      * Issue store credit as the settlement for a refund.
      *
-     * Used when the refund policy resolves to store credit rather than returning
-     * funds to the original payment method.
+     * @param  Customer  $customer
+     * @param  string  $amount
+     * @param  ?Model  $reference
+     * @param  ?string  $description
+     * @return StoreCreditTransaction
      *
      * @throws ValidationException
      */
@@ -185,6 +219,10 @@ class StoreCreditService
 
     /**
      * Return store credit that funded an order after a refund completes.
+     *
+     * @param  Order  $order
+     * @param  string  $amount
+     * @return ?StoreCreditTransaction
      *
      * @throws ValidationException
      */
@@ -208,6 +246,11 @@ class StoreCreditService
 
     /**
      * Amount of a due total this customer's wallet can cover.
+     *
+     * @param  Customer  $customer
+     * @param  string  $requested
+     * @param  string  $amountDue
+     * @return string
      */
     public function applicableAmount(Customer $customer, string $requested, string $amountDue): string
     {
@@ -221,6 +264,11 @@ class StoreCreditService
 
     /**
      * Manually adjust a wallet balance up or down.
+     *
+     * @param  Customer  $customer
+     * @param  string  $signedAmount
+     * @param  ?string  $description
+     * @return StoreCreditTransaction
      *
      * @throws ValidationException
      */
@@ -262,6 +310,10 @@ class StoreCreditService
 
     /**
      * Change the wallet status (e.g. suspend abuse).
+     *
+     * @param  Customer  $customer
+     * @param  StoreCreditAccountStatus  $status
+     * @return StoreCreditAccount
      */
     public function updateStatus(Customer $customer, StoreCreditAccountStatus $status): StoreCreditAccount
     {
@@ -272,6 +324,12 @@ class StoreCreditService
         return $account->fresh() ?? $account;
     }
 
+    /**
+     * Lock account.
+     *
+     * @param  Customer  $customer
+     * @return StoreCreditAccount
+     */
     protected function lockAccount(Customer $customer): StoreCreditAccount
     {
         $this->getOrCreateAccount($customer);
@@ -286,6 +344,11 @@ class StoreCreditService
     }
 
     /**
+     * Assert usable.
+     *
+     * @param  StoreCreditAccount  $account
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertUsable(StoreCreditAccount $account): void
@@ -297,6 +360,17 @@ class StoreCreditService
         }
     }
 
+    /**
+     * Record transaction.
+     *
+     * @param  StoreCreditAccount  $account
+     * @param  StoreCreditTransactionType  $type
+     * @param  string  $amount
+     * @param  string  $balanceAfter
+     * @param  ?string  $description
+     * @param  ?Model  $reference
+     * @return StoreCreditTransaction
+     */
     protected function recordTransaction(
         StoreCreditAccount $account,
         StoreCreditTransactionType $type,

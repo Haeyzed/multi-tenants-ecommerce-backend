@@ -18,10 +18,18 @@ use Illuminate\Support\Facades\Auth;
  */
 class CheckoutController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CheckoutService  $checkoutService
+     */
     public function __construct(private readonly CheckoutService $checkoutService) {}
 
     /**
      * Convert the active cart into an order.
+     *
+     * @param  CheckoutRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,

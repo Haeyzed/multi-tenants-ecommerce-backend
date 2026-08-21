@@ -19,10 +19,19 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class ProductRelationController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductRelationService  $relationService
+     */
     public function __construct(private readonly ProductRelationService $relationService) {}
 
     /**
      * List relations of a given type.
+     *
+     * @param  Product  $product
+     * @param  string  $type
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -41,6 +50,11 @@ class ProductRelationController extends Controller
 
     /**
      * Sync relations of a given type.
+     *
+     * @param  SyncProductRelationsRequest  $request
+     * @param  Product  $product
+     * @param  string  $type
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -58,6 +72,12 @@ class ProductRelationController extends Controller
         );
     }
 
+    /**
+     * Resolve type.
+     *
+     * @param  string  $type
+     * @return ProductRelationType
+     */
     protected function resolveType(string $type): ProductRelationType
     {
         $relationType = ProductRelationType::tryFrom($type);

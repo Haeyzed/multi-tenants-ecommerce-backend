@@ -56,6 +56,9 @@ class ProductTagService
 
     /**
      * Retrieve a tag.
+     *
+     * @param  ProductTag  $tag
+     * @return ProductTag
      */
     public function show(ProductTag $tag): ProductTag
     {
@@ -66,6 +69,7 @@ class ProductTagService
      * Create a tag.
      *
      * @param  array{name: string, slug?: string|null, is_active?: bool}  $data
+     * @return ProductTag
      */
     public function store(array $data): ProductTag
     {
@@ -82,7 +86,9 @@ class ProductTagService
     /**
      * Update a tag.
      *
+     * @param  ProductTag  $tag
      * @param  array{name?: string, slug?: string|null, is_active?: bool}  $data
+     * @return ProductTag
      */
     public function update(ProductTag $tag, array $data): ProductTag
     {
@@ -94,6 +100,9 @@ class ProductTagService
 
     /**
      * Delete a tag.
+     *
+     * @param  ProductTag  $tag
+     * @return void
      */
     public function destroy(ProductTag $tag): void
     {
@@ -103,7 +112,9 @@ class ProductTagService
     /**
      * Replace-set tags on a product.
      *
+     * @param  Product  $product
      * @param  list<int>  $tagIds
+     * @return Product
      *
      * @throws ValidationException
      */
@@ -127,7 +138,10 @@ class ProductTagService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

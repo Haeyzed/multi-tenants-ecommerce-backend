@@ -19,8 +19,8 @@ class DriverLocationService
     /**
      * Record a location fix for a driver on an active delivery.
      *
-     * Persistence is throttled per delivery. Broadcasts are throttled separately.
-     *
+     * @param  Driver  $driver
+     * @param  Delivery  $delivery
      * @param  array{
      *     latitude: float|string,
      *     longitude: float|string,
@@ -29,6 +29,7 @@ class DriverLocationService
      *     speed?: float|string|null,
      *     recorded_at?: string|null
      * }  $data
+     * @return ?DriverLocation
      *
      * @throws ValidationException
      */

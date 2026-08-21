@@ -18,8 +18,18 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class HrSettingsController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     */
     public function __construct(private readonly HrSettingsService $hrSettings) {}
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'HR settings payload.', type: 'array{success: true, message: string, data: SettingsDomainResource, meta: null, errors: null}')]
     public function show(): JsonResponse
     {
@@ -34,6 +44,12 @@ class HrSettingsController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateHrSettingsRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated HR settings payload.', type: 'array{success: true, message: string, data: SettingsDomainResource, meta: null, errors: null}')]
     public function update(UpdateHrSettingsRequest $request): JsonResponse
     {

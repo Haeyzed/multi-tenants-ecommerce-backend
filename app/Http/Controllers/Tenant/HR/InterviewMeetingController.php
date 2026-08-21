@@ -21,8 +21,20 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR / Recruitment / Interviews')]
 class InterviewMeetingController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  InterviewMeetingService  $meetings
+     */
     public function __construct(private readonly InterviewMeetingService $meetings) {}
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreInterviewMeetingRequest  $request
+     * @param  Interview  $interview
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created interview meeting.', type: 'array{success: true, message: string, data: InterviewMeetingResource, meta: null, errors: null}')]
     public function store(StoreInterviewMeetingRequest $request, Interview $interview): JsonResponse
     {
@@ -42,6 +54,13 @@ class InterviewMeetingController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateInterviewMeetingRequest  $request
+     * @param  Interview  $interview
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated interview meeting.', type: 'array{success: true, message: string, data: InterviewMeetingResource, meta: null, errors: null}')]
     public function update(UpdateInterviewMeetingRequest $request, Interview $interview): JsonResponse
     {
@@ -53,6 +72,12 @@ class InterviewMeetingController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Interview  $interview
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Cancelled interview meeting.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Interview $interview): JsonResponse
     {

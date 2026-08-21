@@ -20,6 +20,11 @@ use Illuminate\Validation\ValidationException;
  */
 class ProductCollectionService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
     /**
@@ -46,6 +51,9 @@ class ProductCollectionService
 
     /**
      * Retrieve a collection with media and products.
+     *
+     * @param  ProductCollection  $collection
+     * @return ProductCollection
      */
     public function show(ProductCollection $collection): ProductCollection
     {
@@ -56,6 +64,8 @@ class ProductCollectionService
      * Create a collection and optionally attach an image.
      *
      * @param  array<string, mixed>  $data
+     * @param  ?UploadedFile  $image
+     * @return ProductCollection
      */
     public function store(array $data, ?UploadedFile $image = null): ProductCollection
     {
@@ -77,7 +87,10 @@ class ProductCollectionService
     /**
      * Update a collection and optionally replace its image.
      *
+     * @param  ProductCollection  $collection
      * @param  array<string, mixed>  $data
+     * @param  ?UploadedFile  $image
+     * @return ProductCollection
      */
     public function update(ProductCollection $collection, array $data, ?UploadedFile $image = null): ProductCollection
     {
@@ -95,6 +108,9 @@ class ProductCollectionService
 
     /**
      * Delete a collection and its image.
+     *
+     * @param  ProductCollection  $collection
+     * @return void
      */
     public function destroy(ProductCollection $collection): void
     {
@@ -107,7 +123,9 @@ class ProductCollectionService
     /**
      * Replace-set collection products.
      *
+     * @param  ProductCollection  $collection
      * @param  list<array{product_id: int, sort_order?: int}>  $items
+     * @return ProductCollection
      *
      * @throws ValidationException
      */
@@ -146,6 +164,11 @@ class ProductCollectionService
 
     /**
      * Attach a product to a collection.
+     *
+     * @param  ProductCollection  $collection
+     * @param  int  $productId
+     * @param  int  $sortOrder
+     * @return ProductCollection
      */
     public function attach(ProductCollection $collection, int $productId, int $sortOrder = 0): ProductCollection
     {
@@ -164,6 +187,10 @@ class ProductCollectionService
 
     /**
      * Detach a product from a collection.
+     *
+     * @param  ProductCollection  $collection
+     * @param  int  $productId
+     * @return ProductCollection
      */
     public function detach(ProductCollection $collection, int $productId): ProductCollection
     {
@@ -173,7 +200,10 @@ class ProductCollectionService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

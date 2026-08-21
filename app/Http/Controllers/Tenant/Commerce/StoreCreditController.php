@@ -22,8 +22,19 @@ use Illuminate\Http\Request;
  */
 class StoreCreditController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  StoreCreditService  $storeCreditService
+     */
     public function __construct(private readonly StoreCreditService $storeCreditService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated store credit accounts.', type: 'array{success: true, message: string, data: StoreCreditAccountResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -38,6 +49,12 @@ class StoreCreditController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Customer  $customer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A customer store credit account.', type: 'array{success: true, message: string, data: StoreCreditAccountResource, meta: null, errors: null}')]
     public function show(Customer $customer): JsonResponse
     {
@@ -50,6 +67,13 @@ class StoreCreditController extends Controller
         );
     }
 
+    /**
+     * Transactions.
+     *
+     * @param  Request  $request
+     * @param  Customer  $customer
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated store credit ledger.', type: 'array{success: true, message: string, data: StoreCreditTransactionResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function transactions(Request $request, Customer $customer): JsonResponse
     {
@@ -65,6 +89,13 @@ class StoreCreditController extends Controller
         );
     }
 
+    /**
+     * Credit.
+     *
+     * @param  StoreCreditTransactionRequest  $request
+     * @param  Customer  $customer
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Recorded store credit.', type: 'array{success: true, message: string, data: StoreCreditTransactionResource, meta: null, errors: null}')]
     public function credit(StoreCreditTransactionRequest $request, Customer $customer): JsonResponse
     {
@@ -86,6 +117,13 @@ class StoreCreditController extends Controller
         );
     }
 
+    /**
+     * Debit.
+     *
+     * @param  StoreCreditTransactionRequest  $request
+     * @param  Customer  $customer
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Recorded store credit debit.', type: 'array{success: true, message: string, data: StoreCreditTransactionResource, meta: null, errors: null}')]
     public function debit(StoreCreditTransactionRequest $request, Customer $customer): JsonResponse
     {

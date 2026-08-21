@@ -21,6 +21,16 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class JobOpeningService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     * @param  SeoService  $seo
+     * @param  MediaService  $media
+     * @param  UsageLimiter  $usageLimiter
+     * @param  RecruitmentActivityService  $activities
+     * @param  WorkLocationService  $workLocations
+     */
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly SeoService $seo,
@@ -31,6 +41,8 @@ class JobOpeningService
     ) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, status?: string|null, department_id?: int|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, JobOpening>
      */
@@ -47,6 +59,8 @@ class JobOpeningService
     }
 
     /**
+     * Retrieve a paginated public list of resources.
+     *
      * @param  array{search?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, JobOpening>
      */
@@ -63,7 +77,10 @@ class JobOpeningService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return JobOpening
      */
     public function store(array $data): JobOpening
     {
@@ -86,6 +103,12 @@ class JobOpeningService
         return $opening->load($this->openingRelations());
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  JobOpening  $opening
+     * @return JobOpening
+     */
     public function show(JobOpening $opening): JobOpening
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -93,6 +116,12 @@ class JobOpeningService
         return $opening->load($this->openingRelations())->loadCount('applications');
     }
 
+    /**
+     * Retrieve a published resource by slug.
+     *
+     * @param  string  $slug
+     * @return JobOpening
+     */
     public function showPublicBySlug(string $slug): JobOpening
     {
         $this->hrSettings->assertPublicJobListingsEnabled();
@@ -105,7 +134,11 @@ class JobOpeningService
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  JobOpening  $opening
      * @param  array<string, mixed>  $data
+     * @return JobOpening
      */
     public function update(JobOpening $opening, array $data): JobOpening
     {
@@ -141,6 +174,12 @@ class JobOpeningService
         return $opening->fresh($this->openingRelations()) ?? $opening;
     }
 
+    /**
+     * Publish.
+     *
+     * @param  JobOpening  $opening
+     * @return JobOpening
+     */
     public function publish(JobOpening $opening): JobOpening
     {
         return $this->update($opening, [
@@ -150,11 +189,23 @@ class JobOpeningService
         ]);
     }
 
+    /**
+     * Pause.
+     *
+     * @param  JobOpening  $opening
+     * @return JobOpening
+     */
     public function pause(JobOpening $opening): JobOpening
     {
         return $this->update($opening, ['status' => JobOpeningStatus::Paused]);
     }
 
+    /**
+     * Close.
+     *
+     * @param  JobOpening  $opening
+     * @return JobOpening
+     */
     public function close(JobOpening $opening): JobOpening
     {
         return $this->update($opening, [
@@ -163,6 +214,12 @@ class JobOpeningService
         ]);
     }
 
+    /**
+     * Cancel.
+     *
+     * @param  JobOpening  $opening
+     * @return JobOpening
+     */
     public function cancel(JobOpening $opening): JobOpening
     {
         return $this->update($opening, [
@@ -171,6 +228,13 @@ class JobOpeningService
         ]);
     }
 
+    /**
+     * Add image.
+     *
+     * @param  JobOpening  $opening
+     * @param  UploadedFile  $file
+     * @return Media
+     */
     public function addImage(JobOpening $opening, UploadedFile $file): Media
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -179,6 +243,11 @@ class JobOpeningService
     }
 
     /**
+     * Delete a resource.
+     *
+     * @param  JobOpening  $opening
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(JobOpening $opening): void
@@ -197,7 +266,10 @@ class JobOpeningService
     }
 
     /**
+     * Payload.
+     *
      * @param  array<string, mixed>  $data
+     * @param  bool  $creating
      * @return array<string, mixed>
      */
     protected function payload(array $data, bool $creating): array
@@ -246,6 +318,12 @@ class JobOpeningService
         return $payload;
     }
 
+    /**
+     * Sync lifecycle timestamps.
+     *
+     * @param  JobOpening  $opening
+     * @return void
+     */
     protected function syncLifecycleTimestamps(JobOpening $opening): void
     {
         if ($opening->status->isPubliclyListable() && $opening->published_at === null) {
@@ -257,6 +335,12 @@ class JobOpeningService
         }
     }
 
+    /**
+     * Assert listing limit.
+     *
+     * @param  JobOpeningStatus|string  $status
+     * @return void
+     */
     protected function assertListingLimit(JobOpeningStatus|string $status): void
     {
         $normalized = JobOpeningStatus::fromInput($status);
@@ -269,6 +353,8 @@ class JobOpeningService
     }
 
     /**
+     * Opening relations.
+     *
      * @return list<string>
      */
     protected function openingRelations(): array
@@ -286,6 +372,12 @@ class JobOpeningService
         return $relations;
     }
 
+    /**
+     * Nullable code.
+     *
+     * @param  mixed  $code
+     * @return ?string
+     */
     protected function nullableCode(mixed $code): ?string
     {
         $code = is_string($code) ? strtoupper(trim($code)) : '';
@@ -294,7 +386,10 @@ class JobOpeningService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

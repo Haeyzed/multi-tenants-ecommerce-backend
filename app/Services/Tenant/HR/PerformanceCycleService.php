@@ -14,9 +14,16 @@ use Illuminate\Validation\ValidationException;
  */
 class PerformanceCycleService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     */
     public function __construct(private readonly HrSettingsService $hrSettings) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, status?: string|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, PerformanceCycle>
      */
@@ -32,7 +39,10 @@ class PerformanceCycleService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array{name: string, starts_on: string, ends_on: string, status?: PerformanceCycleStatus|string|null, description?: string|null}  $data
+     * @return PerformanceCycle
      */
     public function store(array $data): PerformanceCycle
     {
@@ -48,6 +58,12 @@ class PerformanceCycleService
         ]);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PerformanceCycle  $cycle
+     * @return PerformanceCycle
+     */
     public function show(PerformanceCycle $cycle): PerformanceCycle
     {
         $this->hrSettings->assertPerformanceEnabled();
@@ -56,7 +72,11 @@ class PerformanceCycleService
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  PerformanceCycle  $cycle
      * @param  array<string, mixed>  $data
+     * @return PerformanceCycle
      */
     public function update(PerformanceCycle $cycle, array $data): PerformanceCycle
     {
@@ -73,6 +93,11 @@ class PerformanceCycleService
     }
 
     /**
+     * Delete a resource.
+     *
+     * @param  PerformanceCycle  $cycle
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(PerformanceCycle $cycle): void
@@ -89,6 +114,12 @@ class PerformanceCycleService
     }
 
     /**
+     * Assert window.
+     *
+     * @param  string  $start
+     * @param  string  $end
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertWindow(string $start, string $end): void
@@ -101,7 +132,10 @@ class PerformanceCycleService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

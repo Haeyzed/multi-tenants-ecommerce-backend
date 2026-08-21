@@ -19,8 +19,19 @@ use Illuminate\Http\Request;
  */
 class InvoiceController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  InvoiceService  $invoiceService
+     */
     public function __construct(private readonly InvoiceService $invoiceService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated invoices.', type: 'array{success: true, message: string, data: InvoiceResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -35,6 +46,12 @@ class InvoiceController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Invoice  $invoice
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'An invoice.', type: 'array{success: true, message: string, data: InvoiceResource, meta: null, errors: null}')]
     public function show(Invoice $invoice): JsonResponse
     {
@@ -46,6 +63,12 @@ class InvoiceController extends Controller
         );
     }
 
+    /**
+     * Generate for order.
+     *
+     * @param  Order  $order
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Generated invoice for order.', type: 'array{success: true, message: string, data: InvoiceResource, meta: null, errors: null}')]
     public function generateForOrder(Order $order): JsonResponse
     {
@@ -57,6 +80,12 @@ class InvoiceController extends Controller
         );
     }
 
+    /**
+     * Download.
+     *
+     * @param  Invoice  $invoice
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Invoice download URL.', type: 'array{success: true, message: string, data: array{invoice: InvoiceResource, download_url: string|null}, meta: null, errors: null}')]
     public function download(Invoice $invoice): JsonResponse
     {

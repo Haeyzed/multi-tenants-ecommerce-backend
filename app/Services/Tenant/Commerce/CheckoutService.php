@@ -42,6 +42,24 @@ use Illuminate\Validation\ValidationException;
  */
 class CheckoutService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  AccountingService  $accounting
+     * @param  CartService  $cartService
+     * @param  CommerceSettingService  $commerceSettings
+     * @param  CommissionService  $commissions
+     * @param  DiscountService  $discountService
+     * @param  FeatureGate  $featureGate
+     * @param  FlashSaleService  $flashSaleService
+     * @param  GiftCardService  $giftCardService
+     * @param  InventoryStockableResolver  $stockables
+     * @param  OrderInventoryService  $orderInventory
+     * @param  SellerOrderService  $sellerOrders
+     * @param  StoreCreditService  $storeCreditService
+     * @param  TaxService  $taxService
+     * @param  UsageLimiter  $usageLimiter
+     */
     public function __construct(
         private readonly AccountingService $accounting,
         private readonly CartService $cartService,
@@ -62,12 +80,7 @@ class CheckoutService
     /**
      * Checkout the customer's active cart.
      *
-     * Gift card and store credit are prepaid tenders applied once discounts, tax and
-     * shipping have been settled: the gift card is drawn down first, then store credit.
-     * The order's `grand_total` therefore records only what is still owed through a
-     * payment gateway, while `gift_card_amount` and `store_credit_amount` snapshot the
-     * prepaid portions so a refund can restore each to its original source.
-     *
+     * @param  Customer  $customer
      * @param  array{
      *     shipping_address_id: int,
      *     billing_address_id?: int|null,
@@ -79,6 +92,7 @@ class CheckoutService
      *     idempotency_key?: string|null,
      *     notes?: string|null
      * }  $data
+     * @return Order
      *
      * @throws ValidationException
      */
@@ -351,16 +365,11 @@ class CheckoutService
     /**
      * Work out how much of the order total prepaid tenders can cover.
      *
-     * The gift card is drawn down before store credit, and neither can exceed the
-     * amount still owed, so the returned `amount_due` is never negative.
-     *
+     * @param  Customer  $customer
+     * @param  string  $currency
+     * @param  string  $grandTotal
      * @param  array<string, mixed>  $data
      * @return array{
-     *     gift_card: GiftCard|null,
-     *     gift_card_amount: string,
-     *     store_credit_amount: string,
-     *     amount_due: string
-     * }
      *
      * @throws ValidationException
      */
@@ -403,12 +412,15 @@ class CheckoutService
     /**
      * Draw down the resolved prepaid tenders against a freshly created order.
      *
+     * @param  Customer  $customer
+     * @param  Order  $order
      * @param  array{
      *     gift_card: GiftCard|null,
      *     gift_card_amount: string,
      *     store_credit_amount: string,
      *     amount_due: string
      * }  $prepaid
+     * @return void
      *
      * @throws ValidationException
      */
@@ -428,6 +440,13 @@ class CheckoutService
         }
     }
 
+    /**
+     * Find idempotent order.
+     *
+     * @param  Customer  $customer
+     * @param  string  $key
+     * @return ?Order
+     */
     protected function findIdempotentOrder(Customer $customer, string $key): ?Order
     {
         $order = Order::query()
@@ -450,6 +469,13 @@ class CheckoutService
     }
 
     /**
+     * Resolve customer address.
+     *
+     * @param  Customer  $customer
+     * @param  int  $addressId
+     * @param  string  $field
+     * @return CustomerAddress
+     *
      * @throws ValidationException
      */
     protected function resolveCustomerAddress(Customer $customer, int $addressId, string $field): CustomerAddress
@@ -469,6 +495,9 @@ class CheckoutService
     }
 
     /**
+     * Address snapshot.
+     *
+     * @param  CustomerAddress  $address
      * @return array<string, mixed>
      */
     protected function addressSnapshot(CustomerAddress $address): array
@@ -492,6 +521,7 @@ class CheckoutService
      * Persist an order, regenerating the order number when a unique collision occurs.
      *
      * @param  array<string, mixed>  $attributes
+     * @return Order
      */
     protected function createOrderWithUniqueNumber(array $attributes): Order
     {
@@ -515,6 +545,11 @@ class CheckoutService
         ]);
     }
 
+    /**
+     * Generate order number.
+     *
+     * @return string
+     */
     protected function generateOrderNumber(): string
     {
         $prefix = 'ORD-'.now()->format('Ymd').'-';
@@ -537,7 +572,12 @@ class CheckoutService
     /**
      * Create an order item snapshot and attach inventory_id when stock can be reserved.
      *
+     * @param  Order  $order
+     * @param  CartItem  $item
+     * @param  ?array  $lineTax
+     * @param  string  $discountAmount
      * @param  array{flash_sale_item_id: int, flash_sale_id: int, sale_price: string}|null  $flashSaleMeta
+     * @return void
      *
      * @throws ValidationException
      */
@@ -591,6 +631,10 @@ class CheckoutService
 
     /**
      * Prefer default warehouse inventory with enough available qty for a seller offer.
+     *
+     * @param  SellerOffer  $offer
+     * @param  int  $quantity
+     * @return ?Inventory
      */
     protected function findOfferInventoryForReservation(SellerOffer $offer, int $quantity): ?Inventory
     {
@@ -619,8 +663,12 @@ class CheckoutService
     }
 
     /**
-     * Prefer default warehouse inventory with enough available qty.
-     * Backorders with zero stock skip reservation (null inventory_id).
+     * Prefer default warehouse inventory with enough available qty. Backorders with zero stock skip reservation (null inventory_id).
+     *
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
+     * @param  int  $quantity
+     * @return ?Inventory
      */
     protected function findInventoryForReservation(
         Product $product,
@@ -658,6 +706,10 @@ class CheckoutService
 
     /**
      * Enforce plan feature access when the tenant has an active/trialing subscription.
+     *
+     * @param  string  $featureSlug
+     * @param  string  $field
+     * @return void
      *
      * @throws ValidationException
      */

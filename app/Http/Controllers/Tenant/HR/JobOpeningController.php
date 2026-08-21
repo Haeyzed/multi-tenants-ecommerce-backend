@@ -24,8 +24,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR / Job Listings')]
 class JobOpeningController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  JobOpeningService  $openings
+     */
     public function __construct(private readonly JobOpeningService $openings) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexJobOpeningRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated job openings.', type: 'array{success: true, message: string, data: JobOpeningResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexJobOpeningRequest $request): JsonResponse
     {
@@ -40,6 +51,12 @@ class JobOpeningController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreJobOpeningRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
     public function store(StoreJobOpeningRequest $request): JsonResponse
     {
@@ -51,6 +68,12 @@ class JobOpeningController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  JobOpening  $job_opening
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
     public function show(JobOpening $job_opening): JsonResponse
     {
@@ -62,6 +85,13 @@ class JobOpeningController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateJobOpeningRequest  $request
+     * @param  JobOpening  $job_opening
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
     public function update(UpdateJobOpeningRequest $request, JobOpening $job_opening): JsonResponse
     {
@@ -73,6 +103,12 @@ class JobOpeningController extends Controller
         );
     }
 
+    /**
+     * Publish.
+     *
+     * @param  JobOpening  $job_opening
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Published job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
     public function publish(JobOpening $job_opening): JsonResponse
     {
@@ -84,6 +120,12 @@ class JobOpeningController extends Controller
         );
     }
 
+    /**
+     * Pause.
+     *
+     * @param  JobOpening  $job_opening
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paused job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
     public function pause(JobOpening $job_opening): JsonResponse
     {
@@ -95,6 +137,12 @@ class JobOpeningController extends Controller
         );
     }
 
+    /**
+     * Close.
+     *
+     * @param  JobOpening  $job_opening
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Closed job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
     public function close(JobOpening $job_opening): JsonResponse
     {
@@ -106,6 +154,12 @@ class JobOpeningController extends Controller
         );
     }
 
+    /**
+     * Cancel.
+     *
+     * @param  JobOpening  $job_opening
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Cancelled job opening.', type: 'array{success: true, message: string, data: JobOpeningResource, meta: null, errors: null}')]
     public function cancel(JobOpening $job_opening): JsonResponse
     {
@@ -117,6 +171,13 @@ class JobOpeningController extends Controller
         );
     }
 
+    /**
+     * Image.
+     *
+     * @param  StoreJobOpeningImageRequest  $request
+     * @param  JobOpening  $job_opening
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Job listing image.', type: 'array{success: true, message: string, data: MediaResource, meta: null, errors: null}')]
     public function image(StoreJobOpeningImageRequest $request, JobOpening $job_opening): JsonResponse
     {
@@ -128,6 +189,12 @@ class JobOpeningController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  JobOpening  $job_opening
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted job opening.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(JobOpening $job_opening): JsonResponse
     {

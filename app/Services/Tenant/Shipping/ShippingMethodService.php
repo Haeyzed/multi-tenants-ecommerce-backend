@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 class ShippingMethodService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, is_active?: bool|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, ShippingMethod>
      */
@@ -38,6 +40,8 @@ class ShippingMethodService
     }
 
     /**
+     * Return options for select inputs.
+     *
      * @param  array{is_active?: bool|null}  $params
      * @return Collection<int, array{label: string, value: int}>
      */
@@ -60,6 +64,8 @@ class ShippingMethodService
     }
 
     /**
+     * name: string, code: string, description?: string|null, amount: string|float, min_order_amount?: string|float|null, is_active?: bool, sort_order?: int, estimated_days_min?: int|null, estimated_days_max?: int|null }  $data
+     *
      * @param  array{
      *     name: string,
      *     code: string,
@@ -71,6 +77,7 @@ class ShippingMethodService
      *     estimated_days_min?: int|null,
      *     estimated_days_max?: int|null
      * }  $data
+     * @return ShippingMethod
      */
     public function store(array $data): ShippingMethod
     {
@@ -87,12 +94,21 @@ class ShippingMethodService
         ]);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  ShippingMethod  $method
+     * @return ShippingMethod
+     */
     public function show(ShippingMethod $method): ShippingMethod
     {
         return $method;
     }
 
     /**
+     * name?: string, code?: string, description?: string|null, amount?: string|float, min_order_amount?: string|float|null, is_active?: bool, sort_order?: int, estimated_days_min?: int|null, estimated_days_max?: int|null }  $data
+     *
+     * @param  ShippingMethod  $method
      * @param  array{
      *     name?: string,
      *     code?: string,
@@ -104,6 +120,7 @@ class ShippingMethodService
      *     estimated_days_min?: int|null,
      *     estimated_days_max?: int|null
      * }  $data
+     * @return ShippingMethod
      */
     public function update(ShippingMethod $method, array $data): ShippingMethod
     {
@@ -114,6 +131,11 @@ class ShippingMethodService
     }
 
     /**
+     * Delete a resource.
+     *
+     * @param  ShippingMethod  $method
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(ShippingMethod $method): void
@@ -128,7 +150,10 @@ class ShippingMethodService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

@@ -15,12 +15,20 @@ use Illuminate\Validation\ValidationException;
  */
 class OrderInventoryService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  InventoryService  $inventoryService
+     */
     public function __construct(
         private readonly InventoryService $inventoryService,
     ) {}
 
     /**
      * Reserve stock for all order items that have an inventory_id.
+     *
+     * @param  Order  $order
+     * @return void
      */
     public function reserveForOrder(Order $order): void
     {
@@ -43,6 +51,9 @@ class OrderInventoryService
 
     /**
      * Release reserved stock for unpaid orders only.
+     *
+     * @param  Order  $order
+     * @return void
      *
      * @throws ValidationException
      */
@@ -71,6 +82,9 @@ class OrderInventoryService
 
     /**
      * Atomically convert reserved stock into a sale decrease for each reserved line.
+     *
+     * @param  Order  $order
+     * @return void
      */
     public function commitSaleForOrder(Order $order): void
     {

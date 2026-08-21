@@ -19,10 +19,19 @@ use Illuminate\Support\Facades\Auth;
  */
 class ProductReviewController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductReviewService  $reviewService
+     */
     public function __construct(private readonly ProductReviewService $reviewService) {}
 
     /**
      * Submit a pending product review.
+     *
+     * @param  StoreCustomerProductReviewRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 201,

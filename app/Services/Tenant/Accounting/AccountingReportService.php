@@ -19,6 +19,7 @@ class AccountingReportService
     /**
      * Active-account trial balance from posted journal lines.
      *
+     * @param  ?string  $asOfDate
      * @return list<array{code: string, name: string, type: string, debit: string, credit: string, balance: string}>
      */
     public function trialBalance(?string $asOfDate = null): array
@@ -48,6 +49,7 @@ class AccountingReportService
     /**
      * Posted ledger lines for an account with optional date filters.
      *
+     * @param  Account  $account
      * @param  array{date_from?: string|null, date_to?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, JournalEntryLine>
      */
@@ -74,6 +76,8 @@ class AccountingReportService
     /**
      * Debit/credit totals and net balance for an account.
      *
+     * @param  Account  $account
+     * @param  ?string  $asOfDate
      * @return array{debit_total: string, credit_total: string, balance: string}
      */
     public function accountBalance(Account $account, ?string $asOfDate = null): array
@@ -82,6 +86,10 @@ class AccountingReportService
     }
 
     /**
+     * Aggregate account.
+     *
+     * @param  Account  $account
+     * @param  ?string  $asOfDate
      * @return array{debit_total: string, credit_total: string, balance: string}
      */
     protected function aggregateAccount(Account $account, ?string $asOfDate = null): array

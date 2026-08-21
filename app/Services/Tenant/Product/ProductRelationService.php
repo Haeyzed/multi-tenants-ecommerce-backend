@@ -19,6 +19,8 @@ class ProductRelationService
     /**
      * List related products for a relation type with pivot data.
      *
+     * @param  Product  $product
+     * @param  ProductRelationType  $type
      * @return Collection<int, Product>
      */
     public function list(Product $product, ProductRelationType $type): Collection
@@ -31,6 +33,8 @@ class ProductRelationService
     /**
      * Replace-set related products for a relation type.
      *
+     * @param  Product  $product
+     * @param  ProductRelationType  $type
      * @param  list<array{product_id: int, sort_order?: int}>  $items
      * @return Collection<int, Product>
      *
@@ -78,6 +82,10 @@ class ProductRelationService
     }
 
     /**
+     * Relation query.
+     *
+     * @param  Product  $product
+     * @param  ProductRelationType  $type
      * @return BelongsToMany<Product, Product>
      */
     protected function relationQuery(Product $product, ProductRelationType $type)

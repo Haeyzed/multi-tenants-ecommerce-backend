@@ -20,8 +20,19 @@ use Illuminate\Support\Facades\Auth;
  */
 class PaymentController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  OrderPaymentService  $orderPaymentService
+     */
     public function __construct(private readonly OrderPaymentService $orderPaymentService) {}
 
+    /**
+     * Pay.
+     *
+     * @param  InitializeOrderPaymentRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'Payment initiation result.',
@@ -44,6 +55,12 @@ class PaymentController extends Controller
         ], 'Payment initialized successfully.');
     }
 
+    /**
+     * Verify.
+     *
+     * @param  VerifyOrderPaymentRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Verified payment.',

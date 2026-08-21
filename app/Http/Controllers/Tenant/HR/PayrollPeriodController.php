@@ -19,8 +19,18 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class PayrollPeriodController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PayrollRunService  $payrollRunService
+     */
     public function __construct(private readonly PayrollRunService $payrollRunService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Payroll periods.', type: 'array{success: true, message: string, data: PayrollPeriodResource[], meta: null, errors: null}')]
     public function index(): JsonResponse
     {
@@ -38,6 +48,11 @@ class PayrollPeriodController extends Controller
         );
     }
 
+    /**
+     * Current.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Current payroll period.', type: 'array{success: true, message: string, data: PayrollPeriodResource, meta: null, errors: null}')]
     public function current(): JsonResponse
     {

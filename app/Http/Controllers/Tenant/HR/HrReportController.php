@@ -20,12 +20,25 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 #[Group('HR')]
 class HrReportController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrReportService  $reports
+     * @param  HrCsvExporter  $csv
+     * @param  StatutoryReturnService  $statutory
+     */
     public function __construct(
         private readonly HrReportService $reports,
         private readonly HrCsvExporter $csv,
         private readonly StatutoryReturnService $statutory,
     ) {}
 
+    /**
+     * Attendance.
+     *
+     * @param  IndexHrReportRequest  $request
+     * @return JsonResponse|StreamedResponse
+     */
     #[Response(status: 200, description: 'Attendance report.', type: 'array{success: true, message: string, data: array<string, mixed>, meta: null, errors: null}')]
     public function attendance(IndexHrReportRequest $request): JsonResponse|StreamedResponse
     {
@@ -36,6 +49,12 @@ class HrReportController extends Controller
         return $this->respond($request, $payload, 'attendance-report.csv', 'Attendance report retrieved successfully.');
     }
 
+    /**
+     * Leave.
+     *
+     * @param  IndexHrReportRequest  $request
+     * @return JsonResponse|StreamedResponse
+     */
     #[Response(status: 200, description: 'Leave report.', type: 'array{success: true, message: string, data: array<string, mixed>, meta: null, errors: null}')]
     public function leave(IndexHrReportRequest $request): JsonResponse|StreamedResponse
     {
@@ -46,6 +65,12 @@ class HrReportController extends Controller
         return $this->respond($request, $payload, 'leave-report.csv', 'Leave report retrieved successfully.');
     }
 
+    /**
+     * Payroll.
+     *
+     * @param  IndexHrReportRequest  $request
+     * @return JsonResponse|StreamedResponse
+     */
     #[Response(status: 200, description: 'Payroll register.', type: 'array{success: true, message: string, data: array<string, mixed>, meta: null, errors: null}')]
     public function payroll(IndexHrReportRequest $request): JsonResponse|StreamedResponse
     {
@@ -56,6 +81,12 @@ class HrReportController extends Controller
         return $this->respond($request, $payload, 'payroll-report.csv', 'Payroll report retrieved successfully.');
     }
 
+    /**
+     * Overtime.
+     *
+     * @param  IndexHrReportRequest  $request
+     * @return JsonResponse|StreamedResponse
+     */
     #[Response(status: 200, description: 'Overtime report.', type: 'array{success: true, message: string, data: array<string, mixed>, meta: null, errors: null}')]
     public function overtime(IndexHrReportRequest $request): JsonResponse|StreamedResponse
     {
@@ -66,6 +97,12 @@ class HrReportController extends Controller
         return $this->respond($request, $payload, 'overtime-report.csv', 'Overtime report retrieved successfully.');
     }
 
+    /**
+     * Headcount.
+     *
+     * @param  IndexHrReportRequest  $request
+     * @return JsonResponse|StreamedResponse
+     */
     #[Response(status: 200, description: 'Headcount report.', type: 'array{success: true, message: string, data: array<string, mixed>, meta: null, errors: null}')]
     public function headcount(IndexHrReportRequest $request): JsonResponse|StreamedResponse
     {
@@ -76,6 +113,12 @@ class HrReportController extends Controller
         return $this->respond($request, $payload, 'headcount-report.csv', 'Headcount report retrieved successfully.');
     }
 
+    /**
+     * Statutory.
+     *
+     * @param  IndexHrReportRequest  $request
+     * @return JsonResponse|StreamedResponse
+     */
     #[Response(status: 200, description: 'Statutory filing schedule.', type: 'array{success: true, message: string, data: array<string, mixed>, meta: null, errors: null}')]
     public function statutory(IndexHrReportRequest $request): JsonResponse|StreamedResponse
     {
@@ -86,6 +129,12 @@ class HrReportController extends Controller
         return $this->respond($request, $payload, 'statutory-return.csv', 'Statutory return retrieved successfully.');
     }
 
+    /**
+     * Recruitment.
+     *
+     * @param  IndexHrReportRequest  $request
+     * @return JsonResponse|StreamedResponse
+     */
     #[Response(status: 200, description: 'Recruitment report.', type: 'array{success: true, message: string, data: array<string, mixed>, meta: null, errors: null}')]
     public function recruitment(IndexHrReportRequest $request): JsonResponse|StreamedResponse
     {
@@ -97,7 +146,13 @@ class HrReportController extends Controller
     }
 
     /**
+     * Respond.
+     *
+     * @param  IndexHrReportRequest  $request
      * @param  array<string, mixed>  $payload
+     * @param  string  $filename
+     * @param  string  $message
+     * @return JsonResponse|StreamedResponse
      */
     protected function respond(IndexHrReportRequest $request, array $payload, string $filename, string $message): JsonResponse|StreamedResponse
     {

@@ -20,8 +20,19 @@ use Illuminate\Http\Request;
  */
 class ShippingMethodController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ShippingMethodService  $shippingMethodService
+     */
     public function __construct(private readonly ShippingMethodService $shippingMethodService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated shipping methods.', type: 'array{success: true, message: string, data: ShippingMethodResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -36,6 +47,12 @@ class ShippingMethodController extends Controller
         );
     }
 
+    /**
+     * Return options for select inputs.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Shipping method options.', type: ApiResponseSchema::OPTIONS)]
     public function options(Request $request): JsonResponse
     {
@@ -47,6 +64,12 @@ class ShippingMethodController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreShippingMethodRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created shipping method.', type: 'array{success: true, message: string, data: ShippingMethodResource, meta: null, errors: null}')]
     public function store(StoreShippingMethodRequest $request): JsonResponse
     {
@@ -58,6 +81,12 @@ class ShippingMethodController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  ShippingMethod  $shippingMethod
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A shipping method.', type: 'array{success: true, message: string, data: ShippingMethodResource, meta: null, errors: null}')]
     public function show(ShippingMethod $shippingMethod): JsonResponse
     {
@@ -69,6 +98,13 @@ class ShippingMethodController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateShippingMethodRequest  $request
+     * @param  ShippingMethod  $shippingMethod
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated shipping method.', type: 'array{success: true, message: string, data: ShippingMethodResource, meta: null, errors: null}')]
     public function update(UpdateShippingMethodRequest $request, ShippingMethod $shippingMethod): JsonResponse
     {
@@ -80,6 +116,12 @@ class ShippingMethodController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  ShippingMethod  $shippingMethod
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted shipping method.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(ShippingMethod $shippingMethod): JsonResponse
     {

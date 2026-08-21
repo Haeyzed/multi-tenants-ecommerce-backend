@@ -28,10 +28,18 @@ use Illuminate\Http\JsonResponse;
  */
 class InventoryController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  InventoryService  $inventoryService
+     */
     public function __construct(private readonly InventoryService $inventoryService) {}
 
     /**
      * List inventory records with pagination and filters.
+     *
+     * @param  IndexInventoryRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -51,6 +59,10 @@ class InventoryController extends Controller
 
     /**
      * List inventory records for a warehouse.
+     *
+     * @param  IndexInventoryRequest  $request
+     * @param  Warehouse  $warehouse
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -72,6 +84,9 @@ class InventoryController extends Controller
 
     /**
      * Assign a product or variant to a warehouse.
+     *
+     * @param  StoreInventoryRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -103,6 +118,9 @@ class InventoryController extends Controller
 
     /**
      * Show an inventory record.
+     *
+     * @param  Inventory  $inventory
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -119,6 +137,10 @@ class InventoryController extends Controller
 
     /**
      * Adjust inventory quantity.
+     *
+     * @param  AdjustInventoryRequest  $request
+     * @param  Inventory  $inventory
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -146,6 +168,10 @@ class InventoryController extends Controller
 
     /**
      * Reserve inventory quantity.
+     *
+     * @param  ReserveInventoryRequest  $request
+     * @param  Inventory  $inventory
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -162,6 +188,10 @@ class InventoryController extends Controller
 
     /**
      * Release reserved inventory quantity.
+     *
+     * @param  ReleaseInventoryRequest  $request
+     * @param  Inventory  $inventory
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -178,6 +208,10 @@ class InventoryController extends Controller
 
     /**
      * Transfer inventory between warehouses.
+     *
+     * @param  TransferInventoryRequest  $request
+     * @param  Inventory  $inventory
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -207,6 +241,9 @@ class InventoryController extends Controller
 
     /**
      * Remove an empty inventory assignment.
+     *
+     * @param  Inventory  $inventory
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -220,6 +257,11 @@ class InventoryController extends Controller
         return $this->deleted('Inventory assignment removed successfully.');
     }
 
+    /**
+     * Resolve the authenticated tenant user.
+     *
+     * @return ?User
+     */
     protected function actor(): ?User
     {
         $user = auth()->user();

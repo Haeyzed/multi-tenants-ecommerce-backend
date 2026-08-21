@@ -18,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 class StatutoryReturnService
 {
     /**
+     * Generate.
+     *
      * @param  array{from?: string|null, to?: string|null, kind?: string|null}  $params
      * @return array<string, mixed>
      */
@@ -58,7 +60,10 @@ class StatutoryReturnService
     }
 
     /**
+     * Generate or fail.
+     *
      * @param  array{from?: string|null, to?: string|null, kind?: string|null}  $params
+     * @return array
      *
      * @throws ValidationException
      */
@@ -74,6 +79,12 @@ class StatutoryReturnService
     }
 
     /**
+     * Schedule.
+     *
+     * @param  string  $from
+     * @param  string  $to
+     * @param  StatutoryReturnKind  $kind
+     * @param  list<array<string, mixed>>  $rows
      * @param  list<array<string, mixed>>  $rows
      * @param  list<string>  $required
      * @param  list<string>  $totalKeys
@@ -104,6 +115,9 @@ class StatutoryReturnService
     }
 
     /**
+     * Row.
+     *
+     * @param  PayrollItem  $item
      * @return array<string, mixed>
      */
     protected function row(PayrollItem $item): array
@@ -134,6 +148,13 @@ class StatutoryReturnService
         ];
     }
 
+    /**
+     * Line amount.
+     *
+     * @param  PayrollItem  $item
+     * @param  string  $code
+     * @return string
+     */
     protected function lineAmount(PayrollItem $item, string $code): string
     {
         $line = $item->lines->first(fn (PayrollItemLine $line): bool => $line->code === $code);
@@ -142,6 +163,9 @@ class StatutoryReturnService
     }
 
     /**
+     * Totals.
+     *
+     * @param  list<array<string, mixed>>  $rows
      * @param  list<array<string, mixed>>  $rows
      * @param  list<string>  $keys
      * @return array<string, string>

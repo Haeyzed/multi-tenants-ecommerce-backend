@@ -19,8 +19,19 @@ use Illuminate\Support\Facades\Auth;
  */
 class CustomerInvoiceController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  InvoiceService  $invoiceService
+     */
     public function __construct(private readonly InvoiceService $invoiceService) {}
 
+    /**
+     * For order.
+     *
+     * @param  Order  $order
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Customer order invoice.', type: 'array{success: true, message: string, data: InvoiceResource, meta: null, errors: null}')]
     public function forOrder(Order $order): JsonResponse
     {
@@ -33,6 +44,12 @@ class CustomerInvoiceController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Invoice  $invoice
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Customer invoice.', type: 'array{success: true, message: string, data: InvoiceResource, meta: null, errors: null}')]
     public function show(Invoice $invoice): JsonResponse
     {
@@ -45,6 +62,12 @@ class CustomerInvoiceController extends Controller
         );
     }
 
+    /**
+     * Download.
+     *
+     * @param  Invoice  $invoice
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Customer invoice download URL.', type: 'array{success: true, message: string, data: array{invoice: InvoiceResource, download_url: string|null}, meta: null, errors: null}')]
     public function download(Invoice $invoice): JsonResponse
     {

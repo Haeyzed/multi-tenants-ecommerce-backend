@@ -17,10 +17,18 @@ use Illuminate\Http\JsonResponse;
  */
 class ProductBundleController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductBundleService  $bundleService
+     */
     public function __construct(private readonly ProductBundleService $bundleService) {}
 
     /**
      * List bundle items.
+     *
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -37,6 +45,10 @@ class ProductBundleController extends Controller
 
     /**
      * Sync bundle items.
+     *
+     * @param  SyncProductBundleItemsRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

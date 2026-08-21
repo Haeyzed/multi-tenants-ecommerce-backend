@@ -20,8 +20,19 @@ use Illuminate\Http\Request;
  */
 class CouponController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CouponService  $couponService
+     */
     public function __construct(private readonly CouponService $couponService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated coupons.', type: 'array{success: true, message: string, data: CouponResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -36,6 +47,12 @@ class CouponController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreCouponRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created coupon.', type: 'array{success: true, message: string, data: CouponResource, meta: null, errors: null}')]
     public function store(StoreCouponRequest $request): JsonResponse
     {
@@ -47,6 +64,12 @@ class CouponController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Coupon  $coupon
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A coupon.', type: 'array{success: true, message: string, data: CouponResource, meta: null, errors: null}')]
     public function show(Coupon $coupon): JsonResponse
     {
@@ -58,6 +81,13 @@ class CouponController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateCouponRequest  $request
+     * @param  Coupon  $coupon
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated coupon.', type: 'array{success: true, message: string, data: CouponResource, meta: null, errors: null}')]
     public function update(UpdateCouponRequest $request, Coupon $coupon): JsonResponse
     {
@@ -69,6 +99,12 @@ class CouponController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Coupon  $coupon
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted coupon.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Coupon $coupon): JsonResponse
     {

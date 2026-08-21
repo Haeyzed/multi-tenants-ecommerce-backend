@@ -16,8 +16,19 @@ use Illuminate\Validation\ValidationException;
  */
 class PayrollPeriodService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     */
     public function __construct(private readonly HrSettingsService $hrSettings) {}
 
+    /**
+     * Ensure current period.
+     *
+     * @param  ?Carbon  $asOf
+     * @return PayrollPeriod
+     */
     public function ensureCurrentPeriod(?Carbon $asOf = null): PayrollPeriod
     {
         $window = $this->periodWindow($asOf ?? now());
@@ -26,6 +37,9 @@ class PayrollPeriodService
     }
 
     /**
+     * Period window.
+     *
+     * @param  ?Carbon  $asOf
      * @return array{period_start: string, period_end: string, payment_date: string}
      */
     public function periodWindow(?Carbon $asOf = null): array
@@ -57,6 +71,14 @@ class PayrollPeriodService
         ];
     }
 
+    /**
+     * Find or create period.
+     *
+     * @param  string  $periodStart
+     * @param  string  $periodEnd
+     * @param  ?string  $paymentDate
+     * @return PayrollPeriod
+     */
     public function findOrCreatePeriod(string $periodStart, string $periodEnd, ?string $paymentDate = null): PayrollPeriod
     {
         $periodStart = Carbon::parse($periodStart)->toDateString();
@@ -98,6 +120,9 @@ class PayrollPeriodService
     }
 
     /**
+     * Biweekly bounds.
+     *
+     * @param  Carbon  $asOf
      * @return array{0: Carbon, 1: Carbon}
      */
     protected function biweeklyBounds(Carbon $asOf): array

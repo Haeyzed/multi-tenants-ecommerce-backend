@@ -19,11 +19,18 @@ use Illuminate\Support\Str;
  */
 class PromotionService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CouponService  $couponService
+     */
     public function __construct(
         private readonly CouponService $couponService,
     ) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, is_active?: bool|null, type?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Promotion>
      */
@@ -51,7 +58,10 @@ class PromotionService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return Promotion
      */
     public function store(array $data): Promotion
     {
@@ -61,13 +71,23 @@ class PromotionService
         return $promotion->fresh(['products', 'categories']) ?? $promotion;
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Promotion  $promotion
+     * @return Promotion
+     */
     public function show(Promotion $promotion): Promotion
     {
         return $promotion->load(['products', 'categories']);
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  Promotion  $promotion
      * @param  array<string, mixed>  $data
+     * @return Promotion
      */
     public function update(Promotion $promotion, array $data): Promotion
     {
@@ -78,6 +98,12 @@ class PromotionService
         return $promotion->fresh(['products', 'categories']) ?? $promotion;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Promotion  $promotion
+     * @return void
+     */
     public function destroy(Promotion $promotion): void
     {
         $promotion->delete();
@@ -86,6 +112,7 @@ class PromotionService
     /**
      * Return promotions applicable to the cart, ordered by priority descending.
      *
+     * @param  Cart  $cart
      * @return Collection<int, Promotion>
      */
     public function evaluateForCart(Cart $cart): Collection
@@ -128,6 +155,8 @@ class PromotionService
     /**
      * Calculate promotion discount amount and line allocations.
      *
+     * @param  Promotion  $promotion
+     * @param  Cart  $cart
      * @return array{amount: string, line_discounts: array<int, string>, free_shipping: bool}
      */
     public function calculatePromotionDiscount(Promotion $promotion, Cart $cart): array
@@ -194,6 +223,10 @@ class PromotionService
     }
 
     /**
+     * Eligible cart items.
+     *
+     * @param  Promotion  $promotion
+     * @param  Cart  $cart
      * @return Collection<int, CartItem>
      */
     public function eligibleCartItems(Promotion $promotion, Cart $cart): Collection
@@ -228,6 +261,10 @@ class PromotionService
     }
 
     /**
+     * Calculate buy xget y.
+     *
+     * @param  Promotion  $promotion
+     * @param  Cart  $cart
      * @return array{amount: string, line_discounts: array<int, string>, free_shipping: bool}
      */
     protected function calculateBuyXGetY(Promotion $promotion, Cart $cart): array
@@ -273,6 +310,14 @@ class PromotionService
         ];
     }
 
+    /**
+     * Cap discount.
+     *
+     * @param  string  $discount
+     * @param  string  $eligibleSubtotal
+     * @param  ?string  $maxDiscount
+     * @return string
+     */
     protected function capDiscount(string $discount, string $eligibleSubtotal, ?string $maxDiscount): string
     {
         if ($maxDiscount !== null && bccomp($discount, $maxDiscount, 2) > 0) {
@@ -287,7 +332,10 @@ class PromotionService
     }
 
     /**
+     * Attributes from data.
+     *
      * @param  array<string, mixed>  $data
+     * @param  ?Promotion  $existing
      * @return array<string, mixed>
      */
     protected function attributesFromData(array $data, ?Promotion $existing = null): array
@@ -318,7 +366,11 @@ class PromotionService
     }
 
     /**
+     * Sync restrictions.
+     *
+     * @param  Promotion  $promotion
      * @param  array<string, mixed>  $data
+     * @return void
      */
     protected function syncRestrictions(Promotion $promotion, array $data): void
     {
@@ -332,7 +384,10 @@ class PromotionService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

@@ -15,11 +15,23 @@ use Illuminate\Support\Carbon;
  */
 class OvertimeEngine
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  WorkCalendarService  $calendar
+     * @param  HrSettingsService  $hrSettings
+     */
     public function __construct(
         private readonly WorkCalendarService $calendar,
         private readonly HrSettingsService $hrSettings,
     ) {}
 
+    /**
+     * Policy for.
+     *
+     * @param  ?Employee  $employee
+     * @return ?OvertimePolicy
+     */
     public function policyFor(?Employee $employee): ?OvertimePolicy
     {
         $schedule = $this->calendar->scheduleFor($employee);
@@ -39,6 +51,13 @@ class OvertimeEngine
             ->first();
     }
 
+    /**
+     * Classify.
+     *
+     * @param  ?Employee  $employee
+     * @param  Carbon  $date
+     * @return OvertimeDayType
+     */
     public function classify(?Employee $employee, Carbon $date): OvertimeDayType
     {
         if ($this->calendar->isPublicHoliday($date)) {
@@ -52,6 +71,13 @@ class OvertimeEngine
         return OvertimeDayType::Weekday;
     }
 
+    /**
+     * Rate percent.
+     *
+     * @param  ?Employee  $employee
+     * @param  Carbon  $date
+     * @return int
+     */
     public function ratePercent(?Employee $employee, Carbon $date): int
     {
         $policy = $this->policyFor($employee);
@@ -64,6 +90,13 @@ class OvertimeEngine
         };
     }
 
+    /**
+     * Overtime minutes.
+     *
+     * @param  Employee  $employee
+     * @param  Attendance  $attendance
+     * @return int
+     */
     public function overtimeMinutes(Employee $employee, Attendance $attendance): int
     {
         if ($attendance->checked_in_at === null || $attendance->checked_out_at === null) {
@@ -93,6 +126,12 @@ class OvertimeEngine
         return min(1440, $overtime);
     }
 
+    /**
+     * Weekly threshold minutes.
+     *
+     * @param  ?Employee  $employee
+     * @return int
+     */
     public function weeklyThresholdMinutes(?Employee $employee): int
     {
         $policy = $this->policyFor($employee);
@@ -106,6 +145,12 @@ class OvertimeEngine
             : 0;
     }
 
+    /**
+     * Weekly rate percent.
+     *
+     * @param  ?Employee  $employee
+     * @return int
+     */
     public function weeklyRatePercent(?Employee $employee): int
     {
         $policy = $this->policyFor($employee);
@@ -117,6 +162,11 @@ class OvertimeEngine
 
     /**
      * Weekly overtime minutes in a pay period that were not already counted as daily overtime.
+     *
+     * @param  Employee  $employee
+     * @param  string  $periodStart
+     * @param  string  $periodEnd
+     * @return int
      */
     public function weeklyOvertimeMinutes(Employee $employee, string $periodStart, string $periodEnd): int
     {

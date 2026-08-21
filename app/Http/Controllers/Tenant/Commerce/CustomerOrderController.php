@@ -22,10 +22,18 @@ use Illuminate\Support\Facades\Auth;
  */
 class CustomerOrderController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  OrderService  $orderService
+     */
     public function __construct(private readonly OrderService $orderService) {}
 
     /**
      * List the authenticated customer's orders.
+     *
+     * @param  IndexCustomerOrderRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -48,6 +56,9 @@ class CustomerOrderController extends Controller
 
     /**
      * Show a single customer order.
+     *
+     * @param  Order  $order
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -67,6 +78,9 @@ class CustomerOrderController extends Controller
 
     /**
      * Cancel an unpaid-eligible customer order.
+     *
+     * @param  Order  $order
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -86,6 +100,10 @@ class CustomerOrderController extends Controller
 
     /**
      * List refunds for a customer-owned order.
+     *
+     * @param  Request  $request
+     * @param  Order  $order
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

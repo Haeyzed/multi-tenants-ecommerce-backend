@@ -18,10 +18,19 @@ use Illuminate\Http\JsonResponse;
  */
 class StorefrontReviewController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  StorefrontCatalogService  $catalogService
+     */
     public function __construct(private readonly StorefrontCatalogService $catalogService) {}
 
     /**
      * List approved reviews for a product.
+     *
+     * @param  IndexStorefrontRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

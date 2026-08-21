@@ -32,8 +32,19 @@ class AutomaticDriverAssignmentStrategy implements DriverAssignmentStrategyInter
         DeliveryStatus::OutForDelivery,
     ];
 
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceSettingService  $commerceSettings
+     */
     public function __construct(private readonly CommerceSettingService $commerceSettings) {}
 
+    /**
+     * Assign.
+     *
+     * @param  Delivery  $delivery
+     * @return ?Driver
+     */
     public function assign(Delivery $delivery): ?Driver
     {
         $delivery->loadMissing('order');
@@ -81,6 +92,9 @@ class AutomaticDriverAssignmentStrategy implements DriverAssignmentStrategyInter
     }
 
     /**
+     * Delivery coordinates.
+     *
+     * @param  Delivery  $delivery
      * @return array{0: float, 1: float}|null
      */
     protected function deliveryCoordinates(Delivery $delivery): ?array
@@ -105,6 +119,12 @@ class AutomaticDriverAssignmentStrategy implements DriverAssignmentStrategyInter
         return null;
     }
 
+    /**
+     * Last location.
+     *
+     * @param  Driver  $driver
+     * @return ?DriverLocation
+     */
     protected function lastLocation(Driver $driver): ?DriverLocation
     {
         return DriverLocation::query()
@@ -114,11 +134,27 @@ class AutomaticDriverAssignmentStrategy implements DriverAssignmentStrategyInter
             ->first();
     }
 
+    /**
+     * Is valid coordinate pair.
+     *
+     * @param  mixed  $lat
+     * @param  mixed  $lng
+     * @return bool
+     */
     protected function isValidCoordinatePair(mixed $lat, mixed $lng): bool
     {
         return is_numeric($lat) && is_numeric($lng);
     }
 
+    /**
+     * Distance km.
+     *
+     * @param  float  $lat1
+     * @param  float  $lon1
+     * @param  float  $lat2
+     * @param  float  $lon2
+     * @return float
+     */
     protected function distanceKm(float $lat1, float $lon1, float $lat2, float $lon2): float
     {
         $earthRadiusKm = 6371.0;

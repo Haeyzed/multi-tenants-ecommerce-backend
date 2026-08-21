@@ -20,10 +20,18 @@ use Illuminate\Http\JsonResponse;
  */
 class UnitController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  UnitService  $unitService
+     */
     public function __construct(private readonly UnitService $unitService) {}
 
     /**
      * List units with pagination, search, and filters.
+     *
+     * @param  IndexUnitRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -43,6 +51,9 @@ class UnitController extends Controller
 
     /**
      * Unit options for select inputs.
+     *
+     * @param  IndexUnitRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -59,6 +70,9 @@ class UnitController extends Controller
 
     /**
      * Create a unit.
+     *
+     * @param  StoreUnitRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -75,6 +89,9 @@ class UnitController extends Controller
 
     /**
      * Show a unit.
+     *
+     * @param  Unit  $unit
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -91,6 +108,10 @@ class UnitController extends Controller
 
     /**
      * Update a unit.
+     *
+     * @param  UpdateUnitRequest  $request
+     * @param  Unit  $unit
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -107,6 +128,9 @@ class UnitController extends Controller
 
     /**
      * Delete a unit.
+     *
+     * @param  Unit  $unit
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

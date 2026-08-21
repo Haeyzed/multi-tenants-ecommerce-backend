@@ -14,6 +14,8 @@ class HomeController extends Controller
 {
     /**
      * Confirm the tenant application is reachable without leaking the tenant id.
+     *
+     * @return JsonResponse
      */
     public function __invoke(): JsonResponse
     {

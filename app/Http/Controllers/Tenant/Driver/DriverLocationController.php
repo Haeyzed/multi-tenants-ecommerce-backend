@@ -19,10 +19,18 @@ use Illuminate\Support\Facades\Auth;
  */
 class DriverLocationController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  DriverLocationService  $locationService
+     */
     public function __construct(private readonly DriverLocationService $locationService) {}
 
     /**
      * Record a location update for an active delivery.
+     *
+     * @param  StoreDriverLocationRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

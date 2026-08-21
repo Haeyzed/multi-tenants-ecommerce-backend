@@ -27,8 +27,19 @@ use Illuminate\Http\Request;
  */
 class TaxController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  TaxAdminService  $taxAdmin
+     */
     public function __construct(private readonly TaxAdminService $taxAdmin) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated taxes.', type: 'array{success: true, message: string, data: TaxResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -43,6 +54,12 @@ class TaxController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreTaxRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created tax.', type: 'array{success: true, message: string, data: TaxResource, meta: null, errors: null}')]
     public function store(StoreTaxRequest $request): JsonResponse
     {
@@ -54,6 +71,12 @@ class TaxController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Tax  $tax
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A tax.', type: 'array{success: true, message: string, data: TaxResource, meta: null, errors: null}')]
     public function show(Tax $tax): JsonResponse
     {
@@ -65,6 +88,13 @@ class TaxController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateTaxRequest  $request
+     * @param  Tax  $tax
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated tax.', type: 'array{success: true, message: string, data: TaxResource, meta: null, errors: null}')]
     public function update(UpdateTaxRequest $request, Tax $tax): JsonResponse
     {
@@ -76,6 +106,12 @@ class TaxController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Tax  $tax
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted tax.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Tax $tax): JsonResponse
     {
@@ -85,6 +121,12 @@ class TaxController extends Controller
         return $this->deleted('Tax deleted successfully.');
     }
 
+    /**
+     * Index zones.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated tax zones.', type: 'array{success: true, message: string, data: TaxZoneResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function indexZones(Request $request): JsonResponse
     {
@@ -99,6 +141,12 @@ class TaxController extends Controller
         );
     }
 
+    /**
+     * Store zone.
+     *
+     * @param  StoreTaxZoneRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created tax zone.', type: 'array{success: true, message: string, data: TaxZoneResource, meta: null, errors: null}')]
     public function storeZone(StoreTaxZoneRequest $request): JsonResponse
     {
@@ -110,6 +158,12 @@ class TaxController extends Controller
         );
     }
 
+    /**
+     * Show zone.
+     *
+     * @param  TaxZone  $taxZone
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A tax zone.', type: 'array{success: true, message: string, data: TaxZoneResource, meta: null, errors: null}')]
     public function showZone(TaxZone $taxZone): JsonResponse
     {
@@ -121,6 +175,13 @@ class TaxController extends Controller
         );
     }
 
+    /**
+     * Update zone.
+     *
+     * @param  UpdateTaxZoneRequest  $request
+     * @param  TaxZone  $taxZone
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated tax zone.', type: 'array{success: true, message: string, data: TaxZoneResource, meta: null, errors: null}')]
     public function updateZone(UpdateTaxZoneRequest $request, TaxZone $taxZone): JsonResponse
     {
@@ -132,6 +193,12 @@ class TaxController extends Controller
         );
     }
 
+    /**
+     * Destroy zone.
+     *
+     * @param  TaxZone  $taxZone
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted tax zone.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroyZone(TaxZone $taxZone): JsonResponse
     {
@@ -141,6 +208,12 @@ class TaxController extends Controller
         return $this->deleted('Tax zone deleted successfully.');
     }
 
+    /**
+     * Store rule.
+     *
+     * @param  StoreTaxRuleRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created tax rule.', type: 'array{success: true, message: string, data: TaxRuleResource, meta: null, errors: null}')]
     public function storeRule(StoreTaxRuleRequest $request): JsonResponse
     {
@@ -152,6 +225,12 @@ class TaxController extends Controller
         );
     }
 
+    /**
+     * Destroy rule.
+     *
+     * @param  TaxRule  $taxRule
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted tax rule.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroyRule(TaxRule $taxRule): JsonResponse
     {

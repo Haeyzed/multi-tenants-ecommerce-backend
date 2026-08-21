@@ -30,12 +30,20 @@ class InterviewMeetingProviderSettingService
         'api_secret',
     ];
 
+    /**
+     * Create a new class instance.
+     *
+     * @param  InterviewMeetingManager  $manager
+     * @param  RecruitmentActivityService  $activities
+     */
     public function __construct(
         private readonly InterviewMeetingManager $manager,
         private readonly RecruitmentActivityService $activities,
     ) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @return list<array<string, mixed>>
      */
     public function list(): array
@@ -50,6 +58,9 @@ class InterviewMeetingProviderSettingService
     }
 
     /**
+     * Upsert.
+     *
+     * @param  string  $provider
      * @param  array{enabled?: bool|null, credentials?: array<string, mixed>|null}  $data
      * @return array<string, mixed>
      */
@@ -86,6 +97,9 @@ class InterviewMeetingProviderSettingService
     }
 
     /**
+     * Credentials for.
+     *
+     * @param  string  $provider
      * @return array<string, mixed>
      */
     public function credentialsFor(string $provider): array
@@ -101,6 +115,12 @@ class InterviewMeetingProviderSettingService
         return is_array($record?->credentials) ? $record->credentials : [];
     }
 
+    /**
+     * Is enabled.
+     *
+     * @param  string  $provider
+     * @return bool
+     */
     public function isEnabled(string $provider): bool
     {
         if ($provider === MeetingProvider::Manual->value || $provider === MeetingProvider::Fake->value) {
@@ -117,6 +137,9 @@ class InterviewMeetingProviderSettingService
     }
 
     /**
+     * Test.
+     *
+     * @param  string  $provider
      * @return array<string, mixed>
      */
     public function test(string $provider): array
@@ -135,6 +158,10 @@ class InterviewMeetingProviderSettingService
     }
 
     /**
+     * To public array.
+     *
+     * @param  string  $provider
+     * @param  ?InterviewMeetingProviderSetting  $record
      * @return array<string, mixed>
      */
     public function toPublicArray(string $provider, ?InterviewMeetingProviderSetting $record = null): array
@@ -172,6 +199,13 @@ class InterviewMeetingProviderSettingService
         ];
     }
 
+    /**
+     * Is fully configured.
+     *
+     * @param  InterviewMeetingProvider  $driver
+     * @param  array  $credentials
+     * @return bool
+     */
     protected function isFullyConfigured(InterviewMeetingProvider $driver, array $credentials): bool
     {
         if (! $driver->capabilities()->requiresExternalApi) {
@@ -181,6 +215,12 @@ class InterviewMeetingProviderSettingService
         return $driver->isConfigured($credentials);
     }
 
+    /**
+     * Assert known.
+     *
+     * @param  string  $provider
+     * @return string
+     */
     protected function assertKnown(string $provider): string
     {
         $provider = Str::lower($provider);
@@ -195,6 +235,8 @@ class InterviewMeetingProviderSettingService
     }
 
     /**
+     * Sanitize incoming credentials.
+     *
      * @param  array<string, mixed>  $credentials
      * @return array<string, mixed>
      */
@@ -221,6 +263,12 @@ class InterviewMeetingProviderSettingService
         return $clean;
     }
 
+    /**
+     * Is secret key.
+     *
+     * @param  string  $key
+     * @return bool
+     */
     protected function isSecretKey(string $key): bool
     {
         $normalized = Str::lower($key);

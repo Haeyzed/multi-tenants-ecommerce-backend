@@ -33,6 +33,20 @@ use Illuminate\Validation\ValidationException;
  */
 class PayrollRunService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     * @param  LeaveTypeService  $leaveTypeService
+     * @param  WorkCalendarService  $calendar
+     * @param  OvertimeEngine  $overtime
+     * @param  PayeCalculatorService  $paye
+     * @param  StatutoryContributionService  $statutory
+     * @param  NibssPayrollProcessor  $nibss
+     * @param  PayrollRunAccountingService  $accounting
+     * @param  PayrollPeriodService  $periods
+     * @param  HrActivityService  $activities
+     */
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly LeaveTypeService $leaveTypeService,
@@ -47,6 +61,8 @@ class PayrollRunService
     ) {}
 
     /**
+     * status?: string|null, from?: string|null, to?: string|null, sort?: string|null, per_page?: int|null }  $params
+     *
      * @param  array{
      *     status?: string|null,
      *     from?: string|null,
@@ -65,6 +81,8 @@ class PayrollRunService
     }
 
     /**
+     * period_start?: string|null, period_end?: string|null, payroll_period_id?: int|null, currency?: string|null, notes?: string|null }  $data
+     *
      * @param  array{
      *     period_start?: string|null,
      *     period_end?: string|null,
@@ -72,6 +90,7 @@ class PayrollRunService
      *     currency?: string|null,
      *     notes?: string|null
      * }  $data
+     * @return PayrollRun
      *
      * @throws ValidationException
      */
@@ -109,6 +128,12 @@ class PayrollRunService
         return $this->generate($run);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PayrollRun  $payrollRun
+     * @return PayrollRun
+     */
     public function show(PayrollRun $payrollRun): PayrollRun
     {
         return $payrollRun->load([
@@ -122,6 +147,9 @@ class PayrollRunService
 
     /**
      * Regenerate payslip items for a draft payroll run.
+     *
+     * @param  PayrollRun  $payrollRun
+     * @return PayrollRun
      *
      * @throws ValidationException
      */
@@ -196,6 +224,10 @@ class PayrollRunService
     /**
      * Lock a draft payroll run for payment.
      *
+     * @param  PayrollRun  $payrollRun
+     * @param  User  $actor
+     * @return PayrollRun
+     *
      * @throws ValidationException
      */
     public function process(PayrollRun $payrollRun, User $actor): PayrollRun
@@ -238,6 +270,10 @@ class PayrollRunService
     /**
      * Approve a payroll run that is waiting for approval.
      *
+     * @param  PayrollRun  $payrollRun
+     * @param  User  $actor
+     * @return PayrollRun
+     *
      * @throws ValidationException
      */
     public function approve(PayrollRun $payrollRun, User $actor): PayrollRun
@@ -266,6 +302,8 @@ class PayrollRunService
     /**
      * Mark a processed payroll run as paid and optionally post to accounting.
      *
+     * @param  PayrollRun  $payrollRun
+     * @param  User  $actor
      * @param  array{
      *     post_to_accounting?: bool|null,
      *     expense_account_id?: int|null,
@@ -273,6 +311,7 @@ class PayrollRunService
      *     tax_payable_account_id?: int|null,
      *     deduction_payable_account_id?: int|null
      * }  $options
+     * @return PayrollRun
      *
      * @throws ValidationException
      */
@@ -317,6 +356,9 @@ class PayrollRunService
     /**
      * Cancel a draft or processed payroll run.
      *
+     * @param  PayrollRun  $payrollRun
+     * @return PayrollRun
+     *
      * @throws ValidationException
      */
     public function cancel(PayrollRun $payrollRun): PayrollRun
@@ -342,6 +384,10 @@ class PayrollRunService
     }
 
     /**
+     * List for employee.
+     *
+     * @param  Employee  $employee
+     * @param  array  $params
      * @return LengthAwarePaginator<int, PayrollItem>
      */
     public function listForEmployee(Employee $employee, array $params = []): LengthAwarePaginator
@@ -353,6 +399,12 @@ class PayrollRunService
             ->paginate($this->perPage($params));
     }
 
+    /**
+     * Show item.
+     *
+     * @param  PayrollItem  $item
+     * @return PayrollItem
+     */
     public function showItem(PayrollItem $item): PayrollItem
     {
         return $item->load([
@@ -363,6 +415,11 @@ class PayrollRunService
     }
 
     /**
+     * Assert editable.
+     *
+     * @param  PayrollRun  $payrollRun
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertEditable(PayrollRun $payrollRun): void
@@ -375,6 +432,13 @@ class PayrollRunService
     }
 
     /**
+     * Assert no overlapping run.
+     *
+     * @param  string  $periodStart
+     * @param  string  $periodEnd
+     * @param  ?int  $ignoreId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertNoOverlappingRun(string $periodStart, string $periodEnd, ?int $ignoreId = null): void
@@ -393,6 +457,13 @@ class PayrollRunService
         }
     }
 
+    /**
+     * Build item.
+     *
+     * @param  PayrollRun  $payrollRun
+     * @param  Employee  $employee
+     * @return ?PayrollItem
+     */
     protected function buildItem(PayrollRun $payrollRun, Employee $employee): ?PayrollItem
     {
         $salary = $employee->salary;
@@ -550,6 +621,16 @@ class PayrollRunService
         return $item->load('lines');
     }
 
+    /**
+     * Create line.
+     *
+     * @param  PayrollItem  $item
+     * @param  PayrollLineType  $type
+     * @param  string  $code
+     * @param  string  $label
+     * @param  string  $amount
+     * @return PayrollItemLine
+     */
     protected function createLine(
         PayrollItem $item,
         PayrollLineType $type,
@@ -566,6 +647,11 @@ class PayrollRunService
     }
 
     /**
+     * Employment window.
+     *
+     * @param  Employee  $employee
+     * @param  string  $periodStart
+     * @param  string  $periodEnd
      * @return array{0: string, 1: string}|null
      */
     protected function employmentWindow(Employee $employee, string $periodStart, string $periodEnd): ?array
@@ -608,6 +694,7 @@ class PayrollRunService
     /**
      * Bank payment register for a payroll run.
      *
+     * @param  PayrollRun  $payrollRun
      * @return list<array<string, scalar|null>>
      */
     public function paymentRegister(PayrollRun $payrollRun): array
@@ -631,6 +718,14 @@ class PayrollRunService
         })->values()->all();
     }
 
+    /**
+     * Count working days.
+     *
+     * @param  string  $startDate
+     * @param  string  $endDate
+     * @param  ?Employee  $employee
+     * @return int
+     */
     protected function countWorkingDays(string $startDate, string $endDate, ?Employee $employee = null): int
     {
         $start = Carbon::parse($startDate)->startOfDay();
@@ -648,6 +743,14 @@ class PayrollRunService
         return $count;
     }
 
+    /**
+     * Count absent days.
+     *
+     * @param  Employee  $employee
+     * @param  string  $periodStart
+     * @param  string  $periodEnd
+     * @return int
+     */
     protected function countAbsentDays(Employee $employee, string $periodStart, string $periodEnd): int
     {
         return Attendance::query()
@@ -660,6 +763,14 @@ class PayrollRunService
             ->count();
     }
 
+    /**
+     * Count unpaid leave days.
+     *
+     * @param  Employee  $employee
+     * @param  string  $periodStart
+     * @param  string  $periodEnd
+     * @return int
+     */
     protected function countUnpaidLeaveDays(Employee $employee, string $periodStart, string $periodEnd): int
     {
         $this->leaveTypeService->ensureDefaults();
@@ -691,6 +802,13 @@ class PayrollRunService
     }
 
     /**
+     * Overtime for period.
+     *
+     * @param  Employee  $employee
+     * @param  string  $periodStart
+     * @param  string  $periodEnd
+     * @param  string  $baseSalary
+     * @param  int  $workingDays
      * @return array{0: int, 1: string}
      */
     protected function overtimeForPeriod(Employee $employee, string $periodStart, string $periodEnd, string $baseSalary, int $workingDays): array
@@ -739,6 +857,10 @@ class PayrollRunService
     }
 
     /**
+     * Prior year to date.
+     *
+     * @param  Employee  $employee
+     * @param  PayrollRun  $payrollRun
      * @return array{0: string, 1: string, 2: int}
      */
     protected function priorYearToDate(Employee $employee, PayrollRun $payrollRun): array
@@ -771,6 +893,12 @@ class PayrollRunService
         return [$gross, $paye, $items->count()];
     }
 
+    /**
+     * Tax year start.
+     *
+     * @param  Carbon  $periodEnd
+     * @return Carbon
+     */
     protected function taxYearStart(Carbon $periodEnd): Carbon
     {
         $month = $this->hrSettings->payrollTaxYearStartMonth();
@@ -783,6 +911,15 @@ class PayrollRunService
         return $start;
     }
 
+    /**
+     * Statutory paye.
+     *
+     * @param  string  $taxablePay
+     * @param  string  $priorYtdGross
+     * @param  string  $priorYtdPaye
+     * @param  int  $periodsElapsed
+     * @return string
+     */
     protected function statutoryPaye(string $taxablePay, string $priorYtdGross, string $priorYtdPaye, int $periodsElapsed): string
     {
         if (! $this->hrSettings->isPayrollTaxEnabled()) {
@@ -811,6 +948,11 @@ class PayrollRunService
         return $this->paye->periodTax($taxablePay, $frequency, $table);
     }
 
+    /**
+     * Should submit nibss.
+     *
+     * @return bool
+     */
     protected function shouldSubmitNibss(): bool
     {
         return $this->hrSettings->isNibssEnabled()
@@ -820,6 +962,13 @@ class PayrollRunService
             && $this->hrSettings->nibssOriginatorBankCode() !== null;
     }
 
+    /**
+     * Resolve component amount.
+     *
+     * @param  EmployeeSalaryComponent  $component
+     * @param  string  $baseSalary
+     * @return string
+     */
     protected function resolveComponentAmount(EmployeeSalaryComponent $component, string $baseSalary): string
     {
         if ($component->calculation === SalaryComponentCalculation::Percent) {
@@ -830,6 +979,12 @@ class PayrollRunService
     }
 
     /**
+     * Create from current period.
+     *
+     * @param  ?string  $currency
+     * @param  ?string  $notes
+     * @return PayrollRun
+     *
      * @throws ValidationException
      */
     public function createFromCurrentPeriod(?string $currency = null, ?string $notes = null): PayrollRun
@@ -845,6 +1000,12 @@ class PayrollRunService
         ]);
     }
 
+    /**
+     * Ensure current period.
+     *
+     * @param  ?Carbon  $asOf
+     * @return PayrollPeriod
+     */
     public function ensureCurrentPeriod(?Carbon $asOf = null): PayrollPeriod
     {
         return $this->periods->ensureCurrentPeriod($asOf);
@@ -852,6 +1013,8 @@ class PayrollRunService
 
     /**
      * Create a draft run for the current period when today is the configured payment day.
+     *
+     * @return ?PayrollRun
      */
     public function scheduleCurrentPeriodRun(): ?PayrollRun
     {
@@ -888,6 +1051,9 @@ class PayrollRunService
     }
 
     /**
+     * Period window.
+     *
+     * @param  ?Carbon  $asOf
      * @return array{period_start: string, period_end: string, payment_date: string}
      */
     public function periodWindow(?Carbon $asOf = null): array
@@ -895,11 +1061,24 @@ class PayrollRunService
         return $this->periods->periodWindow($asOf);
     }
 
+    /**
+     * Find or create period.
+     *
+     * @param  string  $periodStart
+     * @param  string  $periodEnd
+     * @param  ?string  $paymentDate
+     * @return PayrollPeriod
+     */
     protected function findOrCreatePeriod(string $periodStart, string $periodEnd, ?string $paymentDate = null): PayrollPeriod
     {
         return $this->periods->findOrCreatePeriod($periodStart, $periodEnd, $paymentDate);
     }
 
+    /**
+     * Next reference.
+     *
+     * @return string
+     */
     protected function nextReference(): string
     {
         $prefix = 'PAY-'.now()->format('Ym').'-';
@@ -917,6 +1096,12 @@ class PayrollRunService
         return $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * Dispatch payslips.
+     *
+     * @param  PayrollRun  $payrollRun
+     * @return void
+     */
     protected function dispatchPayslips(PayrollRun $payrollRun): void
     {
         $payrollRun->loadMissing('items');
@@ -927,7 +1112,10 @@ class PayrollRunService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

@@ -18,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 class WorkLocationService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, is_active?: bool|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, WorkLocation>
      */
@@ -31,6 +33,8 @@ class WorkLocationService
     }
 
     /**
+     * Return options for select inputs.
+     *
      * @return Collection<int, array{label: string, value: int}>
      */
     public function options(): Collection
@@ -47,7 +51,10 @@ class WorkLocationService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array{name: string, code?: string|null, address?: string|null, is_active?: bool}  $data
+     * @return WorkLocation
      *
      * @throws ValidationException
      */
@@ -63,13 +70,23 @@ class WorkLocationService
         ]);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  WorkLocation  $location
+     * @return WorkLocation
+     */
     public function show(WorkLocation $location): WorkLocation
     {
         return $location->loadCount(['employees', 'jobOpenings']);
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  WorkLocation  $location
      * @param  array{name?: string, code?: string|null, address?: string|null, is_active?: bool}  $data
+     * @return WorkLocation
      *
      * @throws ValidationException
      */
@@ -86,6 +103,11 @@ class WorkLocationService
     }
 
     /**
+     * Delete a resource.
+     *
+     * @param  WorkLocation  $location
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(WorkLocation $location): void
@@ -101,6 +123,12 @@ class WorkLocationService
     }
 
     /**
+     * Assert unique name.
+     *
+     * @param  string  $name
+     * @param  ?int  $ignoreId
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertUniqueName(string $name, ?int $ignoreId = null): void
@@ -121,6 +149,8 @@ class WorkLocationService
      * Copy the configured location name onto the legacy snapshot string when assigned.
      *
      * @param  array<string, mixed>  $data
+     * @param  string  $idKey
+     * @param  string  $labelKey
      * @return array<string, mixed>
      */
     public function applySnapshot(array $data, string $idKey = 'work_location_id', string $labelKey = 'work_location'): array
@@ -139,7 +169,10 @@ class WorkLocationService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

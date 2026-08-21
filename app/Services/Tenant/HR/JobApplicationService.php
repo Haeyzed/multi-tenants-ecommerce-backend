@@ -25,6 +25,15 @@ use Illuminate\Validation\ValidationException;
  */
 class JobApplicationService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     * @param  CandidateService  $candidates
+     * @param  RecruitmentStageService  $stages
+     * @param  UsageLimiter  $usageLimiter
+     * @param  RecruitmentActivityService  $activities
+     */
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly CandidateService $candidates,
@@ -34,6 +43,8 @@ class JobApplicationService
     ) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, status?: string|null, job_opening_id?: int|null, candidate_id?: int|null, recruitment_stage_id?: int|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, JobApplication>
      */
@@ -49,7 +60,12 @@ class JobApplicationService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @param  ?User  $actor
+     * @param  bool  $public
+     * @return JobApplication
      *
      * @throws ValidationException
      */
@@ -117,6 +133,13 @@ class JobApplicationService
         return $application->load(['jobOpening', 'candidate', 'stage', 'hiredEmployee.user']);
     }
 
+    /**
+     * Apply public.
+     *
+     * @param  array  $data
+     * @param  ?UploadedFile  $resume
+     * @return JobApplication
+     */
     public function applyPublic(array $data, ?UploadedFile $resume = null): JobApplication
     {
         $application = $this->store($data, null, true);
@@ -128,6 +151,12 @@ class JobApplicationService
         return $application->load(['jobOpening', 'candidate', 'stage']);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  JobApplication  $application
+     * @return JobApplication
+     */
     public function show(JobApplication $application): JobApplication
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -146,6 +175,9 @@ class JobApplicationService
     }
 
     /**
+     * List activities.
+     *
+     * @param  JobApplication  $application
      * @param  array{sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, RecruitmentActivity>
      */
@@ -157,7 +189,12 @@ class JobApplicationService
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  JobApplication  $application
      * @param  array<string, mixed>  $data
+     * @param  ?User  $actor
+     * @return JobApplication
      */
     public function update(JobApplication $application, array $data, ?User $actor = null): JobApplication
     {
@@ -191,6 +228,15 @@ class JobApplicationService
     }
 
     /**
+     * Move stage.
+     *
+     * @param  JobApplication  $application
+     * @param  ?RecruitmentStage  $stage
+     * @param  ?JobApplicationStatus  $status
+     * @param  ?User  $actor
+     * @param  ?string  $notes
+     * @return JobApplication
+     *
      * @throws ValidationException
      */
     public function moveStage(
@@ -246,6 +292,12 @@ class JobApplicationService
         return $application->fresh(['jobOpening', 'candidate', 'stage', 'hiredEmployee.user']) ?? $application;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  JobApplication  $application
+     * @return void
+     */
     public function destroy(JobApplication $application): void
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -253,6 +305,18 @@ class JobApplicationService
         $application->delete();
     }
 
+    /**
+     * Record history.
+     *
+     * @param  JobApplication  $application
+     * @param  ?RecruitmentStage  $fromStage
+     * @param  ?RecruitmentStage  $toStage
+     * @param  ?JobApplicationStatus  $fromStatus
+     * @param  JobApplicationStatus  $toStatus
+     * @param  ?User  $actor
+     * @param  ?string  $notes
+     * @return ApplicationStageHistory
+     */
     public function recordHistory(
         JobApplication $application,
         ?RecruitmentStage $fromStage,
@@ -274,6 +338,11 @@ class JobApplicationService
     }
 
     /**
+     * Assert accepts applications.
+     *
+     * @param  JobOpening  $opening
+     * @return void
+     *
      * @throws ValidationException
      */
     public function assertAcceptsApplications(JobOpening $opening): void
@@ -286,7 +355,10 @@ class JobApplicationService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

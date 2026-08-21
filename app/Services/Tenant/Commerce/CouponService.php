@@ -22,6 +22,8 @@ use Illuminate\Validation\ValidationException;
 class CouponService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, is_active?: bool|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Coupon>
      */
@@ -50,7 +52,10 @@ class CouponService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return Coupon
      */
     public function store(array $data): Coupon
     {
@@ -60,13 +65,23 @@ class CouponService
         return $this->freshWithRelations($coupon);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Coupon  $coupon
+     * @return Coupon
+     */
     public function show(Coupon $coupon): Coupon
     {
         return $this->freshWithRelations($coupon);
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  Coupon  $coupon
      * @param  array<string, mixed>  $data
+     * @return Coupon
      */
     public function update(Coupon $coupon, array $data): Coupon
     {
@@ -77,6 +92,12 @@ class CouponService
         return $this->freshWithRelations($coupon);
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Coupon  $coupon
+     * @return void
+     */
     public function destroy(Coupon $coupon): void
     {
         $coupon->delete();
@@ -85,7 +106,11 @@ class CouponService
     /**
      * Validate a coupon code against the customer's cart.
      *
-     * @param  list<int>  $excludedCartItemIds  Cart item IDs excluded from coupon eligibility (e.g. non-stackable flash lines).
+     * @param  Customer  $customer
+     * @param  Cart  $cart
+     * @param  string  $code
+     * @param  array  $excludedCartItemIds
+     * @return DiscountResult
      *
      * @throws ValidationException
      */
@@ -161,6 +186,12 @@ class CouponService
     }
 
     /**
+     * Assert coupon is redeemable.
+     *
+     * @param  Coupon  $coupon
+     * @param  Customer  $customer
+     * @return void
+     *
      * @throws ValidationException
      */
     public function assertCouponIsRedeemable(Coupon $coupon, Customer $customer): void
@@ -218,6 +249,13 @@ class CouponService
         }
     }
 
+    /**
+     * Calculate discount amount.
+     *
+     * @param  Coupon  $coupon
+     * @param  string  $eligibleSubtotal
+     * @return string
+     */
     public function calculateDiscountAmount(Coupon $coupon, string $eligibleSubtotal): string
     {
         $discount = match ($coupon->type) {
@@ -237,6 +275,10 @@ class CouponService
     }
 
     /**
+     * Eligible cart items.
+     *
+     * @param  Coupon  $coupon
+     * @param  Cart  $cart
      * @param  list<int>  $excludedCartItemIds
      * @return Collection<int, CartItem>
      */
@@ -282,7 +324,10 @@ class CouponService
     }
 
     /**
+     * Sum item subtotals.
+     *
      * @param  Collection<int, CartItem>  $items
+     * @return string
      */
     public function sumItemSubtotals(Collection $items): string
     {
@@ -296,7 +341,10 @@ class CouponService
     }
 
     /**
+     * Distribute discount.
+     *
      * @param  Collection<int, CartItem>  $items
+     * @param  string  $totalDiscount
      * @return array<int, string>
      */
     public function distributeDiscount(Collection $items, string $totalDiscount): array
@@ -330,7 +378,10 @@ class CouponService
     }
 
     /**
+     * Attributes from data.
+     *
      * @param  array<string, mixed>  $data
+     * @param  ?Coupon  $existing
      * @return array<string, mixed>
      */
     protected function attributesFromData(array $data, ?Coupon $existing = null): array
@@ -367,7 +418,11 @@ class CouponService
     }
 
     /**
+     * Sync restrictions.
+     *
+     * @param  Coupon  $coupon
      * @param  array<string, mixed>  $data
+     * @return void
      */
     protected function syncRestrictions(Coupon $coupon, array $data): void
     {
@@ -381,13 +436,22 @@ class CouponService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {
         return max(1, min((int) ($params['per_page'] ?? 15), 100));
     }
 
+    /**
+     * Fresh with relations.
+     *
+     * @param  Coupon  $coupon
+     * @return Coupon
+     */
     protected function freshWithRelations(Coupon $coupon): Coupon
     {
         $with = ['products'];

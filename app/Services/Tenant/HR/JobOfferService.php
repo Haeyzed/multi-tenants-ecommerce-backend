@@ -22,6 +22,14 @@ use Illuminate\Validation\ValidationException;
  */
 class JobOfferService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     * @param  JobApplicationService  $applications
+     * @param  RecruitmentStageService  $stages
+     * @param  RecruitmentActivityService  $activities
+     */
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly JobApplicationService $applications,
@@ -30,7 +38,10 @@ class JobOfferService
     ) {}
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return JobOffer
      *
      * @throws ValidationException
      */
@@ -60,6 +71,12 @@ class JobOfferService
         return $offer->load(['application.candidate', 'application.jobOpening']);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  JobOffer  $offer
+     * @return JobOffer
+     */
     public function show(JobOffer $offer): JobOffer
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -69,6 +86,11 @@ class JobOfferService
     }
 
     /**
+     * Show public by token.
+     *
+     * @param  string  $token
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     public function showPublicByToken(string $token): JobOffer
@@ -88,7 +110,11 @@ class JobOfferService
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  JobOffer  $offer
      * @param  array<string, mixed>  $data
+     * @return JobOffer
      *
      * @throws ValidationException
      */
@@ -122,6 +148,11 @@ class JobOfferService
     }
 
     /**
+     * Submit for approval.
+     *
+     * @param  JobOffer  $offer
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     public function submitForApproval(JobOffer $offer): JobOffer
@@ -143,6 +174,12 @@ class JobOfferService
     }
 
     /**
+     * Approve.
+     *
+     * @param  JobOffer  $offer
+     * @param  User  $actor
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     public function approve(JobOffer $offer, User $actor): JobOffer
@@ -165,6 +202,12 @@ class JobOfferService
     }
 
     /**
+     * Send.
+     *
+     * @param  JobOffer  $offer
+     * @param  ?User  $actor
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     public function send(JobOffer $offer, ?User $actor = null): JobOffer
@@ -212,12 +255,24 @@ class JobOfferService
         return $offer->fresh(['application.candidate', 'application.jobOpening']) ?? $offer;
     }
 
+    /**
+     * Public response url.
+     *
+     * @param  string  $token
+     * @return string
+     */
     public function publicResponseUrl(string $token): string
     {
         return route('tenant.public.offers.show', ['token' => $token], absolute: true);
     }
 
     /**
+     * Accept.
+     *
+     * @param  JobOffer  $offer
+     * @param  ?User  $actor
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     public function accept(JobOffer $offer, ?User $actor = null): JobOffer
@@ -226,6 +281,12 @@ class JobOfferService
     }
 
     /**
+     * Reject.
+     *
+     * @param  JobOffer  $offer
+     * @param  ?User  $actor
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     public function reject(JobOffer $offer, ?User $actor = null): JobOffer
@@ -234,6 +295,11 @@ class JobOfferService
     }
 
     /**
+     * Accept public by token.
+     *
+     * @param  string  $token
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     public function acceptPublicByToken(string $token): JobOffer
@@ -242,6 +308,11 @@ class JobOfferService
     }
 
     /**
+     * Reject public by token.
+     *
+     * @param  string  $token
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     public function rejectPublicByToken(string $token): JobOffer
@@ -250,6 +321,11 @@ class JobOfferService
     }
 
     /**
+     * Withdraw.
+     *
+     * @param  JobOffer  $offer
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     public function withdraw(JobOffer $offer): JobOffer
@@ -273,6 +349,12 @@ class JobOfferService
         return $offer->fresh(['application.candidate']) ?? $offer;
     }
 
+    /**
+     * Expire if needed.
+     *
+     * @param  JobOffer  $offer
+     * @return JobOffer
+     */
     public function expireIfNeeded(JobOffer $offer): JobOffer
     {
         if ($offer->isExpired()) {
@@ -287,6 +369,13 @@ class JobOfferService
     }
 
     /**
+     * Decide.
+     *
+     * @param  JobOffer  $offer
+     * @param  JobOfferStatus  $decision
+     * @param  ?User  $actor
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     protected function decide(JobOffer $offer, JobOfferStatus $decision, ?User $actor): JobOffer
@@ -322,6 +411,11 @@ class JobOfferService
     }
 
     /**
+     * Offer from token.
+     *
+     * @param  string  $token
+     * @return JobOffer
+     *
      * @throws ValidationException
      */
     protected function offerFromToken(string $token): JobOffer
@@ -348,6 +442,11 @@ class JobOfferService
     }
 
     /**
+     * Assert can offer.
+     *
+     * @param  JobApplication  $application
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertCanOffer(JobApplication $application): void

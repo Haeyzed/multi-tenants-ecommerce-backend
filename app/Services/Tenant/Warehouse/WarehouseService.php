@@ -18,6 +18,11 @@ use Illuminate\Validation\ValidationException;
  */
 class WarehouseService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  UsageLimiter  $usageLimiter
+     */
     public function __construct(private readonly UsageLimiter $usageLimiter) {}
 
     /**
@@ -77,6 +82,7 @@ class WarehouseService
      *     is_default?: bool,
      *     sort_order?: int
      * }  $data
+     * @return Warehouse
      */
     public function store(array $data): Warehouse
     {
@@ -109,6 +115,9 @@ class WarehouseService
 
     /**
      * Retrieve a warehouse with locations loaded.
+     *
+     * @param  Warehouse  $warehouse
+     * @return Warehouse
      */
     public function show(Warehouse $warehouse): Warehouse
     {
@@ -118,6 +127,7 @@ class WarehouseService
     /**
      * Update a warehouse and unset other defaults when marked default.
      *
+     * @param  Warehouse  $warehouse
      * @param  array{
      *     name?: string,
      *     code?: string,
@@ -132,6 +142,7 @@ class WarehouseService
      *     is_default?: bool,
      *     sort_order?: int
      * }  $data
+     * @return Warehouse
      */
     public function update(Warehouse $warehouse, array $data): Warehouse
     {
@@ -153,6 +164,9 @@ class WarehouseService
     /**
      * Delete a warehouse when no inventory records exist.
      *
+     * @param  Warehouse  $warehouse
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(Warehouse $warehouse): void
@@ -169,6 +183,7 @@ class WarehouseService
     /**
      * List locations for a warehouse.
      *
+     * @param  Warehouse  $warehouse
      * @param  array{
      *     search?: string|null,
      *     is_active?: bool|null,
@@ -190,6 +205,7 @@ class WarehouseService
     /**
      * Create a location within a warehouse.
      *
+     * @param  Warehouse  $warehouse
      * @param  array{
      *     name: string,
      *     code?: string|null,
@@ -200,6 +216,7 @@ class WarehouseService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @return WarehouseLocation
      */
     public function storeLocation(Warehouse $warehouse, array $data): WarehouseLocation
     {
@@ -218,6 +235,7 @@ class WarehouseService
     /**
      * Update a warehouse location.
      *
+     * @param  WarehouseLocation  $location
      * @param  array{
      *     name?: string,
      *     code?: string|null,
@@ -228,6 +246,7 @@ class WarehouseService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @return WarehouseLocation
      */
     public function updateLocation(WarehouseLocation $location, array $data): WarehouseLocation
     {
@@ -239,6 +258,9 @@ class WarehouseService
 
     /**
      * Delete a warehouse location when no inventory records exist.
+     *
+     * @param  WarehouseLocation  $location
+     * @return void
      *
      * @throws ValidationException
      */
@@ -254,7 +276,10 @@ class WarehouseService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

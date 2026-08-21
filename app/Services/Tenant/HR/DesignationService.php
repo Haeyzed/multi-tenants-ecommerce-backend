@@ -14,6 +14,8 @@ use Illuminate\Support\Collection;
 class DesignationService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, department_id?: int|null, is_active?: bool|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Designation>
      */
@@ -27,6 +29,9 @@ class DesignationService
     }
 
     /**
+     * Return options for select inputs.
+     *
+     * @param  ?int  $departmentId
      * @return Collection<int, array{label: string, value: int}>
      */
     public function options(?int $departmentId = null): Collection
@@ -46,7 +51,10 @@ class DesignationService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array{department_id?: int|null, name: string, code?: string|null, description?: string|null, is_active?: bool}  $data
+     * @return Designation
      */
     public function store(array $data): Designation
     {
@@ -59,13 +67,23 @@ class DesignationService
         ])->load('department');
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Designation  $designation
+     * @return Designation
+     */
     public function show(Designation $designation): Designation
     {
         return $designation->loadCount('employees')->load('department');
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  Designation  $designation
      * @param  array{department_id?: int|null, name?: string, code?: string|null, description?: string|null, is_active?: bool}  $data
+     * @return Designation
      */
     public function update(Designation $designation, array $data): Designation
     {
@@ -75,13 +93,22 @@ class DesignationService
         return $designation->fresh(['department']) ?? $designation;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Designation  $designation
+     * @return void
+     */
     public function destroy(Designation $designation): void
     {
         $designation->delete();
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

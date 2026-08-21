@@ -19,6 +19,11 @@ use Illuminate\Support\Facades\DB;
  */
 class DriverService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  UsageLimiter  $usageLimiter
+     */
     public function __construct(private readonly UsageLimiter $usageLimiter) {}
 
     /**
@@ -54,6 +59,7 @@ class DriverService
      *     status?: DriverStatus|string|null,
      *     availability?: DriverAvailability|string|null
      * }  $data
+     * @return Driver
      */
     public function store(array $data): Driver
     {
@@ -76,6 +82,9 @@ class DriverService
 
     /**
      * Retrieve a driver.
+     *
+     * @param  Driver  $driver
+     * @return Driver
      */
     public function show(Driver $driver): Driver
     {
@@ -85,6 +94,7 @@ class DriverService
     /**
      * Update a driver (admin — password optional).
      *
+     * @param  Driver  $driver
      * @param  array{
      *     first_name?: string,
      *     last_name?: string,
@@ -94,6 +104,7 @@ class DriverService
      *     status?: DriverStatus|string,
      *     availability?: DriverAvailability|string
      * }  $data
+     * @return Driver
      */
     public function update(Driver $driver, array $data): Driver
     {
@@ -115,6 +126,9 @@ class DriverService
 
     /**
      * Soft-delete a driver and revoke tokens.
+     *
+     * @param  Driver  $driver
+     * @return void
      */
     public function destroy(Driver $driver): void
     {
@@ -125,6 +139,7 @@ class DriverService
     /**
      * Paginate delivery history for a driver.
      *
+     * @param  Driver  $driver
      * @param  array{status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Delivery>
      */
@@ -145,10 +160,8 @@ class DriverService
     /**
      * Aggregate delivery counts by status for a driver.
      *
+     * @param  Driver  $driver
      * @return array{
-     *     total: int,
-     *     by_status: array<string, int>
-     * }
      */
     public function stats(Driver $driver): array
     {
@@ -177,7 +190,9 @@ class DriverService
     /**
      * Update the authenticated driver's profile.
      *
+     * @param  Driver  $driver
      * @param  array{first_name?: string, last_name?: string, email?: string, phone?: string|null, availability?: DriverAvailability|string}  $data
+     * @return Driver
      */
     public function updateProfile(Driver $driver, array $data): Driver
     {
@@ -188,7 +203,10 @@ class DriverService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

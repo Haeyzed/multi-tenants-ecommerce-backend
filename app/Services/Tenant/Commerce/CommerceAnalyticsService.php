@@ -17,7 +17,11 @@ class CommerceAnalyticsService
     /**
      * Persist a commerce analytics event when the analytics table is available.
      *
+     * @param  string  $name
+     * @param  ?Model  $subject
+     * @param  ?Customer  $customer
      * @param  array<string, mixed>  $payload
+     * @return CommerceEvent
      */
     public function record(string $name, ?Model $subject, ?Customer $customer, array $payload = []): CommerceEvent
     {

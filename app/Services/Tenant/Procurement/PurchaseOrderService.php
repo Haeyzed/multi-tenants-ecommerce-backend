@@ -17,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 class PurchaseOrderService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{status?: string|null, supplier_id?: int|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, PurchaseOrder>
      */
@@ -54,6 +56,7 @@ class PurchaseOrderService
      *         tax?: string|float|null
      *     }>
      * }  $data
+     * @return PurchaseOrder
      */
     public function create(array $data): PurchaseOrder
     {
@@ -113,6 +116,12 @@ class PurchaseOrderService
         });
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return PurchaseOrder
+     */
     public function show(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
         return $purchaseOrder->load([
@@ -125,6 +134,11 @@ class PurchaseOrderService
     }
 
     /**
+     * Approve.
+     *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return PurchaseOrder
+     *
      * @throws ValidationException
      */
     public function approve(PurchaseOrder $purchaseOrder): PurchaseOrder
@@ -147,6 +161,11 @@ class PurchaseOrderService
     }
 
     /**
+     * Mark ordered.
+     *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return PurchaseOrder
+     *
      * @throws ValidationException
      */
     public function markOrdered(PurchaseOrder $purchaseOrder): PurchaseOrder
@@ -171,6 +190,9 @@ class PurchaseOrderService
 
     /**
      * Cancel a purchase order that has not received any goods.
+     *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return PurchaseOrder
      *
      * @throws ValidationException
      */
@@ -216,6 +238,9 @@ class PurchaseOrderService
     /**
      * Short-close a partially received purchase order (under-delivery).
      *
+     * @param  PurchaseOrder  $purchaseOrder
+     * @return PurchaseOrder
+     *
      * @throws ValidationException
      */
     public function close(PurchaseOrder $purchaseOrder): PurchaseOrder
@@ -237,6 +262,11 @@ class PurchaseOrderService
         });
     }
 
+    /**
+     * Next order number.
+     *
+     * @return string
+     */
     protected function nextOrderNumber(): string
     {
         do {
@@ -247,7 +277,10 @@ class PurchaseOrderService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

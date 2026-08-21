@@ -26,8 +26,19 @@ use Illuminate\Validation\ValidationException;
 #[Group('HR')]
 class LeaveRequestController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  LeaveRequestService  $leaveRequestService
+     */
     public function __construct(private readonly LeaveRequestService $leaveRequestService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexLeaveRequestRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated leave requests.', type: 'array{success: true, message: string, data: LeaveRequestResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexLeaveRequestRequest $request): JsonResponse
     {
@@ -49,6 +60,12 @@ class LeaveRequestController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreLeaveRequestRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created leave request.', type: 'array{success: true, message: string, data: LeaveRequestResource, meta: null, errors: null}')]
     public function store(StoreLeaveRequestRequest $request): JsonResponse
     {
@@ -69,6 +86,12 @@ class LeaveRequestController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  LeaveRequest  $leave_request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A leave request.', type: 'array{success: true, message: string, data: LeaveRequestResource, meta: null, errors: null}')]
     public function show(LeaveRequest $leave_request): JsonResponse
     {
@@ -80,6 +103,13 @@ class LeaveRequestController extends Controller
         );
     }
 
+    /**
+     * Approve.
+     *
+     * @param  ReviewLeaveRequestRequest  $request
+     * @param  LeaveRequest  $leave_request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Approved leave request.', type: 'array{success: true, message: string, data: LeaveRequestResource, meta: null, errors: null}')]
     public function approve(ReviewLeaveRequestRequest $request, LeaveRequest $leave_request): JsonResponse
     {
@@ -96,6 +126,13 @@ class LeaveRequestController extends Controller
         );
     }
 
+    /**
+     * Reject.
+     *
+     * @param  ReviewLeaveRequestRequest  $request
+     * @param  LeaveRequest  $leave_request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Rejected leave request.', type: 'array{success: true, message: string, data: LeaveRequestResource, meta: null, errors: null}')]
     public function reject(ReviewLeaveRequestRequest $request, LeaveRequest $leave_request): JsonResponse
     {
@@ -112,6 +149,12 @@ class LeaveRequestController extends Controller
         );
     }
 
+    /**
+     * Cancel.
+     *
+     * @param  LeaveRequest  $leave_request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Cancelled leave request.', type: 'array{success: true, message: string, data: LeaveRequestResource, meta: null, errors: null}')]
     public function cancel(LeaveRequest $leave_request): JsonResponse
     {
@@ -123,6 +166,11 @@ class LeaveRequestController extends Controller
         );
     }
 
+    /**
+     * Resolve the authenticated tenant user.
+     *
+     * @return User
+     */
     protected function actor(): User
     {
         /** @var User $user */

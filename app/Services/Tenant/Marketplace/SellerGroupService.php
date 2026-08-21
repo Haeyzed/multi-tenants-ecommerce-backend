@@ -66,6 +66,7 @@ class SellerGroupService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @return SellerGroup
      */
     public function store(array $data): SellerGroup
     {
@@ -82,6 +83,9 @@ class SellerGroupService
 
     /**
      * Retrieve a seller group with membership count.
+     *
+     * @param  SellerGroup  $group
+     * @return SellerGroup
      */
     public function show(SellerGroup $group): SellerGroup
     {
@@ -91,6 +95,7 @@ class SellerGroupService
     /**
      * Update a seller group.
      *
+     * @param  SellerGroup  $group
      * @param  array{
      *     name?: string,
      *     description?: string|null,
@@ -100,6 +105,7 @@ class SellerGroupService
      *     is_active?: bool,
      *     sort_order?: int
      * }  $data
+     * @return SellerGroup
      */
     public function update(SellerGroup $group, array $data): SellerGroup
     {
@@ -111,6 +117,9 @@ class SellerGroupService
 
     /**
      * Delete a seller group when no sellers are assigned.
+     *
+     * @param  SellerGroup  $group
+     * @return void
      *
      * @throws ValidationException
      */
@@ -126,7 +135,10 @@ class SellerGroupService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\Schema;
  */
 class PopularProductsProvider implements ProductRecommendationProvider
 {
+    /**
+     * Key.
+     *
+     * @return string
+     */
     public function key(): string
     {
         return 'popular';
@@ -24,6 +29,12 @@ class PopularProductsProvider implements ProductRecommendationProvider
 
     /**
      * {@inheritDoc}
+     *
+     * @param  ?Product  $product
+     * @param  ?Customer  $customer
+     * @param  int  $limit
+     * @param  ?string  $sessionKey
+     * @return Collection
      */
     public function recommend(
         ?Product $product = null,

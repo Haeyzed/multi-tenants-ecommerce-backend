@@ -23,10 +23,18 @@ use Illuminate\Http\JsonResponse;
  */
 class ProductTagController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductTagService  $tagService
+     */
     public function __construct(private readonly ProductTagService $tagService) {}
 
     /**
      * List tags.
+     *
+     * @param  IndexProductTagRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -46,6 +54,9 @@ class ProductTagController extends Controller
 
     /**
      * Tag options for select inputs.
+     *
+     * @param  IndexProductTagRequest  $request
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Tag options.', type: ApiResponseSchema::OPTIONS)]
     public function options(IndexProductTagRequest $request): JsonResponse
@@ -58,6 +69,9 @@ class ProductTagController extends Controller
 
     /**
      * Create a tag.
+     *
+     * @param  StoreProductTagRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -74,6 +88,9 @@ class ProductTagController extends Controller
 
     /**
      * Show a tag.
+     *
+     * @param  ProductTag  $tag
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -90,6 +107,10 @@ class ProductTagController extends Controller
 
     /**
      * Update a tag.
+     *
+     * @param  UpdateProductTagRequest  $request
+     * @param  ProductTag  $tag
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -106,6 +127,9 @@ class ProductTagController extends Controller
 
     /**
      * Delete a tag.
+     *
+     * @param  ProductTag  $tag
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -121,6 +145,10 @@ class ProductTagController extends Controller
 
     /**
      * Sync tags on a product.
+     *
+     * @param  SyncProductTagsRequest  $request
+     * @param  Product  $product
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

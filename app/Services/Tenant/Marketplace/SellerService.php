@@ -20,9 +20,16 @@ use Illuminate\Validation\ValidationException;
  */
 class SellerService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  UsageLimiter  $usageLimiter
+     */
     public function __construct(private readonly UsageLimiter $usageLimiter) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, status?: string|null, verification_status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Seller>
      */
@@ -54,6 +61,7 @@ class SellerService
      * Create a seller in pending verification (inactive until approved).
      *
      * @param  array<string, mixed>  $data
+     * @return Seller
      */
     public function store(array $data): Seller
     {
@@ -78,13 +86,23 @@ class SellerService
         ]);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Seller  $seller
+     * @return Seller
+     */
     public function show(Seller $seller): Seller
     {
         return $seller->load(['sellerGroup'])->loadCount('offers');
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  Seller  $seller
      * @param  array<string, mixed>  $data
+     * @return Seller
      */
     public function update(Seller $seller, array $data): Seller
     {
@@ -100,6 +118,9 @@ class SellerService
 
     /**
      * Move seller into under_review.
+     *
+     * @param  Seller  $seller
+     * @return Seller
      */
     public function markUnderReview(Seller $seller): Seller
     {
@@ -111,6 +132,9 @@ class SellerService
 
     /**
      * Approve seller for selling and activate the account.
+     *
+     * @param  Seller  $seller
+     * @return Seller
      */
     public function approve(Seller $seller): Seller
     {
@@ -125,6 +149,9 @@ class SellerService
 
     /**
      * Reject seller verification.
+     *
+     * @param  Seller  $seller
+     * @return Seller
      */
     public function reject(Seller $seller): Seller
     {
@@ -147,6 +174,9 @@ class SellerService
 
     /**
      * Suspend an active seller.
+     *
+     * @param  Seller  $seller
+     * @return Seller
      */
     public function suspend(Seller $seller): Seller
     {
@@ -162,6 +192,9 @@ class SellerService
 
     /**
      * Reactivate a suspended or inactive approved seller.
+     *
+     * @param  Seller  $seller
+     * @return Seller
      */
     public function activate(Seller $seller): Seller
     {
@@ -178,7 +211,10 @@ class SellerService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

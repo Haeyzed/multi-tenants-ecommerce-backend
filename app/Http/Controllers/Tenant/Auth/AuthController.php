@@ -28,11 +28,16 @@ class AuthController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  AuthService  $authService
      */
     public function __construct(private readonly AuthService $authService) {}
 
     /**
      * Register a tenant user and return a Sanctum token.
+     *
+     * @param  RegisterRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -51,6 +56,9 @@ class AuthController extends Controller
 
     /**
      * Authenticate a tenant user and return a Sanctum token.
+     *
+     * @param  LoginRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -69,6 +77,9 @@ class AuthController extends Controller
 
     /**
      * Revoke the current tenant access token.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -87,6 +98,9 @@ class AuthController extends Controller
 
     /**
      * Request a password reset link for a tenant user.
+     *
+     * @param  ForgotPasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -102,6 +116,9 @@ class AuthController extends Controller
 
     /**
      * Reset a tenant user's password using a reset token.
+     *
+     * @param  ResetPasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -117,6 +134,9 @@ class AuthController extends Controller
 
     /**
      * Return the authenticated tenant user.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -136,6 +156,9 @@ class AuthController extends Controller
 
     /**
      * Update the authenticated tenant user's profile.
+     *
+     * @param  UpdateProfileRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -163,6 +186,9 @@ class AuthController extends Controller
 
     /**
      * Upload or replace the authenticated tenant user's avatar.
+     *
+     * @param  StoreAvatarRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -184,6 +210,8 @@ class AuthController extends Controller
 
     /**
      * Delete the authenticated tenant user's avatar.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -202,6 +230,9 @@ class AuthController extends Controller
 
     /**
      * Change the authenticated tenant user's password.
+     *
+     * @param  ChangePasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

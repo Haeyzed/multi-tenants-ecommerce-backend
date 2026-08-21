@@ -19,6 +19,13 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class CandidateService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     * @param  MediaService  $media
+     * @param  RecruitmentActivityService  $activities
+     */
     public function __construct(
         private readonly HrSettingsService $hrSettings,
         private readonly MediaService $media,
@@ -26,6 +33,8 @@ class CandidateService
     ) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, status?: string|null, sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Candidate>
      */
@@ -41,7 +50,10 @@ class CandidateService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return Candidate
      */
     public function store(array $data): Candidate
     {
@@ -50,6 +62,12 @@ class CandidateService
         return $this->findOrCreate($data);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Candidate  $candidate
+     * @return Candidate
+     */
     public function show(Candidate $candidate): Candidate
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -58,6 +76,9 @@ class CandidateService
     }
 
     /**
+     * List activities.
+     *
+     * @param  Candidate  $candidate
      * @param  array{sort?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, RecruitmentActivity>
      */
@@ -69,7 +90,11 @@ class CandidateService
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  Candidate  $candidate
      * @param  array<string, mixed>  $data
+     * @return Candidate
      */
     public function update(Candidate $candidate, array $data): Candidate
     {
@@ -90,6 +115,11 @@ class CandidateService
     }
 
     /**
+     * Delete a resource.
+     *
+     * @param  Candidate  $candidate
+     * @return void
+     *
      * @throws ValidationException
      */
     public function destroy(Candidate $candidate): void
@@ -107,6 +137,13 @@ class CandidateService
         $candidate->delete();
     }
 
+    /**
+     * Add resume.
+     *
+     * @param  Candidate  $candidate
+     * @param  UploadedFile  $file
+     * @return Media
+     */
     public function addResume(Candidate $candidate, UploadedFile $file): Media
     {
         $this->hrSettings->assertRecruitmentEnabled();
@@ -118,6 +155,7 @@ class CandidateService
      * Reuse the same candidate for the same email or phone.
      *
      * @param  array<string, mixed>  $data
+     * @return Candidate
      */
     public function findOrCreate(array $data): Candidate
     {
@@ -162,7 +200,10 @@ class CandidateService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

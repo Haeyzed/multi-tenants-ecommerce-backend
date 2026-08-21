@@ -22,8 +22,19 @@ use Illuminate\Http\Request;
  */
 class OrderReturnController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  OrderReturnService  $returns
+     */
     public function __construct(private readonly OrderReturnService $returns) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated returns.', type: 'array{success: true, message: string, data: OrderReturnResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -40,6 +51,12 @@ class OrderReturnController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  OrderReturn  $order_return
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A return.', type: 'array{success: true, message: string, data: OrderReturnResource, meta: null, errors: null}')]
     public function show(OrderReturn $order_return): JsonResponse
     {
@@ -51,6 +68,13 @@ class OrderReturnController extends Controller
         );
     }
 
+    /**
+     * Approve.
+     *
+     * @param  Request  $request
+     * @param  OrderReturn  $order_return
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Approved return.', type: 'array{success: true, message: string, data: OrderReturnResource, meta: null, errors: null}')]
     public function approve(Request $request, OrderReturn $order_return): JsonResponse
     {
@@ -62,6 +86,13 @@ class OrderReturnController extends Controller
         );
     }
 
+    /**
+     * Reject.
+     *
+     * @param  Request  $request
+     * @param  OrderReturn  $order_return
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Rejected return.', type: 'array{success: true, message: string, data: OrderReturnResource, meta: null, errors: null}')]
     public function reject(Request $request, OrderReturn $order_return): JsonResponse
     {
@@ -73,6 +104,12 @@ class OrderReturnController extends Controller
         );
     }
 
+    /**
+     * Mark received.
+     *
+     * @param  OrderReturn  $order_return
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Received return.', type: 'array{success: true, message: string, data: OrderReturnResource, meta: null, errors: null}')]
     public function markReceived(OrderReturn $order_return): JsonResponse
     {
@@ -84,6 +121,12 @@ class OrderReturnController extends Controller
         );
     }
 
+    /**
+     * Start inspection.
+     *
+     * @param  OrderReturn  $order_return
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Inspecting return.', type: 'array{success: true, message: string, data: OrderReturnResource, meta: null, errors: null}')]
     public function startInspection(OrderReturn $order_return): JsonResponse
     {
@@ -95,6 +138,13 @@ class OrderReturnController extends Controller
         );
     }
 
+    /**
+     * Inspect item.
+     *
+     * @param  InspectReturnItemRequest  $request
+     * @param  OrderReturnItem  $order_return_item
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Inspected item.', type: 'array{success: true, message: string, data: OrderReturnItemResource, meta: null, errors: null}')]
     public function inspectItem(InspectReturnItemRequest $request, OrderReturnItem $order_return_item): JsonResponse
     {
@@ -110,6 +160,12 @@ class OrderReturnController extends Controller
         );
     }
 
+    /**
+     * Approve for refund.
+     *
+     * @param  OrderReturn  $order_return
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Approved for refund.', type: 'array{success: true, message: string, data: OrderReturnResource, meta: null, errors: null}')]
     public function approveForRefund(OrderReturn $order_return): JsonResponse
     {
@@ -121,6 +177,12 @@ class OrderReturnController extends Controller
         );
     }
 
+    /**
+     * Process refund.
+     *
+     * @param  OrderReturn  $order_return
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Refund processed.', type: 'array{success: true, message: string, data: OrderReturnResource, meta: null, errors: null}')]
     public function processRefund(OrderReturn $order_return): JsonResponse
     {

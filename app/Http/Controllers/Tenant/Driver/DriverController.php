@@ -22,10 +22,18 @@ use Illuminate\Http\JsonResponse;
  */
 class DriverController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  DriverService  $driverService
+     */
     public function __construct(private readonly DriverService $driverService) {}
 
     /**
      * List drivers with pagination, search, and filters.
+     *
+     * @param  IndexDriverRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -47,6 +55,9 @@ class DriverController extends Controller
 
     /**
      * Create a driver.
+     *
+     * @param  StoreDriverRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -67,6 +78,9 @@ class DriverController extends Controller
 
     /**
      * Show a driver.
+     *
+     * @param  Driver  $driver
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -85,6 +99,10 @@ class DriverController extends Controller
 
     /**
      * Update a driver.
+     *
+     * @param  UpdateDriverRequest  $request
+     * @param  Driver  $driver
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -105,6 +123,9 @@ class DriverController extends Controller
 
     /**
      * Soft-delete a driver.
+     *
+     * @param  Driver  $driver
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -122,6 +143,10 @@ class DriverController extends Controller
 
     /**
      * Paginated delivery history for a driver.
+     *
+     * @param  IndexDriverDeliveriesRequest  $request
+     * @param  Driver  $driver
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -143,6 +168,9 @@ class DriverController extends Controller
 
     /**
      * Delivery status counts for a driver.
+     *
+     * @param  Driver  $driver
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

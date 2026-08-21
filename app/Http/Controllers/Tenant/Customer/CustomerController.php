@@ -21,10 +21,18 @@ use Illuminate\Http\JsonResponse;
  */
 class CustomerController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CustomerService  $customerService
+     */
     public function __construct(private readonly CustomerService $customerService) {}
 
     /**
      * List customers with pagination, search, and filters.
+     *
+     * @param  IndexCustomerRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -46,6 +54,9 @@ class CustomerController extends Controller
 
     /**
      * Show a customer.
+     *
+     * @param  Customer  $customer
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -64,6 +75,10 @@ class CustomerController extends Controller
 
     /**
      * Update a customer (admin — no password changes).
+     *
+     * @param  UpdateCustomerRequest  $request
+     * @param  Customer  $customer
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -84,6 +99,10 @@ class CustomerController extends Controller
 
     /**
      * Update a customer's status.
+     *
+     * @param  UpdateCustomerStatusRequest  $request
+     * @param  Customer  $customer
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

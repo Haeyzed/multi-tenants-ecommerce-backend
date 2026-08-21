@@ -21,8 +21,19 @@ use Illuminate\Support\Facades\Auth;
  */
 class DriverDeliveryController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  DeliveryService  $deliveryService
+     */
     public function __construct(private readonly DeliveryService $deliveryService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated deliveries for the driver.', type: 'array{success: true, message: string, data: DeliveryResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -40,6 +51,12 @@ class DriverDeliveryController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function show(Delivery $delivery): JsonResponse
     {
@@ -54,6 +71,12 @@ class DriverDeliveryController extends Controller
         );
     }
 
+    /**
+     * Accept.
+     *
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Accepted delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function accept(Delivery $delivery): JsonResponse
     {
@@ -68,6 +91,12 @@ class DriverDeliveryController extends Controller
         );
     }
 
+    /**
+     * Reject.
+     *
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Rejected delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function reject(Delivery $delivery): JsonResponse
     {
@@ -82,6 +111,12 @@ class DriverDeliveryController extends Controller
         );
     }
 
+    /**
+     * Mark picked up.
+     *
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Picked up delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function markPickedUp(Delivery $delivery): JsonResponse
     {
@@ -96,6 +131,12 @@ class DriverDeliveryController extends Controller
         );
     }
 
+    /**
+     * Mark out for delivery.
+     *
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Out for delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function markOutForDelivery(Delivery $delivery): JsonResponse
     {
@@ -110,6 +151,12 @@ class DriverDeliveryController extends Controller
         );
     }
 
+    /**
+     * Mark arrived.
+     *
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Arrived at destination.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function markArrived(Delivery $delivery): JsonResponse
     {
@@ -124,6 +171,12 @@ class DriverDeliveryController extends Controller
         );
     }
 
+    /**
+     * Mark delivered.
+     *
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Delivered delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function markDelivered(Delivery $delivery): JsonResponse
     {
@@ -138,6 +191,13 @@ class DriverDeliveryController extends Controller
         );
     }
 
+    /**
+     * Mark failed.
+     *
+     * @param  FailDeliveryRequest  $request
+     * @param  Delivery  $delivery
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Failed delivery.', type: 'array{success: true, message: string, data: DeliveryResource, meta: null, errors: null}')]
     public function markFailed(FailDeliveryRequest $request, Delivery $delivery): JsonResponse
     {

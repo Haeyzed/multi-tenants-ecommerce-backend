@@ -26,6 +26,14 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class CartService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceSettingService  $commerceSettings
+     * @param  FlashSaleService  $flashSaleService
+     * @param  InventoryStockableResolver  $stockables
+     * @param  ProductAvailabilityService  $availability
+     */
     public function __construct(
         private readonly CommerceSettingService $commerceSettings,
         private readonly FlashSaleService $flashSaleService,
@@ -35,6 +43,9 @@ class CartService
 
     /**
      * Get or create the customer's active cart.
+     *
+     * @param  Customer  $customer
+     * @return Cart
      */
     public function getOrCreateActiveCart(Customer $customer): Cart
     {
@@ -56,6 +67,9 @@ class CartService
 
     /**
      * Load the active cart with line items and pricing relations.
+     *
+     * @param  Customer  $customer
+     * @return Cart
      */
     public function getCart(Customer $customer): Cart
     {
@@ -70,6 +84,13 @@ class CartService
 
     /**
      * Add a product (and optional variant) line using server-resolved unit price.
+     *
+     * @param  Customer  $customer
+     * @param  int  $productId
+     * @param  ?int  $variantId
+     * @param  int  $quantity
+     * @param  ?int  $sellerOfferId
+     * @return CartItem
      *
      * @throws ValidationException
      */
@@ -132,6 +153,13 @@ class CartService
     }
 
     /**
+     * Add marketplace item.
+     *
+     * @param  Customer  $customer
+     * @param  ?int  $sellerOfferId
+     * @param  int  $quantity
+     * @return CartItem
+     *
      * @throws ValidationException
      */
     protected function addMarketplaceItem(Customer $customer, ?int $sellerOfferId, int $quantity): CartItem
@@ -190,6 +218,11 @@ class CartService
     /**
      * Update a cart line quantity.
      *
+     * @param  Customer  $customer
+     * @param  CartItem  $item
+     * @param  int  $quantity
+     * @return CartItem
+     *
      * @throws ValidationException
      */
     public function updateItem(Customer $customer, CartItem $item, int $quantity): CartItem
@@ -246,6 +279,10 @@ class CartService
 
     /**
      * Remove a cart line.
+     *
+     * @param  Customer  $customer
+     * @param  CartItem  $item
+     * @return void
      */
     public function removeItem(Customer $customer, CartItem $item): void
     {
@@ -255,6 +292,9 @@ class CartService
 
     /**
      * Clear all lines from the active cart.
+     *
+     * @param  Customer  $customer
+     * @return void
      */
     public function clear(Customer $customer): void
     {
@@ -264,6 +304,9 @@ class CartService
 
     /**
      * Recalculate line subtotals from stored unit prices.
+     *
+     * @param  Cart  $cart
+     * @return void
      */
     public function recalculateItemSubtotals(Cart $cart): void
     {
@@ -278,13 +321,8 @@ class CartService
     /**
      * Cart money totals (discounts/tax/shipping filled at checkout).
      *
+     * @param  Cart  $cart
      * @return array{
-     *     subtotal: string,
-     *     discount_total: string,
-     *     tax_total: string,
-     *     shipping_total: string,
-     *     grand_total: string
-     * }
      */
     public function totals(Cart $cart): array
     {
@@ -307,6 +345,10 @@ class CartService
 
     /**
      * Ensure the cart item belongs to the customer's active cart.
+     *
+     * @param  Customer  $customer
+     * @param  CartItem  $item
+     * @return void
      */
     public function assertItemOwnership(Customer $customer, CartItem $item): void
     {
@@ -323,6 +365,10 @@ class CartService
 
     /**
      * Refresh line prices and revalidate purchasability (used at checkout).
+     *
+     * @param  CartItem  $item
+     * @param  string  $currency
+     * @return void
      *
      * @throws ValidationException
      */
@@ -372,6 +418,13 @@ class CartService
     }
 
     /**
+     * Assert offer purchasable.
+     *
+     * @param  SellerOffer  $offer
+     * @param  int  $quantity
+     * @param  string  $currency
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertOfferPurchasable(SellerOffer $offer, int $quantity, string $currency): void
@@ -409,6 +462,13 @@ class CartService
     }
 
     /**
+     * Assert purchasable.
+     *
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
+     * @param  int  $quantity
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertPurchasable(Product $product, ?ProductVariant $variant, int $quantity): void
@@ -446,6 +506,13 @@ class CartService
     }
 
     /**
+     * Assert purchase quantity limits.
+     *
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
+     * @param  int  $quantity
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertPurchaseQuantityLimits(Product $product, ?ProductVariant $variant, int $quantity): void
@@ -467,6 +534,13 @@ class CartService
     }
 
     /**
+     * Assert stock allows quantity.
+     *
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
+     * @param  int  $quantity
+     * @return void
+     *
      * @throws ValidationException
      */
     protected function assertStockAllowsQuantity(Product $product, ?ProductVariant $variant, int $quantity): void
@@ -492,6 +566,12 @@ class CartService
         }
     }
 
+    /**
+     * Sum available.
+     *
+     * @param  Product|ProductVariant  $stockable
+     * @return int
+     */
     protected function sumAvailable(Product|ProductVariant $stockable): int
     {
         $stockable->loadMissing('inventories');
@@ -502,6 +582,12 @@ class CartService
     }
 
     /**
+     * Resolve variant.
+     *
+     * @param  Product  $product
+     * @param  ?int  $variantId
+     * @return ?ProductVariant
+     *
      * @throws ValidationException
      */
     protected function resolveVariant(Product $product, ?int $variantId): ?ProductVariant
@@ -531,6 +617,12 @@ class CartService
      */
     /**
      * Resolve the active unit price for a product/variant in the given currency.
+     *
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
+     * @param  string  $currency
+     * @param  ?Customer  $customer
+     * @return string
      */
     public function resolveUnitPrice(
         Product $product,
@@ -562,6 +654,13 @@ class CartService
         return $basePrice;
     }
 
+    /**
+     * Active price for.
+     *
+     * @param  Product|ProductVariant  $priceable
+     * @param  string  $currency
+     * @return ?ProductPrice
+     */
     protected function activePriceFor(Product|ProductVariant $priceable, string $currency): ?ProductPrice
     {
         $now = now();
@@ -579,6 +678,15 @@ class CartService
             ->first();
     }
 
+    /**
+     * Find line.
+     *
+     * @param  Cart  $cart
+     * @param  int  $productId
+     * @param  ?int  $variantId
+     * @param  ?int  $sellerOfferId
+     * @return ?CartItem
+     */
     protected function findLine(Cart $cart, int $productId, ?int $variantId, ?int $sellerOfferId = null): ?CartItem
     {
         return $cart->items()

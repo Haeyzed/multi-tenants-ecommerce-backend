@@ -22,8 +22,19 @@ use Illuminate\Support\Facades\Auth;
  */
 class IntegrationTokenController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  IntegrationTokenService  $tokens
+     */
     public function __construct(private readonly IntegrationTokenService $tokens) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated integration tokens.', type: 'array{success: true, message: string, data: IntegrationTokenResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -39,6 +50,12 @@ class IntegrationTokenController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreIntegrationTokenRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created integration token. Plain text shown once.', type: 'array{success: true, message: string, data: array{token: IntegrationTokenResource, plain_text_token: string}, meta: null, errors: null}')]
     public function store(StoreIntegrationTokenRequest $request): JsonResponse
     {
@@ -56,6 +73,12 @@ class IntegrationTokenController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  int  $token
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Integration token revoked.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(int $token): JsonResponse
     {

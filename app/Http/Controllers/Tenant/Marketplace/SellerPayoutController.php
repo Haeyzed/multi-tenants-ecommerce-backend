@@ -19,8 +19,19 @@ use Illuminate\Http\JsonResponse;
  */
 class SellerPayoutController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  SellerPayoutService  $payouts
+     */
     public function __construct(private readonly SellerPayoutService $payouts) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexSellerPayoutRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated payouts.', type: 'array{success: true, message: string, data: SellerPayoutResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexSellerPayoutRequest $request): JsonResponse
     {
@@ -35,6 +46,12 @@ class SellerPayoutController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreSellerPayoutRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created payout.', type: 'array{success: true, message: string, data: SellerPayoutResource, meta: null, errors: null}')]
     public function store(StoreSellerPayoutRequest $request): JsonResponse
     {
@@ -46,6 +63,12 @@ class SellerPayoutController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  SellerPayout  $payout
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A payout.', type: 'array{success: true, message: string, data: SellerPayoutResource, meta: null, errors: null}')]
     public function show(SellerPayout $payout): JsonResponse
     {

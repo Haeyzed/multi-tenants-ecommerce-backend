@@ -23,10 +23,18 @@ use Illuminate\Http\JsonResponse;
  */
 class ProductOptionController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductOptionService  $optionService
+     */
     public function __construct(private readonly ProductOptionService $optionService) {}
 
     /**
      * List options.
+     *
+     * @param  IndexCatalogDefinitionRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -46,6 +54,9 @@ class ProductOptionController extends Controller
 
     /**
      * Option select options.
+     *
+     * @param  IndexCatalogDefinitionRequest  $request
+     * @return JsonResponse
      */
     #[Response(status: 200, description: 'Option options.', type: ApiResponseSchema::OPTIONS)]
     public function options(IndexCatalogDefinitionRequest $request): JsonResponse
@@ -58,6 +69,9 @@ class ProductOptionController extends Controller
 
     /**
      * Create an option.
+     *
+     * @param  StoreProductOptionRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -74,6 +88,9 @@ class ProductOptionController extends Controller
 
     /**
      * Show an option.
+     *
+     * @param  ProductOption  $option
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -90,6 +107,10 @@ class ProductOptionController extends Controller
 
     /**
      * Update an option.
+     *
+     * @param  UpdateProductOptionRequest  $request
+     * @param  ProductOption  $option
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -106,6 +127,9 @@ class ProductOptionController extends Controller
 
     /**
      * Delete an option.
+     *
+     * @param  ProductOption  $option
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -121,6 +145,10 @@ class ProductOptionController extends Controller
 
     /**
      * Create an option value.
+     *
+     * @param  StoreProductOptionValueRequest  $request
+     * @param  ProductOption  $option
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -136,6 +164,11 @@ class ProductOptionController extends Controller
 
     /**
      * Update an option value.
+     *
+     * @param  UpdateProductOptionValueRequest  $request
+     * @param  ProductOption  $option
+     * @param  ProductOptionValue  $value
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -154,6 +187,10 @@ class ProductOptionController extends Controller
 
     /**
      * Delete an option value.
+     *
+     * @param  ProductOption  $option
+     * @param  ProductOptionValue  $value
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

@@ -14,11 +14,24 @@ use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 
+/**
+ * Tenant RecruitmentStageController endpoints.
+ */
 #[Group('HR / Recruitment')]
 class RecruitmentStageController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  RecruitmentStageService  $stages
+     */
     public function __construct(private readonly RecruitmentStageService $stages) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Recruitment stages.', type: 'array{success: true, message: string, data: RecruitmentStageResource[], meta: null, errors: null}')]
     public function index(): JsonResponse
     {
@@ -30,6 +43,12 @@ class RecruitmentStageController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreRecruitmentStageRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created recruitment stage.', type: 'array{success: true, message: string, data: RecruitmentStageResource, meta: null, errors: null}')]
     public function store(StoreRecruitmentStageRequest $request): JsonResponse
     {
@@ -41,6 +60,12 @@ class RecruitmentStageController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  RecruitmentStage  $recruitment_stage
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A recruitment stage.', type: 'array{success: true, message: string, data: RecruitmentStageResource, meta: null, errors: null}')]
     public function show(RecruitmentStage $recruitment_stage): JsonResponse
     {
@@ -52,6 +77,13 @@ class RecruitmentStageController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateRecruitmentStageRequest  $request
+     * @param  RecruitmentStage  $recruitment_stage
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated recruitment stage.', type: 'array{success: true, message: string, data: RecruitmentStageResource, meta: null, errors: null}')]
     public function update(UpdateRecruitmentStageRequest $request, RecruitmentStage $recruitment_stage): JsonResponse
     {
@@ -63,6 +95,12 @@ class RecruitmentStageController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  RecruitmentStage  $recruitment_stage
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted recruitment stage.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(RecruitmentStage $recruitment_stage): JsonResponse
     {

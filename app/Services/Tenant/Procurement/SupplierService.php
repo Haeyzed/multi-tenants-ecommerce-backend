@@ -17,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 class SupplierService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Supplier>
      */
@@ -41,6 +43,8 @@ class SupplierService
     }
 
     /**
+     * Return options for select inputs.
+     *
      * @return Collection<int, array{label: string, value: int}>
      */
     public function options(): Collection
@@ -57,7 +61,10 @@ class SupplierService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array<string, mixed>  $data
+     * @return Supplier
      */
     public function store(array $data): Supplier
     {
@@ -79,13 +86,23 @@ class SupplierService
         ]);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Supplier  $supplier
+     * @return Supplier
+     */
     public function show(Supplier $supplier): Supplier
     {
         return $supplier->load('contacts');
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  Supplier  $supplier
      * @param  array<string, mixed>  $data
+     * @return Supplier
      */
     public function update(Supplier $supplier, array $data): Supplier
     {
@@ -97,6 +114,9 @@ class SupplierService
 
     /**
      * Soft-delete a supplier when no open purchase orders remain.
+     *
+     * @param  Supplier  $supplier
+     * @return void
      *
      * @throws ValidationException
      */
@@ -120,7 +140,10 @@ class SupplierService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

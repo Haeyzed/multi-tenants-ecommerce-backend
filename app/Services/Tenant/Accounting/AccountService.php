@@ -14,6 +14,8 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 class AccountService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{type?: string|null, is_active?: bool|null, search?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Account>
      */
@@ -41,6 +43,8 @@ class AccountService
     }
 
     /**
+     * List journal entries.
+     *
      * @param  array{status?: string|null, entry_type?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, JournalEntry>
      */
@@ -59,6 +63,12 @@ class AccountService
         return $query->paginate(max(1, min((int) ($params['per_page'] ?? 15), 100)));
     }
 
+    /**
+     * Show journal entry.
+     *
+     * @param  JournalEntry  $entry
+     * @return JournalEntry
+     */
     public function showJournalEntry(JournalEntry $entry): JournalEntry
     {
         return $entry->load(['lines.account', 'source']);

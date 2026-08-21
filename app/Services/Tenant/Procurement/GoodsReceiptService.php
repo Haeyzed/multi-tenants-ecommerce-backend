@@ -23,6 +23,12 @@ use Illuminate\Validation\ValidationException;
  */
 class GoodsReceiptService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  InventoryService  $inventoryService
+     * @param  AccountingService  $accounting
+     */
     public function __construct(
         private readonly InventoryService $inventoryService,
         private readonly AccountingService $accounting,
@@ -31,7 +37,11 @@ class GoodsReceiptService
     /**
      * Receive quantities against a purchase order (supports partial receives).
      *
+     * @param  PurchaseOrder  $purchaseOrder
      * @param  list<array{purchase_order_item_id: int, quantity: int}>  $items
+     * @param  ?User  $actor
+     * @param  ?string  $notes
+     * @return GoodsReceipt
      *
      * @throws ValidationException
      */
@@ -151,11 +161,22 @@ class GoodsReceiptService
         });
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  GoodsReceipt  $receipt
+     * @return GoodsReceipt
+     */
     public function show(GoodsReceipt $receipt): GoodsReceipt
     {
         return $receipt->load(['items', 'purchaseOrder', 'warehouse', 'receiver']);
     }
 
+    /**
+     * Next receipt number.
+     *
+     * @return string
+     */
     protected function nextReceiptNumber(): string
     {
         do {

@@ -19,12 +19,20 @@ use Illuminate\Validation\ValidationException;
  */
 class BlogPostService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceSettingService  $commerceSettings
+     * @param  MediaService  $mediaService
+     */
     public function __construct(
         private readonly CommerceSettingService $commerceSettings,
         private readonly MediaService $mediaService,
     ) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, status?: string|null, blog_category_id?: int|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, BlogPost>
      */
@@ -38,6 +46,8 @@ class BlogPostService
     }
 
     /**
+     * Retrieve a paginated public list of resources.
+     *
      * @param  array{search?: string|null, blog_category_id?: int|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, BlogPost>
      */
@@ -64,6 +74,8 @@ class BlogPostService
     }
 
     /**
+     * title: string, slug?: string|null, excerpt?: string|null, content?: string|null, status?: CmsContentStatus|string|null, published_at?: string|null, author_id?: int|null, blog_category_id?: int|null, seo?: array<string, mixed>|null }  $data
+     *
      * @param  array{
      *     title: string,
      *     slug?: string|null,
@@ -75,6 +87,7 @@ class BlogPostService
      *     blog_category_id?: int|null,
      *     seo?: array<string, mixed>|null
      * }  $data
+     * @return BlogPost
      */
     public function store(array $data): BlogPost
     {
@@ -97,11 +110,23 @@ class BlogPostService
         return $post->load(['category', 'author', 'seo']);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  BlogPost  $post
+     * @return BlogPost
+     */
     public function show(BlogPost $post): BlogPost
     {
         return $post->load(['category', 'author', 'seo']);
     }
 
+    /**
+     * Retrieve a published resource by slug.
+     *
+     * @param  string  $slug
+     * @return BlogPost
+     */
     public function showPublicBySlug(string $slug): BlogPost
     {
         $this->assertBlogEnabled();
@@ -120,7 +145,11 @@ class BlogPostService
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  BlogPost  $post
      * @param  array<string, mixed>  $data
+     * @return BlogPost
      */
     public function update(BlogPost $post, array $data): BlogPost
     {
@@ -134,6 +163,12 @@ class BlogPostService
         return $post->fresh(['category', 'author', 'seo']) ?? $post;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  BlogPost  $post
+     * @return void
+     */
     public function destroy(BlogPost $post): void
     {
         $post->seo()?->delete();
@@ -142,6 +177,10 @@ class BlogPostService
 
     /**
      * Replace the featured image for a blog post.
+     *
+     * @param  BlogPost  $post
+     * @param  UploadedFile  $image
+     * @return BlogPost
      */
     public function storeFeaturedImage(BlogPost $post, UploadedFile $image): BlogPost
     {
@@ -152,6 +191,9 @@ class BlogPostService
 
     /**
      * Remove the featured image for a blog post.
+     *
+     * @param  BlogPost  $post
+     * @return BlogPost
      */
     public function destroyFeaturedImage(BlogPost $post): BlogPost
     {
@@ -160,6 +202,11 @@ class BlogPostService
         return $post->fresh(['category', 'author', 'seo', 'media']) ?? $post->load(['category', 'author', 'seo', 'media']);
     }
 
+    /**
+     * Assert blog enabled.
+     *
+     * @return void
+     */
     protected function assertBlogEnabled(): void
     {
         $enabled = filter_var(
@@ -175,7 +222,11 @@ class BlogPostService
     }
 
     /**
+     * Sync seo.
+     *
+     * @param  BlogPost  $post
      * @param  array<string, mixed>|null  $seo
+     * @return void
      */
     protected function syncSeo(BlogPost $post, ?array $seo): void
     {
@@ -194,7 +245,10 @@ class BlogPostService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

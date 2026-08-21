@@ -18,10 +18,18 @@ use Illuminate\Validation\ValidationException;
  */
 class EmployeeSalaryService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  HrSettingsService  $hrSettings
+     */
     public function __construct(private readonly HrSettingsService $hrSettings) {}
 
     /**
      * Show the employee's current salary, if configured.
+     *
+     * @param  Employee  $employee
+     * @return ?EmployeeSalary
      */
     public function show(Employee $employee): ?EmployeeSalary
     {
@@ -31,6 +39,7 @@ class EmployeeSalaryService
     /**
      * Create or update an employee salary record.
      *
+     * @param  Employee  $employee
      * @param  array{
      *     base_salary: string|float,
      *     currency?: string|null,
@@ -46,6 +55,7 @@ class EmployeeSalaryService
      *         sort_order?: int|null
      *     }>
      * }  $data
+     * @return EmployeeSalary
      *
      * @throws ValidationException
      */
@@ -87,6 +97,9 @@ class EmployeeSalaryService
     }
 
     /**
+     * History.
+     *
+     * @param  Employee  $employee
      * @return list<EmployeeSalaryRevision>
      */
     public function history(Employee $employee): array
@@ -94,6 +107,13 @@ class EmployeeSalaryService
         return $employee->salaryRevisions()->get()->all();
     }
 
+    /**
+     * Record revision.
+     *
+     * @param  EmployeeSalary  $salary
+     * @param  string  $effectiveTo
+     * @return void
+     */
     protected function recordRevision(EmployeeSalary $salary, string $effectiveTo): void
     {
         $salary->loadMissing('components');
@@ -118,6 +138,9 @@ class EmployeeSalaryService
     }
 
     /**
+     * type: PayrollLineType|string, calculation?: SalaryComponentCalculation|string|null, code: string, label: string, amount: string|float|int, is_tax?: bool|null, sort_order?: int|null }>  $components
+     *
+     * @param  EmployeeSalary  $salary
      * @param  list<array{
      *     type: PayrollLineType|string,
      *     calculation?: SalaryComponentCalculation|string|null,
@@ -127,6 +150,7 @@ class EmployeeSalaryService
      *     is_tax?: bool|null,
      *     sort_order?: int|null
      * }>  $components
+     * @return void
      */
     protected function syncComponents(EmployeeSalary $salary, array $components): void
     {

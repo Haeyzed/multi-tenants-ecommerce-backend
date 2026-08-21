@@ -17,6 +17,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class AnalyticsController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceReportService  $reports
+     * @param  AnalyticsCsvExporter  $exporter
+     */
     public function __construct(
         private readonly CommerceReportService $reports,
         private readonly AnalyticsCsvExporter $exporter,
@@ -24,6 +30,9 @@ class AnalyticsController extends Controller
 
     /**
      * Headline sales, customer, and inventory figures for a period.
+     *
+     * @param  AnalyticsReportRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -47,6 +56,9 @@ class AnalyticsController extends Controller
 
     /**
      * Sales summary for a period, optionally exported as CSV.
+     *
+     * @param  AnalyticsReportRequest  $request
+     * @return JsonResponse|StreamedResponse
      */
     #[Response(
         status: 200,
@@ -67,6 +79,9 @@ class AnalyticsController extends Controller
 
     /**
      * Sales grouped into day, week, or month buckets.
+     *
+     * @param  AnalyticsReportRequest  $request
+     * @return JsonResponse|StreamedResponse
      */
     #[Response(
         status: 200,
@@ -91,6 +106,9 @@ class AnalyticsController extends Controller
 
     /**
      * Customer acquisition and retention figures.
+     *
+     * @param  AnalyticsReportRequest  $request
+     * @return JsonResponse|StreamedResponse
      */
     #[Response(
         status: 200,
@@ -111,6 +129,9 @@ class AnalyticsController extends Controller
 
     /**
      * Best selling products for a period.
+     *
+     * @param  AnalyticsReportRequest  $request
+     * @return JsonResponse|StreamedResponse
      */
     #[Response(
         status: 200,
@@ -131,6 +152,9 @@ class AnalyticsController extends Controller
 
     /**
      * Current stock position across warehouses.
+     *
+     * @param  AnalyticsReportRequest  $request
+     * @return JsonResponse|StreamedResponse
      */
     #[Response(
         status: 200,
@@ -150,6 +174,9 @@ class AnalyticsController extends Controller
 
     /**
      * Marketplace commission aggregates, optionally scoped to one seller.
+     *
+     * @param  AnalyticsReportRequest  $request
+     * @return JsonResponse|StreamedResponse
      */
     #[Response(
         status: 200,
@@ -175,6 +202,9 @@ class AnalyticsController extends Controller
 
     /**
      * Coupon redemption aggregates.
+     *
+     * @param  AnalyticsReportRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -194,6 +224,9 @@ class AnalyticsController extends Controller
 
     /**
      * Payment capture aggregates.
+     *
+     * @param  AnalyticsReportRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

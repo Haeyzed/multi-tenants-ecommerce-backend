@@ -25,8 +25,19 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class FlashSaleController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  FlashSaleService  $flashSaleService
+     */
     public function __construct(private readonly FlashSaleService $flashSaleService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated flash sales.', type: 'array{success: true, message: string, data: FlashSaleResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -41,6 +52,12 @@ class FlashSaleController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreFlashSaleRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created flash sale.', type: 'array{success: true, message: string, data: FlashSaleResource, meta: null, errors: null}')]
     public function store(StoreFlashSaleRequest $request): JsonResponse
     {
@@ -52,6 +69,12 @@ class FlashSaleController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  FlashSale  $flashSale
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A flash sale.', type: 'array{success: true, message: string, data: FlashSaleResource, meta: null, errors: null}')]
     public function show(FlashSale $flashSale): JsonResponse
     {
@@ -63,6 +86,13 @@ class FlashSaleController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateFlashSaleRequest  $request
+     * @param  FlashSale  $flashSale
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated flash sale.', type: 'array{success: true, message: string, data: FlashSaleResource, meta: null, errors: null}')]
     public function update(UpdateFlashSaleRequest $request, FlashSale $flashSale): JsonResponse
     {
@@ -74,6 +104,12 @@ class FlashSaleController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  FlashSale  $flashSale
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted flash sale.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(FlashSale $flashSale): JsonResponse
     {
@@ -83,6 +119,13 @@ class FlashSaleController extends Controller
         return $this->deleted('Flash sale deleted successfully.');
     }
 
+    /**
+     * Store item.
+     *
+     * @param  StoreFlashSaleItemRequest  $request
+     * @param  FlashSale  $flashSale
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created flash sale item.', type: 'array{success: true, message: string, data: FlashSaleItemResource, meta: null, errors: null}')]
     public function storeItem(StoreFlashSaleItemRequest $request, FlashSale $flashSale): JsonResponse
     {
@@ -94,6 +137,14 @@ class FlashSaleController extends Controller
         );
     }
 
+    /**
+     * Update item.
+     *
+     * @param  UpdateFlashSaleItemRequest  $request
+     * @param  FlashSale  $flashSale
+     * @param  FlashSaleItem  $flashSaleItem
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated flash sale item.', type: 'array{success: true, message: string, data: FlashSaleItemResource, meta: null, errors: null}')]
     public function updateItem(
         UpdateFlashSaleItemRequest $request,
@@ -109,6 +160,13 @@ class FlashSaleController extends Controller
         );
     }
 
+    /**
+     * Destroy item.
+     *
+     * @param  FlashSale  $flashSale
+     * @param  FlashSaleItem  $flashSaleItem
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted flash sale item.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroyItem(FlashSale $flashSale, FlashSaleItem $flashSaleItem): JsonResponse
     {
@@ -119,6 +177,13 @@ class FlashSaleController extends Controller
         return $this->deleted('Flash sale item deleted successfully.');
     }
 
+    /**
+     * Assert item belongs to sale.
+     *
+     * @param  FlashSale  $flashSale
+     * @param  FlashSaleItem  $item
+     * @return void
+     */
     protected function assertItemBelongsToSale(FlashSale $flashSale, FlashSaleItem $item): void
     {
         if ((int) $item->flash_sale_id !== (int) $flashSale->id) {

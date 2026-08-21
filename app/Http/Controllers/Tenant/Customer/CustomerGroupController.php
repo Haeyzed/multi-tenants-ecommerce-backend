@@ -20,10 +20,18 @@ use Illuminate\Http\JsonResponse;
  */
 class CustomerGroupController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CustomerGroupService  $customerGroupService
+     */
     public function __construct(private readonly CustomerGroupService $customerGroupService) {}
 
     /**
      * List customer groups with pagination, search, and filters.
+     *
+     * @param  IndexCustomerGroupRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -43,6 +51,9 @@ class CustomerGroupController extends Controller
 
     /**
      * Customer group options for select inputs.
+     *
+     * @param  IndexCustomerGroupRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -59,6 +70,9 @@ class CustomerGroupController extends Controller
 
     /**
      * Create a customer group.
+     *
+     * @param  StoreCustomerGroupRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -77,6 +91,9 @@ class CustomerGroupController extends Controller
 
     /**
      * Show a customer group.
+     *
+     * @param  CustomerGroup  $customerGroup
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -93,6 +110,10 @@ class CustomerGroupController extends Controller
 
     /**
      * Update a customer group.
+     *
+     * @param  UpdateCustomerGroupRequest  $request
+     * @param  CustomerGroup  $customerGroup
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -111,6 +132,9 @@ class CustomerGroupController extends Controller
 
     /**
      * Delete a customer group.
+     *
+     * @param  CustomerGroup  $customerGroup
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

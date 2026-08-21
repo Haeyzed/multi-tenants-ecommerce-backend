@@ -159,6 +159,10 @@ class CommerceSettingService
 
     /**
      * Read a commerce setting value.
+     *
+     * @param  string  $key
+     * @param  ?string  $default
+     * @return ?string
      */
     public function get(string $key, ?string $default = null): ?string
     {
@@ -169,6 +173,10 @@ class CommerceSettingService
 
     /**
      * Persist a commerce setting value.
+     *
+     * @param  string  $key
+     * @param  ?string  $value
+     * @return void
      */
     public function set(string $key, ?string $value): void
     {
@@ -181,6 +189,7 @@ class CommerceSettingService
     /**
      * Known setting keys for a domain, cast with defaults.
      *
+     * @param  string  $domain
      * @return array<string, mixed>
      */
     public function getDomain(string $domain): array
@@ -207,6 +216,7 @@ class CommerceSettingService
     /**
      * Validate against the domain allowlist and persist values.
      *
+     * @param  string  $domain
      * @param  array<string, mixed>  $values
      * @return array<string, mixed>
      */
@@ -229,6 +239,8 @@ class CommerceSettingService
     }
 
     /**
+     * Domains.
+     *
      * @return list<string>
      */
     public function domains(): array
@@ -238,6 +250,9 @@ class CommerceSettingService
 
     /**
      * Whether the given domain is a commerce settings domain.
+     *
+     * @param  string  $domain
+     * @return bool
      */
     public function hasDomain(string $domain): bool
     {
@@ -246,6 +261,8 @@ class CommerceSettingService
 
     /**
      * Tax rate percent string (default 0).
+     *
+     * @return string
      */
     public function taxRate(): string
     {
@@ -254,6 +271,8 @@ class CommerceSettingService
 
     /**
      * Whether marketplace features are enabled for this tenant.
+     *
+     * @return bool
      */
     public function isMarketplaceEnabled(): bool
     {
@@ -262,6 +281,8 @@ class CommerceSettingService
 
     /**
      * Whether public seller self-registration is allowed.
+     *
+     * @return bool
      */
     public function allowSellerRegistration(): bool
     {
@@ -270,6 +291,9 @@ class CommerceSettingService
 
     /**
      * Enable or disable marketplace mode.
+     *
+     * @param  bool  $enabled
+     * @return void
      */
     public function setMarketplaceEnabled(bool $enabled): void
     {
@@ -278,6 +302,8 @@ class CommerceSettingService
 
     /**
      * Default commission type for sellers without an override.
+     *
+     * @return string
      */
     public function defaultCommissionType(): string
     {
@@ -286,6 +312,8 @@ class CommerceSettingService
 
     /**
      * Default commission rate percent (e.g. "10" for 10%).
+     *
+     * @return string
      */
     public function defaultCommissionRate(): string
     {
@@ -294,6 +322,8 @@ class CommerceSettingService
 
     /**
      * Default fixed commission amount.
+     *
+     * @return string
      */
     public function defaultCommissionFixedAmount(): string
     {
@@ -302,6 +332,8 @@ class CommerceSettingService
 
     /**
      * Days after delivery before a seller payout is eligible.
+     *
+     * @return int
      */
     public function marketplaceRefundWindowDays(): int
     {
@@ -310,6 +342,8 @@ class CommerceSettingService
 
     /**
      * Hours of inactivity before an active cart is considered abandoned.
+     *
+     * @return int
      */
     public function cartAbandonAfterHours(): int
     {
@@ -318,6 +352,8 @@ class CommerceSettingService
 
     /**
      * Days after delivery (or fulfillment) during which returns are allowed.
+     *
+     * @return int
      */
     public function returnWindowDays(): int
     {
@@ -326,6 +362,8 @@ class CommerceSettingService
 
     /**
      * Hours after placement during which an order may be cancelled.
+     *
+     * @return int
      */
     public function orderCancellationWindowHours(): int
     {
@@ -334,6 +372,8 @@ class CommerceSettingService
 
     /**
      * Whether a loyalty program should default to active when first created.
+     *
+     * @return bool
      */
     public function loyaltyIsActive(): bool
     {
@@ -342,6 +382,8 @@ class CommerceSettingService
 
     /**
      * Points awarded per currency unit spent (e.g. "1.00" for 1 point per unit).
+     *
+     * @return string
      */
     public function loyaltyPointsPerCurrencyUnit(): string
     {
@@ -350,6 +392,8 @@ class CommerceSettingService
 
     /**
      * Points required to discount one currency unit.
+     *
+     * @return int
      */
     public function loyaltyRedemptionPointsPerCurrency(): int
     {
@@ -358,6 +402,8 @@ class CommerceSettingService
 
     /**
      * Smallest redeemable point amount.
+     *
+     * @return int
      */
     public function loyaltyMinRedemptionPoints(): int
     {
@@ -366,6 +412,8 @@ class CommerceSettingService
 
     /**
      * Largest share of an order subtotal that points may cover, as a percent.
+     *
+     * @return string
      */
     public function loyaltyMaxRedemptionPercent(): string
     {
@@ -374,6 +422,8 @@ class CommerceSettingService
 
     /**
      * Whether points are awarded automatically when an order is paid.
+     *
+     * @return bool
      */
     public function loyaltyEarnOnOrderPaid(): bool
     {
@@ -382,6 +432,8 @@ class CommerceSettingService
 
     /**
      * Resolved delivery assignment strategy (setting overrides config).
+     *
+     * @return string
      */
     public function deliveryAssignmentStrategy(): string
     {
@@ -396,6 +448,8 @@ class CommerceSettingService
 
     /**
      * Resolved delivery assignment radius in km (setting overrides config).
+     *
+     * @return float
      */
     public function deliveryAssignmentRadiusKm(): float
     {
@@ -410,6 +464,8 @@ class CommerceSettingService
 
     /**
      * Storefront currency code from tenant profile when tenancy is initialized.
+     *
+     * @return string
      */
     public function currencyCode(): string
     {
@@ -431,6 +487,9 @@ class CommerceSettingService
     }
 
     /**
+     * Domain schema.
+     *
+     * @param  string  $domain
      * @return array<string, array{type: string, default: mixed}>
      */
     protected function domainSchema(string $domain): array
@@ -445,7 +504,10 @@ class CommerceSettingService
     }
 
     /**
+     * Sync delivery config.
+     *
      * @param  array<string, mixed>  $settings
+     * @return void
      */
     protected function syncDeliveryConfig(array $settings): void
     {
@@ -458,6 +520,14 @@ class CommerceSettingService
         }
     }
 
+    /**
+     * Cast value.
+     *
+     * @param  ?string  $raw
+     * @param  string  $type
+     * @param  mixed  $default
+     * @return mixed
+     */
     protected function castValue(?string $raw, string $type, mixed $default): mixed
     {
         if ($raw === null) {
@@ -475,6 +545,13 @@ class CommerceSettingService
         };
     }
 
+    /**
+     * Serialize value.
+     *
+     * @param  mixed  $value
+     * @param  string  $type
+     * @return ?string
+     */
     protected function serializeValue(mixed $value, string $type): ?string
     {
         if ($value === null) {

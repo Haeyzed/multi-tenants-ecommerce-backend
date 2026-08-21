@@ -21,9 +21,17 @@ class IntegrationTokenService
 {
     public const string TOKEN_NAME_PREFIX = 'integration:';
 
+    /**
+     * Create a new class instance.
+     *
+     * @param  FeatureGate  $featureGate
+     */
     public function __construct(private readonly FeatureGate $featureGate) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
+     * @param  User  $user
      * @param  array{per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, PersonalAccessToken>
      */
@@ -38,6 +46,9 @@ class IntegrationTokenService
     }
 
     /**
+     * Create.
+     *
+     * @param  User  $user
      * @param  array{name: string, abilities?: list<string>|null}  $data
      * @return array{token: PersonalAccessToken, plain_text_token: string}
      */
@@ -63,6 +74,13 @@ class IntegrationTokenService
         ];
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  User  $user
+     * @param  int  $tokenId
+     * @return void
+     */
     public function destroy(User $user, int $tokenId): void
     {
         $this->assertApiAccess();
@@ -80,6 +98,11 @@ class IntegrationTokenService
         $token->delete();
     }
 
+    /**
+     * Assert api access.
+     *
+     * @return void
+     */
     protected function assertApiAccess(): void
     {
         $tenant = tenant();
@@ -99,7 +122,10 @@ class IntegrationTokenService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

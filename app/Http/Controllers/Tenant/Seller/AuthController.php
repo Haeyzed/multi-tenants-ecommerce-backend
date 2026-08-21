@@ -22,12 +22,20 @@ use Illuminate\Http\Request;
  */
 class AuthController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  SellerAuthService  $authService
+     */
     public function __construct(
         private readonly SellerAuthService $authService,
     ) {}
 
     /**
      * Register a new seller account when registration is enabled.
+     *
+     * @param  RegisterRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -46,6 +54,9 @@ class AuthController extends Controller
 
     /**
      * Authenticate a seller and return a Sanctum token.
+     *
+     * @param  LoginRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -64,6 +75,9 @@ class AuthController extends Controller
 
     /**
      * Revoke the current seller access token.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -84,6 +98,9 @@ class AuthController extends Controller
 
     /**
      * Request a password reset link for a seller.
+     *
+     * @param  ForgotPasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -99,6 +116,9 @@ class AuthController extends Controller
 
     /**
      * Reset a seller's password using a reset token.
+     *
+     * @param  ResetPasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -114,6 +134,9 @@ class AuthController extends Controller
 
     /**
      * Change the authenticated seller's password.
+     *
+     * @param  ChangePasswordRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

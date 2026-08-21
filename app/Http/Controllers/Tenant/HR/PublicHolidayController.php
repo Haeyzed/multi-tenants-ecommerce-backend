@@ -22,8 +22,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class PublicHolidayController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PublicHolidayService  $holidays
+     */
     public function __construct(private readonly PublicHolidayService $holidays) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexPublicHolidayRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated public holidays.', type: 'array{success: true, message: string, data: PublicHolidayResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexPublicHolidayRequest $request): JsonResponse
     {
@@ -38,6 +49,12 @@ class PublicHolidayController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StorePublicHolidayRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created public holiday.', type: 'array{success: true, message: string, data: PublicHolidayResource, meta: null, errors: null}')]
     public function store(StorePublicHolidayRequest $request): JsonResponse
     {
@@ -49,6 +66,12 @@ class PublicHolidayController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PublicHoliday  $public_holiday
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A public holiday.', type: 'array{success: true, message: string, data: PublicHolidayResource, meta: null, errors: null}')]
     public function show(PublicHoliday $public_holiday): JsonResponse
     {
@@ -60,6 +83,13 @@ class PublicHolidayController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdatePublicHolidayRequest  $request
+     * @param  PublicHoliday  $public_holiday
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated public holiday.', type: 'array{success: true, message: string, data: PublicHolidayResource, meta: null, errors: null}')]
     public function update(UpdatePublicHolidayRequest $request, PublicHoliday $public_holiday): JsonResponse
     {
@@ -71,6 +101,12 @@ class PublicHolidayController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  PublicHoliday  $public_holiday
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted public holiday.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(PublicHoliday $public_holiday): JsonResponse
     {

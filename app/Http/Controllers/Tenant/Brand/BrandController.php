@@ -22,10 +22,18 @@ use Illuminate\Http\UploadedFile;
  */
 class BrandController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  BrandService  $brandService
+     */
     public function __construct(private readonly BrandService $brandService) {}
 
     /**
      * List brands with pagination, search, and filters.
+     *
+     * @param  IndexBrandRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -45,6 +53,9 @@ class BrandController extends Controller
 
     /**
      * Brand options for select inputs.
+     *
+     * @param  IndexBrandRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -61,6 +72,9 @@ class BrandController extends Controller
 
     /**
      * Create a brand (supports multipart logo upload).
+     *
+     * @param  StoreBrandRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -80,6 +94,9 @@ class BrandController extends Controller
 
     /**
      * Show a brand.
+     *
+     * @param  Brand  $brand
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -96,6 +113,10 @@ class BrandController extends Controller
 
     /**
      * Update a brand (supports multipart logo upload).
+     *
+     * @param  UpdateBrandRequest  $request
+     * @param  Brand  $brand
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -115,6 +136,9 @@ class BrandController extends Controller
 
     /**
      * Delete a brand.
+     *
+     * @param  Brand  $brand
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -130,6 +154,10 @@ class BrandController extends Controller
 
     /**
      * Upload or replace a brand logo.
+     *
+     * @param  StoreBrandLogoRequest  $request
+     * @param  Brand  $brand
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -149,6 +177,9 @@ class BrandController extends Controller
 
     /**
      * Remove a brand logo.
+     *
+     * @param  Brand  $brand
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

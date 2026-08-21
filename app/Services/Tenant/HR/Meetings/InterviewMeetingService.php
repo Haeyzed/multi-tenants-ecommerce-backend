@@ -25,6 +25,14 @@ use Illuminate\Validation\ValidationException;
  */
 class InterviewMeetingService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  InterviewMeetingManager  $manager
+     * @param  InterviewMeetingProviderSettingService  $providerSettings
+     * @param  HrSettingsService  $hrSettings
+     * @param  RecruitmentActivityService  $activities
+     */
     public function __construct(
         private readonly InterviewMeetingManager $manager,
         private readonly InterviewMeetingProviderSettingService $providerSettings,
@@ -33,7 +41,12 @@ class InterviewMeetingService
     ) {}
 
     /**
+     * Create for interview.
+     *
+     * @param  Interview  $interview
      * @param  array<string, mixed>  $input
+     * @param  bool  $recreate
+     * @return InterviewMeeting
      */
     public function createForInterview(Interview $interview, array $input = [], bool $recreate = false): InterviewMeeting
     {
@@ -90,7 +103,11 @@ class InterviewMeetingService
     }
 
     /**
+     * Maybe create for interview.
+     *
+     * @param  Interview  $interview
      * @param  array<string, mixed>  $input
+     * @return ?InterviewMeeting
      */
     public function maybeCreateForInterview(Interview $interview, array $input = []): ?InterviewMeeting
     {
@@ -112,7 +129,11 @@ class InterviewMeetingService
     }
 
     /**
+     * Update for interview.
+     *
+     * @param  Interview  $interview
      * @param  array<string, mixed>  $input
+     * @return InterviewMeeting
      */
     public function updateForInterview(Interview $interview, array $input = []): InterviewMeeting
     {
@@ -172,6 +193,12 @@ class InterviewMeetingService
         return $meeting->fresh() ?? $meeting;
     }
 
+    /**
+     * Sync schedule.
+     *
+     * @param  Interview  $interview
+     * @return void
+     */
     public function syncSchedule(Interview $interview): void
     {
         if (! $this->hrSettings->autoSyncInterviewMeeting()) {
@@ -187,6 +214,13 @@ class InterviewMeetingService
         $this->updateForInterview($interview);
     }
 
+    /**
+     * Cancel for interview.
+     *
+     * @param  Interview  $interview
+     * @param  bool  $force
+     * @return void
+     */
     public function cancelForInterview(Interview $interview, bool $force = false): void
     {
         if (! Schema::hasTable('interview_meetings')) {
@@ -236,7 +270,11 @@ class InterviewMeetingService
     }
 
     /**
+     * Recreate for interview.
+     *
+     * @param  Interview  $interview
      * @param  array<string, mixed>  $input
+     * @return InterviewMeeting
      */
     public function recreateForInterview(Interview $interview, array $input = []): InterviewMeeting
     {
@@ -244,7 +282,11 @@ class InterviewMeetingService
     }
 
     /**
+     * Resolve provider name.
+     *
+     * @param  Interview  $interview
      * @param  array<string, mixed>  $input
+     * @return string
      */
     public function resolveProviderName(Interview $interview, array $input = []): string
     {
@@ -264,7 +306,13 @@ class InterviewMeetingService
     }
 
     /**
+     * Request for.
+     *
+     * @param  Interview  $interview
+     * @param  InterviewMeetingProvider  $driver
      * @param  array<string, mixed>  $input
+     * @param  ?InterviewMeeting  $meeting
+     * @return MeetingRequest
      */
     protected function requestFor(
         Interview $interview,
@@ -293,6 +341,13 @@ class InterviewMeetingService
         );
     }
 
+    /**
+     * Persist result.
+     *
+     * @param  Interview  $interview
+     * @param  MeetingResult  $result
+     * @return InterviewMeeting
+     */
     protected function persistResult(Interview $interview, MeetingResult $result): InterviewMeeting
     {
         return InterviewMeeting::query()->create([
@@ -304,6 +359,9 @@ class InterviewMeetingService
     }
 
     /**
+     * Attributes from result.
+     *
+     * @param  MeetingResult  $result
      * @return array<string, mixed>
      */
     protected function attributesFromResult(MeetingResult $result): array
@@ -320,12 +378,26 @@ class InterviewMeetingService
         ];
     }
 
+    /**
+     * Sync interview snapshot.
+     *
+     * @param  Interview  $interview
+     * @param  InterviewMeeting  $meeting
+     * @return void
+     */
     protected function syncInterviewSnapshot(Interview $interview, InterviewMeeting $meeting): void
     {
         $interview->meeting_url = $meeting->join_url;
         $interview->save();
     }
 
+    /**
+     * Supersede current.
+     *
+     * @param  Interview  $interview
+     * @param  bool  $cancelExternal
+     * @return void
+     */
     protected function supersedeCurrent(Interview $interview, bool $cancelExternal): void
     {
         $current = $interview->currentMeeting;
@@ -359,6 +431,12 @@ class InterviewMeetingService
         $interview->unsetRelation('currentMeeting');
     }
 
+    /**
+     * Mark cancelled.
+     *
+     * @param  InterviewMeeting  $meeting
+     * @return void
+     */
     protected function markCancelled(InterviewMeeting $meeting): void
     {
         $meeting->status = InterviewMeetingStatus::Cancelled;
@@ -371,6 +449,14 @@ class InterviewMeetingService
         ]);
     }
 
+    /**
+     * Record failure.
+     *
+     * @param  Interview  $interview
+     * @param  string  $provider
+     * @param  InterviewMeetingProviderException  $exception
+     * @return void
+     */
     protected function recordFailure(Interview $interview, string $provider, InterviewMeetingProviderException $exception): void
     {
         InterviewMeeting::query()->create([
@@ -397,6 +483,13 @@ class InterviewMeetingService
         event(new InterviewMeetingFailed($interview, $provider, $exception->getMessage()));
     }
 
+    /**
+     * Assert provider usable.
+     *
+     * @param  InterviewMeetingProvider  $driver
+     * @param  string  $providerName
+     * @return void
+     */
     protected function assertProviderUsable(InterviewMeetingProvider $driver, string $providerName): void
     {
         if (! $this->hrSettings->onlineInterviewsEnabled() && $driver->capabilities()->requiresExternalApi) {
@@ -420,6 +513,11 @@ class InterviewMeetingService
         }
     }
 
+    /**
+     * Assert tables.
+     *
+     * @return void
+     */
     protected function assertTables(): void
     {
         if (! Schema::hasTable('interview_meetings')) {
@@ -429,6 +527,12 @@ class InterviewMeetingService
         }
     }
 
+    /**
+     * String or null.
+     *
+     * @param  mixed  $value
+     * @return ?string
+     */
     protected function stringOrNull(mixed $value): ?string
     {
         if (! is_string($value)) {

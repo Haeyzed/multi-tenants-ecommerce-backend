@@ -14,6 +14,8 @@ use Illuminate\Support\Collection;
 class BlogCategoryService
 {
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, is_active?: bool|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, BlogCategory>
      */
@@ -39,6 +41,8 @@ class BlogCategoryService
     }
 
     /**
+     * Return options for select inputs.
+     *
      * @return Collection<int, array{label: string, value: int}>
      */
     public function options(): Collection
@@ -55,7 +59,10 @@ class BlogCategoryService
     }
 
     /**
+     * Create a resource.
+     *
      * @param  array{name: string, slug?: string|null, description?: string|null, is_active?: bool}  $data
+     * @return BlogCategory
      */
     public function store(array $data): BlogCategory
     {
@@ -67,13 +74,23 @@ class BlogCategoryService
         ]);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  BlogCategory  $category
+     * @return BlogCategory
+     */
     public function show(BlogCategory $category): BlogCategory
     {
         return $category->loadCount('posts');
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  BlogCategory  $category
      * @param  array{name?: string, slug?: string|null, description?: string|null, is_active?: bool}  $data
+     * @return BlogCategory
      */
     public function update(BlogCategory $category, array $data): BlogCategory
     {
@@ -83,13 +100,22 @@ class BlogCategoryService
         return $category->fresh() ?? $category;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  BlogCategory  $category
+     * @return void
+     */
     public function destroy(BlogCategory $category): void
     {
         $category->delete();
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

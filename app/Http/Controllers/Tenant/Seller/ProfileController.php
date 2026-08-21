@@ -20,12 +20,20 @@ use Illuminate\Http\Request;
  */
 class ProfileController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  SellerAuthService  $authService
+     */
     public function __construct(
         private readonly SellerAuthService $authService,
     ) {}
 
     /**
      * Return the authenticated seller.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -47,6 +55,9 @@ class ProfileController extends Controller
 
     /**
      * Update the authenticated seller's profile.
+     *
+     * @param  UpdateProfileRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -70,6 +81,9 @@ class ProfileController extends Controller
 
     /**
      * Upload or replace the authenticated seller's logo.
+     *
+     * @param  StoreLogoRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -93,6 +107,9 @@ class ProfileController extends Controller
 
     /**
      * Delete the authenticated seller's logo.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

@@ -31,10 +31,17 @@ use Illuminate\Validation\ValidationException;
  */
 class LoyaltyService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CommerceSettingService  $commerceSettings
+     */
     public function __construct(private readonly CommerceSettingService $commerceSettings) {}
 
     /**
      * The active loyalty program, or null when loyalty is not configured for this tenant.
+     *
+     * @return ?LoyaltyProgram
      */
     public function program(): ?LoyaltyProgram
     {
@@ -50,6 +57,8 @@ class LoyaltyService
 
     /**
      * Resolve the single program row, creating it from commerce settings when missing.
+     *
+     * @return LoyaltyProgram
      */
     public function ensureProgram(): LoyaltyProgram
     {
@@ -77,6 +86,7 @@ class LoyaltyService
      * Update the program settings.
      *
      * @param  array<string, mixed>  $data
+     * @return LoyaltyProgram
      */
     public function updateProgram(array $data): LoyaltyProgram
     {
@@ -99,6 +109,9 @@ class LoyaltyService
 
     /**
      * Get the customer's loyalty account, creating an empty one on first use.
+     *
+     * @param  Customer  $customer
+     * @return LoyaltyAccount
      */
     public function getOrCreateAccount(Customer $customer): LoyaltyAccount
     {
@@ -112,6 +125,8 @@ class LoyaltyService
     }
 
     /**
+     * List accounts.
+     *
      * @param  array{search?: string|null, status?: string|null, customer_id?: int|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, LoyaltyAccount>
      */
@@ -125,6 +140,9 @@ class LoyaltyService
     }
 
     /**
+     * List transactions.
+     *
+     * @param  LoyaltyAccount  $account
      * @param  array{type?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, LoyaltyTransaction>
      */
@@ -141,7 +159,8 @@ class LoyaltyService
     /**
      * Award points for an order that has just been paid.
      *
-     * Returns null when loyalty is unavailable, disabled, or the order already earned.
+     * @param  Order  $order
+     * @return ?LoyaltyTransaction
      */
     public function earnForPaidOrder(Order $order): ?LoyaltyTransaction
     {
@@ -196,8 +215,11 @@ class LoyaltyService
     /**
      * Calculate what a point redemption is worth without touching the ledger.
      *
-     * The requested points are capped by the program's maximum redemption
-     * percentage and, when given, by the amount still discountable on the order.
+     * @param  Customer  $customer
+     * @param  int  $points
+     * @param  string  $orderSubtotal
+     * @param  ?string  $maxDiscountAmount
+     * @return LoyaltyRedemptionResult
      *
      * @throws ValidationException
      */
@@ -265,6 +287,12 @@ class LoyaltyService
     /**
      * Spend points for a checkout, writing the redeem entry to the ledger.
      *
+     * @param  Customer  $customer
+     * @param  int  $points
+     * @param  string  $orderSubtotal
+     * @param  ?Order  $order
+     * @return LoyaltyRedemptionResult
+     *
      * @throws ValidationException
      */
     public function redeemForCheckout(
@@ -301,7 +329,9 @@ class LoyaltyService
     /**
      * Claw back the share of earned points covered by a refund.
      *
-     * Historical earn entries are never mutated; a compensating entry is written instead.
+     * @param  Order  $order
+     * @param  Refund  $refund
+     * @return ?LoyaltyTransaction
      */
     public function reverseEarnForRefund(Order $order, Refund $refund): ?LoyaltyTransaction
     {
@@ -362,6 +392,11 @@ class LoyaltyService
     /**
      * Apply a manual staff adjustment to an account.
      *
+     * @param  LoyaltyAccount  $account
+     * @param  int  $points
+     * @param  ?string  $description
+     * @return LoyaltyTransaction
+     *
      * @throws ValidationException
      */
     public function adjust(LoyaltyAccount $account, int $points, ?string $description = null): LoyaltyTransaction
@@ -383,6 +418,8 @@ class LoyaltyService
 
     /**
      * Whether the loyalty tables have been migrated for this tenant.
+     *
+     * @return bool
      */
     public function isAvailable(): bool
     {
@@ -393,6 +430,10 @@ class LoyaltyService
 
     /**
      * Points awarded for a monetary amount, truncated to a whole number.
+     *
+     * @param  LoyaltyProgram  $program
+     * @param  string  $amount
+     * @return int
      */
     protected function pointsForAmount(LoyaltyProgram $program, string $amount): int
     {
@@ -404,10 +445,15 @@ class LoyaltyService
     }
 
     /**
-     * The only writer of account balances: locks the account, appends a ledger
-     * entry, then rewrites the cached totals from the movement.
+     * The only writer of account balances: locks the account, appends a ledger entry, then rewrites the cached totals from the movement.
      *
+     * @param  LoyaltyAccount  $account
+     * @param  LoyaltyTransactionType  $type
+     * @param  int  $points
+     * @param  ?Model  $reference
+     * @param  ?string  $description
      * @param  array<string, mixed>|null  $meta
+     * @return LoyaltyTransaction
      *
      * @throws ValidationException
      */
@@ -470,6 +516,7 @@ class LoyaltyService
     /**
      * Ledger entries referencing a given model.
      *
+     * @param  Model  $reference
      * @return Builder<LoyaltyTransaction>
      */
     protected function transactionsFor(Model $reference): Builder
@@ -479,13 +526,23 @@ class LoyaltyService
             ->where('reference_id', $reference->getKey());
     }
 
+    /**
+     * Has transaction for.
+     *
+     * @param  LoyaltyTransactionType  $type
+     * @param  Model  $reference
+     * @return bool
+     */
     protected function hasTransactionFor(LoyaltyTransactionType $type, Model $reference): bool
     {
         return $this->transactionsFor($reference)->where('type', $type)->exists();
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

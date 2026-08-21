@@ -16,10 +16,24 @@ use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * Tenant PageController endpoints.
+ */
 class PageController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PageService  $pageService
+     */
     public function __construct(private readonly PageService $pageService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated pages.', type: 'array{success: true, message: string, data: PageResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -34,6 +48,12 @@ class PageController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StorePageRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created page.', type: 'array{success: true, message: string, data: PageResource, meta: null, errors: null}')]
     public function store(StorePageRequest $request): JsonResponse
     {
@@ -45,6 +65,12 @@ class PageController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Page  $page
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A page.', type: 'array{success: true, message: string, data: PageResource, meta: null, errors: null}')]
     public function show(Page $page): JsonResponse
     {
@@ -56,6 +82,13 @@ class PageController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdatePageRequest  $request
+     * @param  Page  $page
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated page.', type: 'array{success: true, message: string, data: PageResource, meta: null, errors: null}')]
     public function update(UpdatePageRequest $request, Page $page): JsonResponse
     {
@@ -67,6 +100,12 @@ class PageController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Page  $page
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted page.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(Page $page): JsonResponse
     {
@@ -76,6 +115,13 @@ class PageController extends Controller
         return $this->deleted('Page deleted successfully.');
     }
 
+    /**
+     * Store featured image.
+     *
+     * @param  StoreFeaturedImageRequest  $request
+     * @param  Page  $page
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Page with featured image.', type: 'array{success: true, message: string, data: PageResource, meta: null, errors: null}')]
     public function storeFeaturedImage(StoreFeaturedImageRequest $request, Page $page): JsonResponse
     {
@@ -87,6 +133,12 @@ class PageController extends Controller
         );
     }
 
+    /**
+     * Destroy featured image.
+     *
+     * @param  Page  $page
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Page with featured image removed.', type: 'array{success: true, message: string, data: PageResource, meta: null, errors: null}')]
     public function destroyFeaturedImage(Page $page): JsonResponse
     {

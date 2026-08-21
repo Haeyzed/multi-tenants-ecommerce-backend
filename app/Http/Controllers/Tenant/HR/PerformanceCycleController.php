@@ -22,8 +22,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class PerformanceCycleController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PerformanceCycleService  $cycles
+     */
     public function __construct(private readonly PerformanceCycleService $cycles) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexPerformanceCycleRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated performance cycles.', type: 'array{success: true, message: string, data: PerformanceCycleResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexPerformanceCycleRequest $request): JsonResponse
     {
@@ -38,6 +49,12 @@ class PerformanceCycleController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StorePerformanceCycleRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created performance cycle.', type: 'array{success: true, message: string, data: PerformanceCycleResource, meta: null, errors: null}')]
     public function store(StorePerformanceCycleRequest $request): JsonResponse
     {
@@ -49,6 +66,12 @@ class PerformanceCycleController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  PerformanceCycle  $performance_cycle
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A performance cycle.', type: 'array{success: true, message: string, data: PerformanceCycleResource, meta: null, errors: null}')]
     public function show(PerformanceCycle $performance_cycle): JsonResponse
     {
@@ -60,6 +83,13 @@ class PerformanceCycleController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdatePerformanceCycleRequest  $request
+     * @param  PerformanceCycle  $performance_cycle
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated performance cycle.', type: 'array{success: true, message: string, data: PerformanceCycleResource, meta: null, errors: null}')]
     public function update(UpdatePerformanceCycleRequest $request, PerformanceCycle $performance_cycle): JsonResponse
     {
@@ -71,6 +101,12 @@ class PerformanceCycleController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  PerformanceCycle  $performance_cycle
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted performance cycle.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(PerformanceCycle $performance_cycle): JsonResponse
     {

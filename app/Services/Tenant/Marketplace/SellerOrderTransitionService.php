@@ -29,6 +29,12 @@ class SellerOrderTransitionService
     ];
 
     /**
+     * Transition.
+     *
+     * @param  SellerOrder  $sellerOrder
+     * @param  SellerOrderStatus  $to
+     * @return SellerOrder
+     *
      * @throws ValidationException
      */
     public function transition(SellerOrder $sellerOrder, SellerOrderStatus $to): SellerOrder

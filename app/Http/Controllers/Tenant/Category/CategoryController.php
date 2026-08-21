@@ -23,10 +23,18 @@ use Illuminate\Http\UploadedFile;
  */
 class CategoryController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  CategoryService  $categoryService
+     */
     public function __construct(private readonly CategoryService $categoryService) {}
 
     /**
      * List categories with pagination, search, and filters.
+     *
+     * @param  IndexCategoryRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -46,6 +54,9 @@ class CategoryController extends Controller
 
     /**
      * Hierarchical category tree.
+     *
+     * @param  IndexCategoryRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -62,6 +73,9 @@ class CategoryController extends Controller
 
     /**
      * Category options for select inputs.
+     *
+     * @param  IndexCategoryRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -78,6 +92,9 @@ class CategoryController extends Controller
 
     /**
      * Create a category (supports multipart image upload).
+     *
+     * @param  StoreCategoryRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -97,6 +114,9 @@ class CategoryController extends Controller
 
     /**
      * Show a category.
+     *
+     * @param  Category  $category
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -113,6 +133,9 @@ class CategoryController extends Controller
 
     /**
      * Immediate children of a category.
+     *
+     * @param  Category  $category
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -129,6 +152,10 @@ class CategoryController extends Controller
 
     /**
      * Update a category (supports multipart image upload).
+     *
+     * @param  UpdateCategoryRequest  $request
+     * @param  Category  $category
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -148,6 +175,9 @@ class CategoryController extends Controller
 
     /**
      * Delete a category.
+     *
+     * @param  Category  $category
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -163,6 +193,10 @@ class CategoryController extends Controller
 
     /**
      * Upload or replace a category image.
+     *
+     * @param  StoreCategoryImageRequest  $request
+     * @param  Category  $category
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -182,6 +216,9 @@ class CategoryController extends Controller
 
     /**
      * Remove a category image.
+     *
+     * @param  Category  $category
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

@@ -23,11 +23,18 @@ use Illuminate\Support\Str;
  */
 class ShipmentService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ShippingCarrierManager  $carriers
+     */
     public function __construct(
         private readonly ShippingCarrierManager $carriers,
     ) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{order_id?: int|null, status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Shipment>
      */
@@ -49,6 +56,9 @@ class ShipmentService
     }
 
     /**
+     * shipping_method_id?: int|null, tracking_number?: string|null, carrier?: string|null, tracking_url?: string|null, notes?: string|null, status?: string|null }  $data
+     *
+     * @param  Order  $order
      * @param  array{
      *     shipping_method_id?: int|null,
      *     tracking_number?: string|null,
@@ -57,6 +67,7 @@ class ShipmentService
      *     notes?: string|null,
      *     status?: string|null
      * }  $data
+     * @return Shipment
      */
     public function create(Order $order, array $data = []): Shipment
     {
@@ -108,12 +119,24 @@ class ShipmentService
         ])->load(['order', 'shippingMethod']);
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Shipment  $shipment
+     * @return Shipment
+     */
     public function show(Shipment $shipment): Shipment
     {
         return $shipment->load(['order', 'shippingMethod']);
     }
 
     /**
+     * Transition.
+     *
+     * @param  Shipment  $shipment
+     * @param  ShipmentStatus  $to
+     * @return Shipment
+     *
      * @throws ValidationException
      */
     public function transition(Shipment $shipment, ShipmentStatus $to): Shipment
@@ -154,6 +177,9 @@ class ShipmentService
     }
 
     /**
+     * For customer order.
+     *
+     * @param  Order  $order
      * @param  array{per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Shipment>
      */
@@ -167,6 +193,9 @@ class ShipmentService
 
     /**
      * Track a shipment via its configured carrier (or the default driver).
+     *
+     * @param  Shipment  $shipment
+     * @return ShipmentTrackingResult
      */
     public function trackViaCarrier(Shipment $shipment): ShipmentTrackingResult
     {
@@ -179,6 +208,9 @@ class ShipmentService
 
     /**
      * Cancel a shipment via its carrier, then optionally mark it Cancelled locally.
+     *
+     * @param  Shipment  $shipment
+     * @return ShipmentCancellationResult
      */
     public function cancelViaCarrier(Shipment $shipment): ShipmentCancellationResult
     {
@@ -201,6 +233,9 @@ class ShipmentService
 
     /**
      * Fetch a shipping label via the shipment's carrier (or the default driver).
+     *
+     * @param  Shipment  $shipment
+     * @return ShipmentLabelResult
      */
     public function labelViaCarrier(Shipment $shipment): ShipmentLabelResult
     {
@@ -214,8 +249,9 @@ class ShipmentService
     /**
      * Apply a normalized carrier status string to a shipment looked up by tracking number.
      *
-     * Returns null when no shipment matches or the status cannot be mapped.
-     * Does not throw — callers (e.g. webhooks) treat this as best-effort.
+     * @param  string  $trackingNumber
+     * @param  string  $status
+     * @return ?Shipment
      */
     public function applyCarrierStatus(string $trackingNumber, string $status): ?Shipment
     {
@@ -243,7 +279,8 @@ class ShipmentService
     /**
      * Map a carrier-normalized status string to {@see ShipmentStatus}.
      *
-     * Matching is case-insensitive; hyphens and underscores are interchangeable.
+     * @param  string  $status
+     * @return ?ShipmentStatus
      */
     protected function mapCarrierStatus(string $status): ?ShipmentStatus
     {
@@ -267,7 +304,10 @@ class ShipmentService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

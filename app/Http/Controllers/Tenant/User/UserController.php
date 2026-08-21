@@ -25,11 +25,16 @@ class UserController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  UserService  $userService
      */
     public function __construct(private readonly UserService $userService) {}
 
     /**
      * List tenant users with pagination and search.
+     *
+     * @param  IndexUserRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -49,6 +54,9 @@ class UserController extends Controller
 
     /**
      * Create a tenant user.
+     *
+     * @param  StoreUserRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -69,6 +77,9 @@ class UserController extends Controller
 
     /**
      * Show a tenant user.
+     *
+     * @param  User  $user
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -85,6 +96,10 @@ class UserController extends Controller
 
     /**
      * Update a tenant user.
+     *
+     * @param  UpdateUserRequest  $request
+     * @param  User  $user
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -105,6 +120,9 @@ class UserController extends Controller
 
     /**
      * Delete a tenant user.
+     *
+     * @param  User  $user
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -120,6 +138,10 @@ class UserController extends Controller
 
     /**
      * Sync roles for a tenant user.
+     *
+     * @param  SyncRolesRequest  $request
+     * @param  User  $user
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -145,6 +167,10 @@ class UserController extends Controller
 
     /**
      * Sync direct permissions for a tenant user.
+     *
+     * @param  SyncPermissionsRequest  $request
+     * @param  User  $user
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

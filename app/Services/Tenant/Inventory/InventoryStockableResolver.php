@@ -19,6 +19,12 @@ use Illuminate\Validation\ValidationException;
 class InventoryStockableResolver
 {
     /**
+     * Resolve.
+     *
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
+     * @return Product|ProductVariant
+     *
      * @throws ValidationException
      */
     public function resolve(Product $product, ?ProductVariant $variant = null): Product|ProductVariant
@@ -45,9 +51,8 @@ class InventoryStockableResolver
     /**
      * Catalogue records that may hold warehouse stock for this product/variant pair.
      *
-     * Simple products with an implicit SKU variant may have inventory on either
-     * the product or the variant. Variable products always stock on the variant.
-     *
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
      * @return list<Product|ProductVariant>
      *
      * @throws ValidationException
@@ -77,6 +82,11 @@ class InventoryStockableResolver
     /**
      * Limit an inventory query to the catalogue records that can hold this stock.
      *
+     * @param  Builder  $query
+     * @param  Product  $product
+     * @param  ?ProductVariant  $variant
+     * @return void
+     *
      * @throws ValidationException
      */
     public function constrainInventoryQuery(Builder $query, Product $product, ?ProductVariant $variant = null): void
@@ -93,11 +103,23 @@ class InventoryStockableResolver
         });
     }
 
+    /**
+     * Requires variant.
+     *
+     * @param  Product  $product
+     * @return bool
+     */
     public function requiresVariant(Product $product): bool
     {
         return $product->has_variants || $product->type === ProductType::Variable;
     }
 
+    /**
+     * Implicit variant.
+     *
+     * @param  Product  $product
+     * @return ?ProductVariant
+     */
     protected function implicitVariant(Product $product): ?ProductVariant
     {
         if ($this->requiresVariant($product)) {

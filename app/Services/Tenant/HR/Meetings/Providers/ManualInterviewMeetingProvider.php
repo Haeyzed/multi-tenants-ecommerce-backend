@@ -17,11 +17,21 @@ use App\Exceptions\Interview\InterviewMeetingProviderException;
  */
 class ManualInterviewMeetingProvider implements InterviewMeetingProvider
 {
+    /**
+     * Name.
+     *
+     * @return string
+     */
     public function name(): string
     {
         return MeetingProvider::Manual->value;
     }
 
+    /**
+     * Capabilities.
+     *
+     * @return MeetingProviderCapabilities
+     */
     public function capabilities(): MeetingProviderCapabilities
     {
         return new MeetingProviderCapabilities(
@@ -35,13 +45,31 @@ class ManualInterviewMeetingProvider implements InterviewMeetingProvider
         );
     }
 
+    /**
+     * Is configured.
+     *
+     * @param  array  $credentials
+     * @return bool
+     */
     public function isConfigured(array $credentials): bool
     {
         return true;
     }
 
+    /**
+     * Test connection.
+     *
+     * @param  array  $credentials
+     * @return void
+     */
     public function testConnection(array $credentials): void {}
 
+    /**
+     * Create meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return MeetingResult
+     */
     public function createMeeting(MeetingRequest $request): MeetingResult
     {
         $joinUrl = $request->joinUrl;
@@ -56,13 +84,31 @@ class ManualInterviewMeetingProvider implements InterviewMeetingProvider
         return $this->result($request, $joinUrl);
     }
 
+    /**
+     * Update meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return MeetingResult
+     */
     public function updateMeeting(MeetingRequest $request): MeetingResult
     {
         return $this->createMeeting($request);
     }
 
+    /**
+     * Cancel meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return void
+     */
     public function cancelMeeting(MeetingRequest $request): void {}
 
+    /**
+     * Get meeting.
+     *
+     * @param  MeetingRequest  $request
+     * @return ?MeetingResult
+     */
     public function getMeeting(MeetingRequest $request): ?MeetingResult
     {
         if ($request->joinUrl === null || $request->joinUrl === '') {
@@ -72,6 +118,13 @@ class ManualInterviewMeetingProvider implements InterviewMeetingProvider
         return $this->result($request, $request->joinUrl);
     }
 
+    /**
+     * Result.
+     *
+     * @param  MeetingRequest  $request
+     * @param  string  $joinUrl
+     * @return MeetingResult
+     */
     protected function result(MeetingRequest $request, string $joinUrl): MeetingResult
     {
         return new MeetingResult(

@@ -17,6 +17,7 @@ class ProductSpecificationService
     /**
      * List specification rows for a product.
      *
+     * @param  Product  $product
      * @return Collection<int, ProductSpecification>
      */
     public function list(Product $product): Collection
@@ -27,6 +28,7 @@ class ProductSpecificationService
     /**
      * Replace-set specification rows for a product.
      *
+     * @param  Product  $product
      * @param  list<array{group?: string|null, name: string, value: string, sort_order?: int}>  $items
      * @return Collection<int, ProductSpecification>
      */

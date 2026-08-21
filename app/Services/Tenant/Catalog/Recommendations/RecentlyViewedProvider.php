@@ -15,8 +15,18 @@ use Illuminate\Support\Collection;
  */
 class RecentlyViewedProvider implements ProductRecommendationProvider
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  ProductViewService  $productViews
+     */
     public function __construct(private readonly ProductViewService $productViews) {}
 
+    /**
+     * Key.
+     *
+     * @return string
+     */
     public function key(): string
     {
         return 'recently_viewed';
@@ -24,6 +34,12 @@ class RecentlyViewedProvider implements ProductRecommendationProvider
 
     /**
      * {@inheritDoc}
+     *
+     * @param  ?Product  $product
+     * @param  ?Customer  $customer
+     * @param  int  $limit
+     * @param  ?string  $sessionKey
+     * @return Collection
      */
     public function recommend(
         ?Product $product = null,

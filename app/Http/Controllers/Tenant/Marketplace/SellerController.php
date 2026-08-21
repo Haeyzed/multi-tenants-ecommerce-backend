@@ -21,8 +21,19 @@ use Illuminate\Http\Request;
  */
 class SellerController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  SellerService  $sellerService
+     */
     public function __construct(private readonly SellerService $sellerService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated sellers.', type: 'array{success: true, message: string, data: SellerResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request): JsonResponse
     {
@@ -42,6 +53,12 @@ class SellerController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreSellerRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created seller.', type: 'array{success: true, message: string, data: SellerResource, meta: null, errors: null}')]
     public function store(StoreSellerRequest $request): JsonResponse
     {
@@ -53,6 +70,12 @@ class SellerController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Seller  $seller
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A seller.', type: 'array{success: true, message: string, data: SellerResource, meta: null, errors: null}')]
     public function show(Seller $seller): JsonResponse
     {
@@ -64,6 +87,13 @@ class SellerController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateSellerRequest  $request
+     * @param  Seller  $seller
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated seller.', type: 'array{success: true, message: string, data: SellerResource, meta: null, errors: null}')]
     public function update(UpdateSellerRequest $request, Seller $seller): JsonResponse
     {
@@ -85,6 +115,12 @@ class SellerController extends Controller
         );
     }
 
+    /**
+     * Approve.
+     *
+     * @param  Seller  $seller
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Approved seller.', type: 'array{success: true, message: string, data: SellerResource, meta: null, errors: null}')]
     public function approve(Seller $seller): JsonResponse
     {
@@ -96,6 +132,12 @@ class SellerController extends Controller
         );
     }
 
+    /**
+     * Reject.
+     *
+     * @param  Seller  $seller
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Rejected seller.', type: 'array{success: true, message: string, data: SellerResource, meta: null, errors: null}')]
     public function reject(Seller $seller): JsonResponse
     {
@@ -107,6 +149,12 @@ class SellerController extends Controller
         );
     }
 
+    /**
+     * Suspend.
+     *
+     * @param  Seller  $seller
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Suspended seller.', type: 'array{success: true, message: string, data: SellerResource, meta: null, errors: null}')]
     public function suspend(Seller $seller): JsonResponse
     {
@@ -118,6 +166,12 @@ class SellerController extends Controller
         );
     }
 
+    /**
+     * Activate.
+     *
+     * @param  Seller  $seller
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Activated seller.', type: 'array{success: true, message: string, data: SellerResource, meta: null, errors: null}')]
     public function activate(Seller $seller): JsonResponse
     {

@@ -21,8 +21,20 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class CustomerDeliveryController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  DeliveryService  $deliveryService
+     */
     public function __construct(private readonly DeliveryService $deliveryService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  Request  $request
+     * @param  Order  $order
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated deliveries for an order.', type: 'array{success: true, message: string, data: DeliveryResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(Request $request, Order $order): JsonResponse
     {

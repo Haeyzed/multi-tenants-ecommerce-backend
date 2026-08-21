@@ -22,8 +22,19 @@ use Illuminate\Http\JsonResponse;
 #[Group('HR')]
 class TaxTableController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  TaxTableService  $taxTables
+     */
     public function __construct(private readonly TaxTableService $taxTables) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexTaxTableRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Paginated tax tables.', type: 'array{success: true, message: string, data: TaxTableResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}')]
     public function index(IndexTaxTableRequest $request): JsonResponse
     {
@@ -38,6 +49,12 @@ class TaxTableController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreTaxTableRequest  $request
+     * @return JsonResponse
+     */
     #[Response(status: 201, description: 'Created tax table.', type: 'array{success: true, message: string, data: TaxTableResource, meta: null, errors: null}')]
     public function store(StoreTaxTableRequest $request): JsonResponse
     {
@@ -49,6 +66,12 @@ class TaxTableController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  TaxTable  $tax_table
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'A tax table.', type: 'array{success: true, message: string, data: TaxTableResource, meta: null, errors: null}')]
     public function show(TaxTable $tax_table): JsonResponse
     {
@@ -60,6 +83,13 @@ class TaxTableController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateTaxTableRequest  $request
+     * @param  TaxTable  $tax_table
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Updated tax table.', type: 'array{success: true, message: string, data: TaxTableResource, meta: null, errors: null}')]
     public function update(UpdateTaxTableRequest $request, TaxTable $tax_table): JsonResponse
     {
@@ -71,6 +101,12 @@ class TaxTableController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  TaxTable  $tax_table
+     * @return JsonResponse
+     */
     #[Response(status: 200, description: 'Deleted tax table.', type: 'array{success: true, message: string, data: null, meta: null, errors: null}')]
     public function destroy(TaxTable $tax_table): JsonResponse
     {
