@@ -14,10 +14,13 @@ use App\Http\Resources\Tenant\Catalog\ProductSpecificationResource;
 use App\Http\Resources\Tenant\Catalog\ProductTagResource;
 use App\Http\Resources\Tenant\Catalog\SeoMetaResource;
 use App\Http\Resources\Tenant\Category\CategoryResource;
+use App\Http\Resources\Tenant\Inventory\InventoryWarehouseStockResource;
 use App\Http\Resources\Tenant\Unit\UnitResource;
+use App\Models\Tenant\Inventory;
 use App\Models\Tenant\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 /**
  * API resource for tenant products.
@@ -33,6 +36,7 @@ class ProductResource extends JsonResource
     {
         /** @var Product $product */
         $product = $this->resource;
+        $warehouseStocks = $this->warehouseStocks($product);
 
         return [
             'id' => $product->id,
@@ -90,8 +94,55 @@ class ProductResource extends JsonResource
                     : collect(),
             ),
             'variants_count' => $this->when(isset($product->variants_count), $product->variants_count),
+            'warehouses' => $this->when(
+                $warehouseStocks !== null,
+                fn () => InventoryWarehouseStockResource::collection($warehouseStocks ?? collect()),
+            ),
+            'total_quantity' => $this->when(
+                $warehouseStocks !== null,
+                fn () => (int) ($warehouseStocks?->sum('quantity') ?? 0),
+            ),
+            'total_reserved_quantity' => $this->when(
+                $warehouseStocks !== null,
+                fn () => (int) ($warehouseStocks?->sum('reserved_quantity') ?? 0),
+            ),
+            'total_available_quantity' => $this->when(
+                $warehouseStocks !== null,
+                fn () => (int) ($warehouseStocks?->sum(fn (Inventory $inventory): int => $inventory->availableQuantity()) ?? 0),
+            ),
             'created_at' => $product->created_at,
             'updated_at' => $product->updated_at,
         ];
+    }
+
+    /**
+     * @return Collection<int, Inventory>|null
+     */
+    protected function warehouseStocks(Product $product): ?Collection
+    {
+        $loaded = $product->relationLoaded('inventories')
+            || ($product->relationLoaded('variants') && $product->variants->contains(
+                fn ($variant): bool => $variant->relationLoaded('inventories'),
+            ));
+
+        if (! $loaded) {
+            return null;
+        }
+
+        $stocks = collect();
+
+        if ($product->relationLoaded('inventories')) {
+            $stocks = $stocks->concat($product->inventories);
+        }
+
+        if ($product->relationLoaded('variants')) {
+            foreach ($product->variants as $variant) {
+                if ($variant->relationLoaded('inventories')) {
+                    $stocks = $stocks->concat($variant->inventories);
+                }
+            }
+        }
+
+        return $stocks->unique('id')->values();
     }
 }

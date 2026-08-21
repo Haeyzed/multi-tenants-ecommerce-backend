@@ -9,7 +9,7 @@ use App\Http\Requests\Tenant\HR\IndexLeaveTypeRequest;
 use App\Http\Requests\Tenant\HR\StoreLeaveTypeRequest;
 use App\Http\Requests\Tenant\HR\UpdateLeaveTypeRequest;
 use App\Http\Resources\Tenant\HR\LeaveTypeResource;
-use App\Models\Tenant\LeaveType;
+use App\Models\HR\LeaveType;
 use App\Services\Tenant\HR\LeaveTypeService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

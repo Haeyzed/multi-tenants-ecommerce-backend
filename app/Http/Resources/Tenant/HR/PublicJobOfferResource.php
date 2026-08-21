@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Tenant\HR;
 
-use App\Models\Tenant\JobOffer;
+use App\Models\HR\JobOffer;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 

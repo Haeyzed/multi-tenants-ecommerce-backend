@@ -9,7 +9,7 @@ use App\Http\Requests\Tenant\HR\IndexTaxTableRequest;
 use App\Http\Requests\Tenant\HR\StoreTaxTableRequest;
 use App\Http\Requests\Tenant\HR\UpdateTaxTableRequest;
 use App\Http\Resources\Tenant\HR\TaxTableResource;
-use App\Models\Tenant\TaxTable;
+use App\Models\HR\TaxTable;
 use App\Services\Tenant\HR\TaxTableService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

@@ -23,11 +23,16 @@ class PlanController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  PlanService  $planService
      */
     public function __construct(private readonly PlanService $planService) {}
 
     /**
      * List plans.
+     *
+     * @param  IndexPlanRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -47,6 +52,9 @@ class PlanController extends Controller
 
     /**
      * Return plan options as label/value pairs.
+     *
+     * @param  IndexPlanRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -63,6 +71,9 @@ class PlanController extends Controller
 
     /**
      * Create a plan.
+     *
+     * @param  StorePlanRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -81,6 +92,9 @@ class PlanController extends Controller
 
     /**
      * Show a plan.
+     *
+     * @param  Plan  $plan
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -97,6 +111,10 @@ class PlanController extends Controller
 
     /**
      * Update a plan.
+     *
+     * @param  UpdatePlanRequest  $request
+     * @param  Plan  $plan
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -115,6 +133,9 @@ class PlanController extends Controller
 
     /**
      * Delete a plan.
+     *
+     * @param  Plan  $plan
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -130,6 +151,10 @@ class PlanController extends Controller
 
     /**
      * Sync features onto a plan by slug.
+     *
+     * @param  SyncPlanFeaturesRequest  $request
+     * @param  Plan  $plan
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

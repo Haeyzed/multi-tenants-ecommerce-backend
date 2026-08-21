@@ -31,6 +31,8 @@ class StateService
     /**
      * Retrieve a single state by identifier.
      *
+     * @param  int  $id
+     * @return State
      *
      * @throws ModelNotFoundException
      */
@@ -62,6 +64,7 @@ class StateService
      * Resolve the page size for paginated listings.
      *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

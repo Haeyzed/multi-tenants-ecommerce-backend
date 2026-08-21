@@ -7,22 +7,22 @@ use App\Enums\Tenant\Accounting\JournalEntryStatus;
 use App\Enums\Tenant\HR\AttendanceStatus;
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
-use App\Enums\Tenant\HR\LeaveType;
 use App\Enums\Tenant\HR\PayrollLineType;
 use App\Enums\Tenant\HR\PayrollRunStatus;
 use App\Enums\Tenant\HR\SalaryComponentCalculation;
 use App\Events\PayrollPaid;
 use App\Events\PayrollProcessed;
 use App\Events\PayslipAvailable;
+use App\Models\HR\Attendance;
+use App\Models\HR\Employee;
+use App\Models\HR\EmployeeSalary;
+use App\Models\HR\EmployeeSalaryRevision;
+use App\Models\HR\LeaveRequest;
+use App\Models\HR\LeaveType as LeaveTypeModel;
+use App\Models\HR\PayrollItem;
+use App\Models\HR\PayrollRun;
 use App\Models\Tenant\Account;
-use App\Models\Tenant\Attendance;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\EmployeeSalary;
-use App\Models\Tenant\EmployeeSalaryRevision;
 use App\Models\Tenant\JournalEntry;
-use App\Models\Tenant\LeaveRequest;
-use App\Models\Tenant\PayrollItem;
-use App\Models\Tenant\PayrollRun;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\EmployeeSalaryService;
 use App\Services\Tenant\HR\HrSettingsService;
@@ -59,6 +59,7 @@ beforeEach(function (): void {
         '2026_08_15_060001_create_commerce_settings_table.php',
         '2026_08_18_003141_create_leave_types_table.php',
         '2026_08_18_003144_create_leave_balances_table.php',
+        '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php',
         '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php',
         '2026_08_18_003148_add_manager_id_to_departments_table.php',
         '2026_08_18_014811_create_employee_salary_components_table.php',
@@ -99,6 +100,7 @@ beforeEach(function (): void {
             '2026_08_15_060001_create_commerce_settings_table.php' => 'commerce_settings',
             '2026_08_18_003141_create_leave_types_table.php' => 'leave_types',
             '2026_08_18_003144_create_leave_balances_table.php' => 'leave_balances',
+            '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php' => null,
             '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php' => null,
             '2026_08_18_003148_add_manager_id_to_departments_table.php' => null,
             '2026_08_18_014811_create_employee_salary_components_table.php' => 'employee_salary_components',
@@ -139,6 +141,10 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_014816_add_payroll_period_id_to_payroll_runs_table.php' && Schema::hasColumn('payroll_runs', 'payroll_period_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php' && Schema::hasColumn('leave_requests', 'leave_type_id')) {
             continue;
         }
 
@@ -234,9 +240,11 @@ test('payroll run generates payslips with absence and unpaid leave deductions', 
         'status' => AttendanceStatus::Absent,
     ]);
 
+    $unpaidLeaveType = LeaveTypeModel::factory()->unpaid()->create();
+
     LeaveRequest::factory()->create([
         'employee_id' => $employee->id,
-        'type' => LeaveType::Unpaid->value,
+        'leave_type_id' => $unpaidLeaveType->id,
         'status' => LeaveStatus::Approved,
         'start_date' => $weekday->copy()->addDays(2)->toDateString(),
         'end_date' => $weekday->copy()->addDays(2)->toDateString(),

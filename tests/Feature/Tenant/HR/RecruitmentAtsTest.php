@@ -16,11 +16,11 @@ use App\Events\JobApplicationStageChanged;
 use App\Events\JobOfferAccepted;
 use App\Events\JobOfferRejected;
 use App\Events\JobOfferSent;
-use App\Models\Tenant\Candidate;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\RecruitmentActivity;
+use App\Models\HR\Candidate;
+use App\Models\HR\Employee;
+use App\Models\HR\RecruitmentActivity;
+use App\Models\HR\WorkLocation;
 use App\Models\Tenant\User;
-use App\Models\Tenant\WorkLocation;
 use App\Policies\Tenant\CandidatePolicy;
 use App\Services\Tenant\HR\CandidateService;
 use App\Services\Tenant\HR\HiringService;
@@ -298,6 +298,7 @@ test('application stage changes persist history', function (): void {
 test('interviews belong to applications and accept interviewer feedback', function (): void {
     $admin = User::factory()->create();
     $admin->syncRoles(['admin']);
+    Employee::factory()->create(['user_id' => $admin->id]);
 
     $opening = app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store(['title' => 'Engineer']));
     $application = app(JobApplicationService::class)->store([
@@ -324,6 +325,35 @@ test('interviews belong to applications and accept interviewer feedback', functi
     expect($interview->application->id)->toBe($application->id)
         ->and($feedback->rating)->toBe(5)
         ->and($completed->status)->toBe(InterviewStatus::Completed);
+});
+
+test('interviewers must have an active employee profile', function (): void {
+    $admin = User::factory()->create();
+    $admin->syncRoles(['admin']);
+
+    $opening = app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store(['title' => 'Staff Role']));
+    $application = app(JobApplicationService::class)->store([
+        'job_opening_id' => $opening->id,
+        'first_name' => 'No',
+        'last_name' => 'Profile',
+        'email' => 'noprofile-interviewer@example.com',
+    ], $admin);
+
+    expect(fn () => app(InterviewService::class)->store([
+        'job_application_id' => $application->id,
+        'scheduled_at' => now()->addDay()->toDateTimeString(),
+        'interviewer_ids' => [$admin->id],
+    ]))->toThrow(ValidationException::class);
+
+    $terminated = User::factory()->create();
+    $terminated->syncRoles(['admin']);
+    Employee::factory()->terminated()->create(['user_id' => $terminated->id]);
+
+    expect(fn () => app(InterviewService::class)->store([
+        'job_application_id' => $application->id,
+        'scheduled_at' => now()->addDay()->toDateTimeString(),
+        'interviewer_ids' => [$terminated->id],
+    ]))->toThrow(ValidationException::class);
 });
 
 test('offers require approval when enabled and hiring converts a candidate once', function (): void {
@@ -510,6 +540,7 @@ test('staff notifications skip missing recruitment permissions', function (): vo
 test('interviews can be listed by calendar window and opening', function (): void {
     $admin = User::factory()->create();
     $admin->syncRoles(['admin']);
+    Employee::factory()->create(['user_id' => $admin->id]);
 
     $opening = app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store(['title' => 'Calendar Role']));
     $other = app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store(['title' => 'Other Role']));
@@ -554,6 +585,7 @@ test('interviews can be listed by calendar window and opening', function (): voi
 test('application and candidate activity feeds include pipeline events', function (): void {
     $admin = User::factory()->create();
     $admin->syncRoles(['admin']);
+    Employee::factory()->create(['user_id' => $admin->id]);
 
     $opening = app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store(['title' => 'Activity Role']));
     $application = app(JobApplicationService::class)->store([

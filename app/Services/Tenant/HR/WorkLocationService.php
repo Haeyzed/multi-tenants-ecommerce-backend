@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\JobOpening;
-use App\Models\Tenant\WorkLocation;
+use App\Models\HR\Employee;
+use App\Models\HR\JobOpening;
+use App\Models\HR\WorkLocation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -114,6 +115,27 @@ class WorkLocationService
                 'name' => ['A work location with this name already exists.'],
             ]);
         }
+    }
+
+    /**
+     * Copy the configured location name onto the legacy snapshot string when assigned.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function applySnapshot(array $data, string $idKey = 'work_location_id', string $labelKey = 'work_location'): array
+    {
+        if (! Schema::hasTable('work_locations') || ! array_key_exists($idKey, $data) || $data[$idKey] === null || $data[$idKey] === '') {
+            return $data;
+        }
+
+        $location = WorkLocation::query()->find((int) $data[$idKey]);
+
+        if ($location !== null && (! array_key_exists($labelKey, $data) || $data[$labelKey] === null || $data[$labelKey] === '')) {
+            $data[$labelKey] = $location->name;
+        }
+
+        return $data;
     }
 
     /**

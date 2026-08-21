@@ -19,11 +19,16 @@ class StateController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  StateService  $stateService
      */
     public function __construct(private readonly StateService $stateService) {}
 
     /**
      * List states with pagination, search, and filters.
+     *
+     * @param  IndexStateRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -43,6 +48,9 @@ class StateController extends Controller
 
     /**
      * Return state options as label/value pairs.
+     *
+     * @param  IndexStateRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -59,6 +67,9 @@ class StateController extends Controller
 
     /**
      * Show a single state by identifier.
+     *
+     * @param  int  $state
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

@@ -17,11 +17,17 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class DomainService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  FeatureGate  $featureGate
+     */
     public function __construct(private readonly FeatureGate $featureGate) {}
 
     /**
      * List domains for a tenant.
      *
+     * @param  Tenant  $tenant
      * @param  array{per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Domain>
      */
@@ -35,10 +41,9 @@ class DomainService
     /**
      * Create a domain for the tenant.
      *
-     * The first (primary) domain is always allowed for provisioning. Additional
-     * domains require the custom-domain plan feature when a subscription exists.
-     *
+     * @param  Tenant  $tenant
      * @param  array{domain: string, is_primary?: bool}  $data
+     * @return Domain
      *
      * @throws ValidationException
      */
@@ -69,6 +74,10 @@ class DomainService
     /**
      * Show a domain belonging to the tenant.
      *
+     * @param  Tenant  $tenant
+     * @param  Domain  $domain
+     * @return Domain
+     *
      * @throws NotFoundHttpException
      */
     public function show(Tenant $tenant, Domain $domain): Domain
@@ -81,7 +90,10 @@ class DomainService
     /**
      * Update a domain belonging to the tenant.
      *
+     * @param  Tenant  $tenant
+     * @param  Domain  $domain
      * @param  array{domain?: string, is_primary?: bool}  $data
+     * @return Domain
      *
      * @throws NotFoundHttpException
      */
@@ -111,6 +123,10 @@ class DomainService
 
     /**
      * Delete a domain belonging to the tenant.
+     *
+     * @param  Tenant  $tenant
+     * @param  Domain  $domain
+     * @return void
      *
      * @throws NotFoundHttpException
      * @throws ValidationException
@@ -142,6 +158,10 @@ class DomainService
     /**
      * Mark a domain as primary for the tenant.
      *
+     * @param  Tenant  $tenant
+     * @param  Domain  $domain
+     * @return Domain
+     *
      * @throws NotFoundHttpException
      */
     public function makePrimary(Tenant $tenant, Domain $domain): Domain
@@ -157,6 +177,12 @@ class DomainService
     }
 
     /**
+     * Assert owns.
+     *
+     * @param  Tenant  $tenant
+     * @param  Domain  $domain
+     * @return void
+     *
      * @throws NotFoundHttpException
      */
     private function assertOwns(Tenant $tenant, Domain $domain): void
@@ -166,13 +192,22 @@ class DomainService
         }
     }
 
+    /**
+     * Clear primary.
+     *
+     * @param  Tenant  $tenant
+     * @return void
+     */
     private function clearPrimary(Tenant $tenant): void
     {
         $tenant->domains()->where('is_primary', true)->update(['is_primary' => false]);
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     private function perPage(array $params): int
     {

@@ -29,7 +29,10 @@ return new class extends Migration
             $table->unsignedInteger('reorder_quantity')->nullable();
             $table->timestamps();
 
-            $table->unique(['warehouse_id', 'inventoryable_type', 'inventoryable_id']);
+            $table->unique(
+                ['warehouse_id', 'inventoryable_type', 'inventoryable_id'],
+                'inventories_warehouse_stockable_unique',
+            );
             $table->index('warehouse_id');
         });
     }

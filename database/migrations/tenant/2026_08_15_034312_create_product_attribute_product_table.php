@@ -23,7 +23,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['product_id', 'product_attribute_value_id']);
+            $table->unique(['product_id', 'product_attribute_value_id'], 'product_attr_value_unique');
         });
     }
 

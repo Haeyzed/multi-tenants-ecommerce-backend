@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Tenant\HR;
 
-use App\Models\Tenant\LeaveRequest;
+use App\Models\HR\LeaveRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,7 +24,8 @@ class LeaveRequestResource extends JsonResource
         return [
             'id' => $leaveRequest->id,
             'employee_id' => $leaveRequest->employee_id,
-            'type' => $leaveRequest->type,
+            'leave_type_id' => $leaveRequest->leave_type_id,
+            'type' => $leaveRequest->leaveType?->code,
             'start_date' => $leaveRequest->start_date?->toDateString(),
             'end_date' => $leaveRequest->end_date?->toDateString(),
             'status' => $leaveRequest->status,
@@ -47,6 +48,11 @@ class LeaveRequestResource extends JsonResource
                 'first_name' => $leaveRequest->reviewer->first_name,
                 'last_name' => $leaveRequest->reviewer->last_name,
                 'email' => $leaveRequest->reviewer->email,
+            ]),
+            'leave_type' => $this->whenLoaded('leaveType', fn () => $leaveRequest->leaveType === null ? null : [
+                'id' => $leaveRequest->leaveType->id,
+                'name' => $leaveRequest->leaveType->name,
+                'code' => $leaveRequest->leaveType->code,
             ]),
             'created_at' => $leaveRequest->created_at,
             'updated_at' => $leaveRequest->updated_at,

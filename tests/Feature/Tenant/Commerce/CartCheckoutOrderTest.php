@@ -13,6 +13,7 @@ use App\Models\Tenant\Inventory;
 use App\Models\Tenant\Order;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductPrice;
+use App\Models\Tenant\ProductVariant;
 use App\Models\Tenant\Warehouse;
 use App\Services\Tenant\Commerce\CartService;
 use App\Services\Tenant\Commerce\CheckoutService;
@@ -20,6 +21,7 @@ use App\Services\Tenant\Commerce\OrderService;
 use App\Services\Tenant\Inventory\InventoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 uses(RefreshDatabase::class);
@@ -27,11 +29,13 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     $migrationFiles = [
         '2026_08_15_031728_create_brands_table.php',
+        '2026_08_15_031731_create_categories_table.php',
         '2026_08_15_034243_create_units_table.php',
         '2026_08_15_034246_create_warehouses_table.php',
         '2026_08_15_034249_create_warehouse_locations_table.php',
         '2026_08_15_034302_create_products_table.php',
         '2026_08_15_034305_create_product_variants_table.php',
+        '2026_08_15_034307_create_category_product_table.php',
         '2026_08_15_034315_create_product_prices_table.php',
         '2026_08_15_034318_create_inventories_table.php',
         '2026_08_15_034321_create_inventory_movements_table.php',
@@ -94,6 +98,38 @@ function commerceFixture(int $stock = 10, string $price = '100.00'): array
         'address' => $address,
         'product' => $product,
         'inventory' => $inventory->fresh(),
+    ];
+}
+
+/**
+ * @return array{product: Product, variant: ProductVariant}
+ */
+function simpleSkuProductFixture(string $sku = 'SAMSUNG-TV-001', string $price = '100.00'): array
+{
+    $product = Product::factory()->active()->create([
+        'allow_backorder' => false,
+        'has_variants' => false,
+    ]);
+
+    $variant = ProductVariant::query()->create([
+        'product_id' => $product->id,
+        'name' => $product->name,
+        'sku' => $sku,
+        'is_active' => true,
+        'sort_order' => 0,
+    ]);
+
+    ProductPrice::query()->create([
+        'priceable_type' => $product->getMorphClass(),
+        'priceable_id' => $product->id,
+        'currency' => 'NGN',
+        'amount' => $price,
+        'is_active' => true,
+    ]);
+
+    return [
+        'product' => $product->fresh(['variants']),
+        'variant' => $variant,
     ];
 }
 
@@ -211,4 +247,37 @@ test('customer cannot access another customer order', function (): void {
 
     expect(fn () => app(OrderService::class)->customerShow($other, $order))
         ->toThrow(AccessDeniedHttpException::class);
+});
+
+test('checkout reserves stock from implicit sku variant when cart has no variant', function (): void {
+    Event::fake([OrderCreated::class]);
+
+    $customer = Customer::factory()->create();
+    $address = CustomerAddress::factory()->for($customer)->default()->create();
+    $warehouse = Warehouse::factory()->create(['is_default' => true]);
+    ['product' => $product] = simpleSkuProductFixture();
+
+    $inventory = app(InventoryService::class)->assign($warehouse, $product, null, ['quantity' => 10]);
+
+    app(CartService::class)->addItem($customer, $product->id, null, 2);
+
+    $order = app(CheckoutService::class)->checkout($customer, [
+        'shipping_address_id' => $address->id,
+    ]);
+
+    expect($order->items->first()->inventory_id)->toBe($inventory->id)
+        ->and($inventory->fresh()->reserved_quantity)->toBe(2);
+
+    Event::assertDispatched(OrderCreated::class);
+});
+
+test('cart rejects quantity above implicit sku variant stock', function (): void {
+    $customer = Customer::factory()->create();
+    $warehouse = Warehouse::factory()->create(['is_default' => true]);
+    ['product' => $product] = simpleSkuProductFixture();
+
+    app(InventoryService::class)->assign($warehouse, $product, null, ['quantity' => 2]);
+
+    expect(fn () => app(CartService::class)->addItem($customer, $product->id, null, 3))
+        ->toThrow(ValidationException::class);
 });

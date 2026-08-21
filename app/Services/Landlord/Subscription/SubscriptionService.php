@@ -33,16 +33,16 @@ class SubscriptionService
 {
     /**
      * Create a new subscription service.
+     *
+     * @param  PaymentManager  $paymentManager
      */
     public function __construct(private readonly PaymentManager $paymentManager) {}
 
     /**
      * Run a callback inside a central-database transaction.
      *
-     * @template TReturn
-     *
      * @param  callable(): TReturn  $callback
-     * @return TReturn
+     * @return mixed
      */
     protected function centralTransaction(callable $callback): mixed
     {
@@ -52,6 +52,9 @@ class SubscriptionService
 
     /**
      * Resolve the tenant's current access-granting subscription.
+     *
+     * @param  Tenant  $tenant
+     * @return ?Subscription
      */
     public function currentForTenant(Tenant $tenant): ?Subscription
     {
@@ -61,9 +64,8 @@ class SubscriptionService
     /**
      * Subscribe a tenant to a plan.
      *
-     * Free plans activate immediately. Paid plans create a pending subscription
-     * and payment transaction, then initialize the configured gateway.
-     *
+     * @param  Tenant  $tenant
+     * @param  Plan  $plan
      * @param  array{email?: string|null, callback_url?: string|null, customer_name?: string|null, metadata?: array<string, mixed>}  $options
      * @return array{subscription: Subscription, payment: PaymentInitiationResult|null}
      *
@@ -92,6 +94,10 @@ class SubscriptionService
 
     /**
      * Verify a pending payment reference and activate the related subscription.
+     *
+     * @param  Tenant  $tenant
+     * @param  string  $reference
+     * @return Subscription
      *
      * @throws ValidationException
      * @throws RuntimeException
@@ -156,6 +162,11 @@ class SubscriptionService
 
     /**
      * Activate a subscription after a successful payment verification or webhook.
+     *
+     * @param  PaymentTransaction  $transaction
+     * @param  ?string  $providerTransactionId
+     * @param  ?CarbonInterface  $paidAt
+     * @return Subscription
      */
     public function activateFromVerifiedPayment(
         PaymentTransaction $transaction,
@@ -219,6 +230,10 @@ class SubscriptionService
 
     /**
      * Cancel a subscription immediately or at the end of the current period.
+     *
+     * @param  Subscription  $subscription
+     * @param  bool  $immediately
+     * @return Subscription
      */
     public function cancel(Subscription $subscription, bool $immediately = false): Subscription
     {
@@ -254,6 +269,8 @@ class SubscriptionService
     /**
      * Change the tenant's plan, cancelling the current access-granting subscription.
      *
+     * @param  Tenant  $tenant
+     * @param  Plan  $plan
      * @param  array{email?: string|null, callback_url?: string|null, customer_name?: string|null, metadata?: array<string, mixed>, immediate?: bool}  $options
      * @return array{subscription: Subscription, payment: PaymentInitiationResult|null}
      *
@@ -287,7 +304,10 @@ class SubscriptionService
     /**
      * Activate a free plan immediately for the tenant.
      *
+     * @param  Tenant  $tenant
+     * @param  Plan  $plan
      * @param  array{metadata?: array<string, mixed>}  $options
+     * @return Subscription
      */
     protected function activateFreePlan(Tenant $tenant, Plan $plan, array $options = []): Subscription
     {
@@ -323,6 +343,8 @@ class SubscriptionService
     /**
      * Create a pending paid subscription and initialize gateway checkout.
      *
+     * @param  Tenant  $tenant
+     * @param  Plan  $plan
      * @param  array{email?: string|null, callback_url?: string|null, customer_name?: string|null, metadata?: array<string, mixed>}  $options
      * @return array{subscription: Subscription, payment: PaymentInitiationResult}
      *
@@ -416,6 +438,10 @@ class SubscriptionService
 
     /**
      * Cancel other access-granting or pending subscriptions for the tenant.
+     *
+     * @param  string  $tenantId
+     * @param  ?int  $exceptSubscriptionId
+     * @return void
      */
     protected function cancelConflictingSubscriptions(string $tenantId, ?int $exceptSubscriptionId = null): void
     {
@@ -439,6 +465,8 @@ class SubscriptionService
     /**
      * Calculate billing period bounds for a plan starting at a given moment.
      *
+     * @param  Plan  $plan
+     * @param  CarbonInterface  $startsAt
      * @return array{starts_at: CarbonInterface, current_period_start: CarbonInterface, current_period_end: CarbonInterface}
      */
     protected function periodBounds(Plan $plan, CarbonInterface $startsAt): array
@@ -458,6 +486,9 @@ class SubscriptionService
 
     /**
      * Generate a unique payment reference for the tenant.
+     *
+     * @param  Tenant  $tenant
+     * @return string
      */
     protected function generateReference(Tenant $tenant): string
     {

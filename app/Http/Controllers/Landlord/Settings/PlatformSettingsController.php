@@ -16,10 +16,18 @@ use Illuminate\Http\JsonResponse;
  */
 class PlatformSettingsController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  PlatformSettingsService  $settings
+     */
     public function __construct(private readonly PlatformSettingsService $settings) {}
 
     /**
      * Retrieve settings for a domain.
+     *
+     * @param  string  $domain
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -39,6 +47,10 @@ class PlatformSettingsController extends Controller
 
     /**
      * Update settings for a domain.
+     *
+     * @param  UpdatePlatformSettingsDomainRequest  $request
+     * @param  string  $domain
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

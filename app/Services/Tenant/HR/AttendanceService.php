@@ -6,8 +6,8 @@ namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\AttendanceClockSource;
 use App\Enums\Tenant\HR\AttendanceStatus;
-use App\Models\Tenant\Attendance;
-use App\Models\Tenant\Employee;
+use App\Models\HR\Attendance;
+use App\Models\HR\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;

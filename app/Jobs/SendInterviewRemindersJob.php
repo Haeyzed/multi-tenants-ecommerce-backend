@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Enums\Tenant\HR\InterviewStatus;
+use App\Models\HR\Interview;
 use App\Models\Landlord\Tenant;
-use App\Models\Tenant\Interview;
 use App\Services\Tenant\HR\HrSettingsService;
 use App\Support\RecruitmentNotifier;
 use Illuminate\Contracts\Queue\ShouldQueue;

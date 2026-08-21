@@ -19,11 +19,16 @@ class TimezoneController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  TimezoneService  $timezoneService
      */
     public function __construct(private readonly TimezoneService $timezoneService) {}
 
     /**
      * List timezones with pagination, search, and filters.
+     *
+     * @param  IndexTimezoneRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -43,6 +48,9 @@ class TimezoneController extends Controller
 
     /**
      * Return timezone options as label/value pairs.
+     *
+     * @param  IndexTimezoneRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -59,6 +67,9 @@ class TimezoneController extends Controller
 
     /**
      * Show a single timezone by identifier.
+     *
+     * @param  int  $timezone
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

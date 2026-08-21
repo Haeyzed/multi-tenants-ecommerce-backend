@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Models\Tenant\Designation;
+use App\Models\HR\Designation;
 use App\Models\Tenant\User;
 
 /**

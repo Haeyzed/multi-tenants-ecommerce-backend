@@ -118,9 +118,11 @@ class GoodsReceiptService
                 $poItem->received_quantity += $qty;
                 $poItem->save();
 
-                $inventoryable = $poItem->product_variant_id !== null
+                $product = Product::query()->findOrFail($poItem->product_id);
+                $variant = $poItem->product_variant_id !== null
                     ? ProductVariant::query()->findOrFail($poItem->product_variant_id)
-                    : Product::query()->findOrFail($poItem->product_id);
+                    : null;
+                $inventoryable = $this->inventoryService->stockableFor($product, $variant);
 
                 $inventory = $this->inventoryService->getOrCreate($warehouse, $inventoryable);
                 $this->inventoryService->increase(

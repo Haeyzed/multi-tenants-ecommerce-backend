@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Models\Tenant\PerformanceCycle;
+use App\Models\HR\PerformanceCycle;
 use App\Models\Tenant\User;
 
 /**

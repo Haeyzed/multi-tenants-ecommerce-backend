@@ -6,8 +6,7 @@ namespace App\Services\Tenant\HR;
 
 use App\Enums\Media\MediaCollection;
 use App\Enums\Tenant\HR\JobOpeningStatus;
-use App\Models\Tenant\JobOpening;
-use App\Models\Tenant\WorkLocation;
+use App\Models\HR\JobOpening;
 use App\Services\Landlord\Feature\UsageLimiter;
 use App\Services\Media\MediaService;
 use App\Services\Tenant\Catalog\SeoService;
@@ -28,6 +27,7 @@ class JobOpeningService
         private readonly MediaService $media,
         private readonly UsageLimiter $usageLimiter,
         private readonly RecruitmentActivityService $activities,
+        private readonly WorkLocationService $workLocations,
     ) {}
 
     /**
@@ -237,12 +237,7 @@ class JobOpeningService
             $payload['status'] = JobOpeningStatus::fromInput($payload['status']);
         }
 
-        if (array_key_exists('work_location_id', $payload) && $payload['work_location_id'] && Schema::hasTable('work_locations')) {
-            $location = WorkLocation::query()->find((int) $payload['work_location_id']);
-            if ($location !== null && (! array_key_exists('work_location', $payload) || $payload['work_location'] === null || $payload['work_location'] === '')) {
-                $payload['work_location'] = $location->name;
-            }
-        }
+        $payload = $this->workLocations->applySnapshot($payload);
 
         if (array_key_exists('work_location_id', $payload) && ! Schema::hasColumn('job_openings', 'work_location_id')) {
             unset($payload['work_location_id']);

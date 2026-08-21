@@ -31,7 +31,10 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
 
-            $table->unique(['cart_id', 'product_id', 'product_variant_id']);
+            $table->unique(
+                ['cart_id', 'product_id', 'product_variant_id'],
+                'cart_items_line_unique',
+            );
         });
     }
 

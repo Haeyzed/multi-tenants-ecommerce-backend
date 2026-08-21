@@ -19,11 +19,16 @@ class CurrencyController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  CurrencyService  $currencyService
      */
     public function __construct(private readonly CurrencyService $currencyService) {}
 
     /**
      * List currencies with pagination, search, and filters.
+     *
+     * @param  IndexCurrencyRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -43,6 +48,9 @@ class CurrencyController extends Controller
 
     /**
      * Return currency options as label/value pairs.
+     *
+     * @param  IndexCurrencyRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -59,6 +67,9 @@ class CurrencyController extends Controller
 
     /**
      * Show a single currency by identifier.
+     *
+     * @param  int  $currency
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

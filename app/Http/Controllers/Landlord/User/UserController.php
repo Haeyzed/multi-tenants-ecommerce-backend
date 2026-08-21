@@ -25,11 +25,16 @@ class UserController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  UserService  $userService
      */
     public function __construct(private readonly UserService $userService) {}
 
     /**
      * List landlord users with pagination and search.
+     *
+     * @param  IndexUserRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -49,6 +54,9 @@ class UserController extends Controller
 
     /**
      * Create a landlord user.
+     *
+     * @param  StoreUserRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -71,6 +79,9 @@ class UserController extends Controller
 
     /**
      * Show a landlord user.
+     *
+     * @param  User  $user
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -87,6 +98,10 @@ class UserController extends Controller
 
     /**
      * Update a landlord user.
+     *
+     * @param  UpdateUserRequest  $request
+     * @param  User  $user
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -109,6 +124,9 @@ class UserController extends Controller
 
     /**
      * Delete a landlord user.
+     *
+     * @param  User  $user
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -124,6 +142,10 @@ class UserController extends Controller
 
     /**
      * Sync roles for a landlord user.
+     *
+     * @param  SyncRolesRequest  $request
+     * @param  User  $user
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -149,6 +171,10 @@ class UserController extends Controller
 
     /**
      * Sync direct permissions for a landlord user.
+     *
+     * @param  SyncPermissionsRequest  $request
+     * @param  User  $user
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

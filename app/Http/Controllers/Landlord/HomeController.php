@@ -14,6 +14,8 @@ class HomeController extends Controller
 {
     /**
      * Render the landlord welcome page.
+     *
+     * @return View
      */
     public function __invoke(): View
     {

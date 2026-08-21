@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
+use App\Models\HR\WorkLocation;
 use App\Models\Tenant\User;
-use App\Models\Tenant\WorkLocation;
 
 /**
  * Authorization for HR work locations.

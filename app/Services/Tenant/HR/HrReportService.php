@@ -4,22 +4,19 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Enums\Tenant\HR\AttendanceStatus;
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Enums\Tenant\HR\JobApplicationStatus;
 use App\Enums\Tenant\HR\JobOpeningStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
-use App\Enums\Tenant\HR\PayrollRunStatus;
-use App\Models\Tenant\ApplicationStageHistory;
-use App\Models\Tenant\Attendance;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\JobApplication;
-use App\Models\Tenant\JobOpening;
-use App\Models\Tenant\LeaveRequest;
-use App\Models\Tenant\PayrollItem;
-use App\Models\Tenant\PayrollItemLine;
+use App\Models\HR\ApplicationStageHistory;
+use App\Models\HR\Attendance;
+use App\Models\HR\Employee;
+use App\Models\HR\JobApplication;
+use App\Models\HR\JobOpening;
+use App\Models\HR\LeaveRequest;
+use App\Models\HR\PayrollItem;
+use App\Services\Tenant\HR\Reports\HrReportQuery;
 use App\Support\Money;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -27,7 +24,7 @@ use Illuminate\Support\Collection;
  */
 class HrReportService
 {
-    public function __construct(private readonly PayrollRunService $payrollRuns) {}
+    public function __construct(private readonly HrReportQuery $queries) {}
 
     /**
      * @param  array{from?: string|null, to?: string|null, department_id?: int|null, employee_id?: int|null}  $params
@@ -35,31 +32,21 @@ class HrReportService
      */
     public function attendance(array $params = []): array
     {
-        [$from, $to] = $this->window($params);
+        [$from, $to] = $this->queries->dateWindow($params);
 
-        $rows = Employee::query()
-            ->with([
-                'user:id,first_name,last_name,email',
-                'attendances' => fn ($query) => $query
-                    ->whereDate('work_date', '>=', $from)
-                    ->whereDate('work_date', '<=', $to),
-            ])
-            ->when($params['department_id'] ?? null, fn ($query, int $id) => $query->where('department_id', $id))
-            ->when($params['employee_id'] ?? null, fn ($query, int $id) => $query->whereKey($id))
+        $rows = $this->queries->employeesWithAttendanceTotals($params, $from, $to)
             ->orderBy('id')
             ->get()
             ->map(function (Employee $employee): array {
-                $records = $employee->attendances;
-
                 return [
                     'employee_id' => $employee->id,
                     'employee_number' => $employee->employee_number,
-                    'name' => trim(($employee->user?->first_name ?? '').' '.($employee->user?->last_name ?? '')),
+                    'name' => $this->queries->employeeDisplayName($employee),
                     'department_id' => $employee->department_id,
-                    'present' => $records->where('status', AttendanceStatus::Present)->count(),
-                    'late' => $records->where('status', AttendanceStatus::Late)->count(),
-                    'absent' => $records->where('status', AttendanceStatus::Absent)->count(),
-                    'overtime_minutes' => (int) $records->sum('overtime_minutes'),
+                    'present' => (int) $employee->present_count,
+                    'late' => (int) $employee->late_count,
+                    'absent' => (int) $employee->absent_count,
+                    'overtime_minutes' => (int) ($employee->overtime_minutes_sum ?? 0),
                 ];
             })
             ->values()
@@ -84,23 +71,16 @@ class HrReportService
      */
     public function leave(array $params = []): array
     {
-        [$from, $to] = $this->window($params);
+        [$from, $to] = $this->queries->dateWindow($params);
 
-        $query = LeaveRequest::query()
-            ->with(['employee.user:id,first_name,last_name'])
-            ->whereDate('start_date', '<=', $to)
-            ->whereDate('end_date', '>=', $from)
-            ->when($params['department_id'] ?? null, function ($query, int $id): void {
-                $query->whereHas('employee', fn ($employee) => $employee->where('department_id', $id));
-            })
-            ->when($params['employee_id'] ?? null, fn ($query, int $id) => $query->where('employee_id', $id));
-
-        $requests = $query->orderByDesc('id')->get();
+        $requests = $this->queries->leaveRequests($params, $from, $to)
+            ->orderByDesc('id')
+            ->get();
 
         $byType = [];
 
         foreach ($requests as $request) {
-            $type = $request->type;
+            $type = $request->leaveType?->code ?? 'unknown';
             $byType[$type] ??= ['type' => $type, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'cancelled' => 0];
             $status = $request->status instanceof LeaveStatus ? $request->status->value : (string) $request->status;
             $byType[$type][$status] = ($byType[$type][$status] ?? 0) + 1;
@@ -113,8 +93,8 @@ class HrReportService
             'rows' => $requests->map(fn (LeaveRequest $request): array => [
                 'id' => $request->id,
                 'employee_id' => $request->employee_id,
-                'name' => trim(($request->employee?->user?->first_name ?? '').' '.($request->employee?->user?->last_name ?? '')),
-                'type' => $request->type,
+                'name' => $this->queries->employeeDisplayName($request->employee),
+                'type' => $request->leaveType?->code,
                 'status' => $request->status,
                 'start_date' => $request->start_date?->toDateString(),
                 'end_date' => $request->end_date?->toDateString(),
@@ -128,18 +108,9 @@ class HrReportService
      */
     public function payroll(array $params = []): array
     {
-        [$from, $to] = $this->window($params);
+        [$from, $to] = $this->queries->dateWindow($params);
 
-        $items = PayrollItem::query()
-            ->with(['employee.user:id,first_name,last_name', 'employee.department:id,name', 'payrollRun'])
-            ->whereHas('payrollRun', function ($query) use ($from, $to): void {
-                $query->whereNot('status', PayrollRunStatus::Cancelled)
-                    ->whereDate('period_start', '<=', $to)
-                    ->whereDate('period_end', '>=', $from);
-            })
-            ->when($params['department_id'] ?? null, function ($query, int $id): void {
-                $query->whereHas('employee', fn ($employee) => $employee->where('department_id', $id));
-            })
+        $items = $this->queries->payrollItems($params, $from, $to)
             ->orderByDesc('id')
             ->get();
 
@@ -166,7 +137,7 @@ class HrReportService
                 'reference' => $item->payrollRun?->reference,
                 'status' => $item->payrollRun?->status,
                 'employee_id' => $item->employee_id,
-                'name' => trim(($item->employee?->user?->first_name ?? '').' '.($item->employee?->user?->last_name ?? '')),
+                'name' => $this->queries->employeeDisplayName($item->employee),
                 'department' => $departmentName,
                 'gross_pay' => $item->gross_pay,
                 'deduction_total' => $item->deduction_total,
@@ -195,28 +166,14 @@ class HrReportService
      */
     public function overtime(array $params = []): array
     {
-        [$from, $to] = $this->window($params);
+        [$from, $to] = $this->queries->dateWindow($params);
 
-        $query = Attendance::query()
-            ->with(['employee.user:id,first_name,last_name'])
-            ->where('overtime_minutes', '>', 0)
-            ->whereDate('work_date', '>=', $from)
-            ->whereDate('work_date', '<=', $to)
-            ->when($params['department_id'] ?? null, function ($query, int $id): void {
-                $query->whereHas('employee', fn ($employee) => $employee->where('department_id', $id));
-            })
-            ->when($params['employee_id'] ?? null, fn ($query, int $id) => $query->where('employee_id', $id));
-
-        $records = $query->orderBy('work_date')->orderBy('id')->get();
-
-        $paid = PayrollItemLine::query()
-            ->where('code', 'overtime')
-            ->whereHas('payrollItem.payrollRun', function ($query) use ($from, $to): void {
-                $query->whereNot('status', PayrollRunStatus::Cancelled)
-                    ->whereDate('period_start', '<=', $to)
-                    ->whereDate('period_end', '>=', $from);
-            })
+        $records = $this->queries->overtimeAttendances($params, $from, $to)
+            ->orderBy('work_date')
+            ->orderBy('id')
             ->get();
+
+        $paid = $this->queries->overtimePayrollLines($from, $to)->get();
 
         $paidTotal = '0.00';
         foreach ($paid as $line) {
@@ -233,7 +190,7 @@ class HrReportService
             'rows' => $records->map(fn (Attendance $attendance): array => [
                 'id' => $attendance->id,
                 'employee_id' => $attendance->employee_id,
-                'name' => trim(($attendance->employee?->user?->first_name ?? '').' '.($attendance->employee?->user?->last_name ?? '')),
+                'name' => $this->queries->employeeDisplayName($attendance->employee),
                 'work_date' => $attendance->work_date?->toDateString(),
                 'overtime_minutes' => $attendance->overtime_minutes,
                 'overtime_rate_percent' => $attendance->overtime_rate_percent,
@@ -249,15 +206,7 @@ class HrReportService
     {
         $asOf = $params['as_of'] ?? now()->toDateString();
 
-        $employees = Employee::query()
-            ->with('department:id,name')
-            ->where(function ($query) use ($asOf): void {
-                $query->whereNull('hired_at')->orWhereDate('hired_at', '<=', $asOf);
-            })
-            ->where(function ($query) use ($asOf): void {
-                $query->whereNull('terminated_at')->orWhereDate('terminated_at', '>', $asOf);
-            })
-            ->get();
+        $employees = $this->queries->headcountEmployees($asOf)->get();
 
         $byDepartment = [];
         $byStatus = [];
@@ -291,13 +240,9 @@ class HrReportService
      */
     public function recruitment(array $params = []): array
     {
-        [$from, $to] = $this->window($params);
+        [$from, $to] = $this->queries->dateWindow($params);
 
-        $applications = JobApplication::query()
-            ->with('jobOpening:id,title')
-            ->whereDate('created_at', '>=', $from)
-            ->whereDate('created_at', '<=', $to)
-            ->get();
+        $applications = $this->queries->applications($from, $to)->get();
 
         $history = $applications->isEmpty()
             ? collect()
@@ -462,22 +407,5 @@ class HrReportService
         }
 
         return $summary;
-    }
-
-    /**
-     * @param  array{from?: string|null, to?: string|null}  $params
-     * @return array{0: string, 1: string}
-     */
-    protected function window(array $params): array
-    {
-        if (! empty($params['from']) && ! empty($params['to'])) {
-            return [(string) $params['from'], (string) $params['to']];
-        }
-
-        $period = $this->payrollRuns->periodWindow(
-            isset($params['from']) ? Carbon::parse((string) $params['from']) : now(),
-        );
-
-        return [$period['period_start'], $period['period_end']];
     }
 }

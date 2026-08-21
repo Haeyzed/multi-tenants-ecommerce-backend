@@ -35,7 +35,7 @@ class SendLeaveRequestedNotification
             'email' => $user->email,
             'start_date' => $event->leaveRequest->start_date->toDateString(),
             'end_date' => $event->leaveRequest->end_date->toDateString(),
-            'type' => $event->leaveRequest->type,
+            'type' => $event->leaveRequest->leaveType?->code ?? $event->leaveRequest->loadMissing('leaveType')->leaveType?->code,
         ];
 
         $this->notifications->send(

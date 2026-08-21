@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Models\Tenant\OvertimePolicy;
+use App\Models\HR\OvertimePolicy;
 use App\Models\Tenant\User;
 
 /**

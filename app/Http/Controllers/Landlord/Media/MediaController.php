@@ -24,8 +24,19 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class MediaController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexMediaRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Paginated media library items.',
@@ -42,6 +53,12 @@ class MediaController extends Controller
         );
     }
 
+    /**
+     * Return options for select inputs.
+     *
+     * @param  IndexMediaRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Media options for select inputs.',
@@ -55,6 +72,12 @@ class MediaController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreMediaRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'Uploaded media item or items.',
@@ -89,6 +112,12 @@ class MediaController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Media  $media
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'A single media item.',
@@ -102,6 +131,13 @@ class MediaController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateMediaRequest  $request
+     * @param  Media  $media
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Updated media item.',
@@ -117,6 +153,12 @@ class MediaController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Media  $media
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Media deleted.',
@@ -129,6 +171,11 @@ class MediaController extends Controller
         return $this->deleted('Media deleted successfully.');
     }
 
+    /**
+     * Resolve the authenticated landlord user.
+     *
+     * @return User
+     */
     protected function actor(): User
     {
         /** @var User $user */

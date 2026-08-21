@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\LeaveType as LeaveTypeCode;
-use App\Models\Tenant\LeaveRequest;
-use App\Models\Tenant\LeaveType;
+use App\Models\HR\LeaveRequest;
+use App\Models\HR\LeaveType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -114,7 +114,7 @@ class LeaveTypeService
      */
     public function destroy(LeaveType $leaveType): void
     {
-        if (LeaveRequest::query()->where('type', $leaveType->code)->exists()) {
+        if (LeaveRequest::query()->where('leave_type_id', $leaveType->id)->exists()) {
             throw ValidationException::withMessages([
                 'leave_type' => ['This leave type is in use and cannot be deleted. Deactivate it instead.'],
             ]);
@@ -143,6 +143,32 @@ class LeaveTypeService
         if (! $type->is_active) {
             throw ValidationException::withMessages([
                 'type' => ['The selected leave type is inactive.'],
+            ]);
+        }
+
+        return $type;
+    }
+
+    /**
+     * Resolve an active leave type by primary key, seeding defaults if needed.
+     *
+     * @throws ValidationException
+     */
+    public function findActiveById(int $id): LeaveType
+    {
+        $this->ensureDefaults();
+
+        $type = LeaveType::query()->find($id);
+
+        if ($type === null) {
+            throw ValidationException::withMessages([
+                'leave_type_id' => ['The selected leave type is invalid.'],
+            ]);
+        }
+
+        if (! $type->is_active) {
+            throw ValidationException::withMessages([
+                'leave_type_id' => ['The selected leave type is inactive.'],
             ]);
         }
 

@@ -22,11 +22,16 @@ class FeatureController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  FeatureService  $featureService
      */
     public function __construct(private readonly FeatureService $featureService) {}
 
     /**
      * List features.
+     *
+     * @param  IndexFeatureRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -46,6 +51,9 @@ class FeatureController extends Controller
 
     /**
      * Return feature options as label/value pairs.
+     *
+     * @param  IndexFeatureRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -62,6 +70,9 @@ class FeatureController extends Controller
 
     /**
      * Create a feature.
+     *
+     * @param  StoreFeatureRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -80,6 +91,9 @@ class FeatureController extends Controller
 
     /**
      * Show a feature.
+     *
+     * @param  Feature  $feature
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -96,6 +110,10 @@ class FeatureController extends Controller
 
     /**
      * Update a feature.
+     *
+     * @param  UpdateFeatureRequest  $request
+     * @param  Feature  $feature
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -114,6 +132,9 @@ class FeatureController extends Controller
 
     /**
      * Delete a feature.
+     *
+     * @param  Feature  $feature
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

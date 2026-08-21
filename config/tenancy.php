@@ -485,6 +485,14 @@ return [
     ],
 
     /**
+     * Tenant provisioning runs synchronously (create DB, ~185 migrations, seed).
+     * Raise PHP's execution limit for HTTP/API requests so MySQL provisioning can finish.
+     */
+    'provisioning' => [
+        'max_execution_time' => (int) env('TENANT_PROVISIONING_MAX_EXECUTION_TIME', 300),
+    ],
+
+    /**
      * Parameters used by the tenants:migrate command.
      */
     'migration_parameters' => [

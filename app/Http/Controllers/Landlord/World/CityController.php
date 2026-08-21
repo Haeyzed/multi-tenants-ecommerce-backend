@@ -19,11 +19,16 @@ class CityController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  CityService  $cityService
      */
     public function __construct(private readonly CityService $cityService) {}
 
     /**
      * List cities with pagination, search, and filters.
+     *
+     * @param  IndexCityRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -43,6 +48,9 @@ class CityController extends Controller
 
     /**
      * Return city options as label/value pairs.
+     *
+     * @param  IndexCityRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -59,6 +67,9 @@ class CityController extends Controller
 
     /**
      * Show a single city by identifier.
+     *
+     * @param  int  $city
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

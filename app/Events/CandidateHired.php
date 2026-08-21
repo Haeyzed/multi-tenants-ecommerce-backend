@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Events;
 
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\JobApplication;
+use App\Models\HR\Employee;
+use App\Models\HR\JobApplication;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

@@ -1,0 +1,2 @@
+php artisan scramble:export --api=landlord --path=landlord-openapi.json
+php artisan scramble:export --api=tenant --path=tenant-openapi.json

@@ -19,11 +19,15 @@ class GeolocateController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  GeolocateService  $geolocateService
      */
     public function __construct(private readonly GeolocateService $geolocateService) {}
 
     /**
      * Return the current client IP address.
+     *
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -40,6 +44,9 @@ class GeolocateController extends Controller
 
     /**
      * Geolocate an IP address (or auto-detect the client IP).
+     *
+     * @param  GeolocateRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

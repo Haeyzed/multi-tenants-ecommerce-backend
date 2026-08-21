@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Models\Tenant\JobOffer;
+use App\Models\HR\JobOffer;
 use App\Models\Tenant\User;
 
 class JobOfferPolicy

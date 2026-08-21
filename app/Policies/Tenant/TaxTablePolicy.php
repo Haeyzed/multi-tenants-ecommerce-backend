@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Models\Tenant\TaxTable;
+use App\Models\HR\TaxTable;
 use App\Models\Tenant\User;
 
 /**

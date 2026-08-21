@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Models\Tenant\LeaveType;
+use App\Models\HR\LeaveType;
 use App\Models\Tenant\User;
 
 /**

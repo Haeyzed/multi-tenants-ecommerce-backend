@@ -18,10 +18,18 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class TenantProfileService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
     /**
      * Show the profile for a tenant.
+     *
+     * @param  Tenant  $tenant
+     * @return TenantProfile
      *
      * @throws NotFoundHttpException
      */
@@ -39,7 +47,11 @@ class TenantProfileService
     /**
      * Create a profile for a tenant that does not yet have one.
      *
+     * @param  Tenant  $tenant
      * @param  array<string, mixed>  $data
+     * @param  ?UploadedFile  $logo
+     * @param  ?UploadedFile  $cover
+     * @return TenantProfile
      */
     public function store(
         Tenant $tenant,
@@ -68,7 +80,11 @@ class TenantProfileService
     /**
      * Update a tenant's profile.
      *
+     * @param  Tenant  $tenant
      * @param  array<string, mixed>  $data
+     * @param  ?UploadedFile  $logo
+     * @param  ?UploadedFile  $cover
+     * @return TenantProfile
      *
      * @throws NotFoundHttpException
      */
@@ -91,6 +107,10 @@ class TenantProfileService
     /**
      * Replace the tenant profile logo.
      *
+     * @param  Tenant  $tenant
+     * @param  UploadedFile  $logo
+     * @return Media
+     *
      * @throws NotFoundHttpException
      */
     public function replaceLogo(Tenant $tenant, UploadedFile $logo): Media
@@ -102,6 +122,9 @@ class TenantProfileService
 
     /**
      * Remove the tenant profile logo.
+     *
+     * @param  Tenant  $tenant
+     * @return void
      *
      * @throws NotFoundHttpException
      */
@@ -115,6 +138,10 @@ class TenantProfileService
     /**
      * Replace the tenant profile cover image.
      *
+     * @param  Tenant  $tenant
+     * @param  UploadedFile  $cover
+     * @return Media
+     *
      * @throws NotFoundHttpException
      */
     public function replaceCover(Tenant $tenant, UploadedFile $cover): Media
@@ -127,6 +154,9 @@ class TenantProfileService
     /**
      * Remove the tenant profile cover image.
      *
+     * @param  Tenant  $tenant
+     * @return void
+     *
      * @throws NotFoundHttpException
      */
     public function removeCover(Tenant $tenant): void
@@ -138,6 +168,9 @@ class TenantProfileService
 
     /**
      * Delete a tenant's profile and its media.
+     *
+     * @param  Tenant  $tenant
+     * @return void
      *
      * @throws NotFoundHttpException
      */
@@ -152,6 +185,9 @@ class TenantProfileService
 
     /**
      * Resolve a publicly visible profile by slug.
+     *
+     * @param  string  $slug
+     * @return TenantProfile
      *
      * @throws NotFoundHttpException
      */
@@ -172,6 +208,11 @@ class TenantProfileService
 
     /**
      * Attach logo and/or cover media when provided.
+     *
+     * @param  TenantProfile  $profile
+     * @param  ?UploadedFile  $logo
+     * @param  ?UploadedFile  $cover
+     * @return void
      */
     protected function syncMedia(
         TenantProfile $profile,

@@ -9,7 +9,7 @@ use App\Http\Requests\Tenant\HR\IndexWorkLocationRequest;
 use App\Http\Requests\Tenant\HR\StoreWorkLocationRequest;
 use App\Http\Requests\Tenant\HR\UpdateWorkLocationRequest;
 use App\Http\Resources\Tenant\HR\WorkLocationResource;
-use App\Models\Tenant\WorkLocation;
+use App\Models\HR\WorkLocation;
 use App\Services\Tenant\HR\WorkLocationService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

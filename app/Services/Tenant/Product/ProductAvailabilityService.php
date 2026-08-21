@@ -12,6 +12,7 @@ use App\Models\Tenant\Inventory;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductBundleItem;
 use App\Models\Tenant\ProductVariant;
+use App\Services\Tenant\Inventory\InventoryStockableResolver;
 use Illuminate\Support\Carbon;
 
 /**
@@ -19,6 +20,8 @@ use Illuminate\Support\Carbon;
  */
 class ProductAvailabilityService
 {
+    public function __construct(private readonly InventoryStockableResolver $stockables) {}
+
     /**
      * Resolve availability for a catalog product (including bundles).
      */
@@ -41,7 +44,7 @@ class ProductAvailabilityService
         }
 
         return $this->fromStockable(
-            availableQty: $this->sumAvailable($product),
+            availableQty: $this->sumAvailableForProduct($product),
             lowStockThreshold: $this->productLowStockThreshold($product),
             allowBackorder: (bool) $product->allow_backorder,
             isPreorder: (bool) $product->is_preorder,
@@ -226,13 +229,30 @@ class ProductAvailabilityService
         return (int) $inventories->sum(fn (Inventory $inventory): int => $inventory->availableQuantity());
     }
 
+    protected function sumAvailableForProduct(Product $product): int
+    {
+        $total = 0;
+
+        foreach ($this->stockables->stockHolders($product) as $holder) {
+            $total += $this->sumAvailable($holder);
+        }
+
+        return $total;
+    }
+
     protected function productLowStockThreshold(Product $product): ?int
     {
-        $inventories = $product->relationLoaded('inventories')
-            ? $product->inventories
-            : $product->inventories()->get();
+        $levels = collect();
 
-        $levels = $inventories->pluck('reorder_level')->filter(fn ($level): bool => $level !== null);
+        foreach ($this->stockables->stockHolders($product) as $holder) {
+            $inventories = $holder->relationLoaded('inventories')
+                ? $holder->inventories
+                : $holder->inventories()->get();
+
+            $levels = $levels->concat($inventories->pluck('reorder_level'));
+        }
+
+        $levels = $levels->filter(fn ($level): bool => $level !== null);
 
         return $levels->isEmpty() ? null : (int) $levels->min();
     }

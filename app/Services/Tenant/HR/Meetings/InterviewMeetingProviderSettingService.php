@@ -6,7 +6,7 @@ namespace App\Services\Tenant\HR\Meetings;
 
 use App\Contracts\Interview\InterviewMeetingProvider;
 use App\Enums\Tenant\HR\MeetingProvider;
-use App\Models\Tenant\InterviewMeetingProviderSetting;
+use App\Models\HR\InterviewMeetingProviderSetting;
 use App\Services\Tenant\HR\RecruitmentActivityService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;

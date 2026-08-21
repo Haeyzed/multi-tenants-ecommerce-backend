@@ -6,12 +6,16 @@ namespace App\Services\Tenant\Inventory;
 
 use App\Enums\Tenant\Catalog\InventoryMovementType;
 use App\Models\Tenant\Inventory;
+use App\Models\Tenant\Product;
+use App\Models\Tenant\ProductVariant;
 use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\WarehouseLocation;
 use App\Services\Tenant\Commerce\BackInStockNotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -22,6 +26,7 @@ class InventoryService
 {
     public function __construct(
         private readonly BackInStockNotificationService $backInStock,
+        private readonly InventoryStockableResolver $stockables,
     ) {}
 
     /**
@@ -30,6 +35,8 @@ class InventoryService
      * @param  array{
      *     warehouse_id?: int|null,
      *     warehouse_location_id?: int|null,
+     *     product_id?: int|null,
+     *     product_variant_id?: int|null,
      *     sort?: string|null,
      *     per_page?: int|null
      * }  $params
@@ -37,9 +44,13 @@ class InventoryService
      */
     public function list(array $params = []): LengthAwarePaginator
     {
-        return Inventory::query()
+        $query = Inventory::query()
             ->with(['warehouse', 'inventoryable'])
-            ->filter($params)
+            ->filter($params);
+
+        $this->constrainCatalogue($query, $params);
+
+        return $query
             ->applySort($params['sort'] ?? null)
             ->paginate($this->perPage($params));
     }
@@ -72,6 +83,104 @@ class InventoryService
                 'reserved_quantity' => 0,
             ],
         );
+    }
+
+    /**
+     * Assign a product or variant to a warehouse without duplicating the catalogue record.
+     *
+     * @param  array{
+     *     warehouse_location_id?: int|null,
+     *     quantity?: int|null,
+     *     reorder_level?: int|null,
+     *     reorder_quantity?: int|null
+     * }  $data
+     *
+     * @throws ValidationException
+     */
+    public function assign(
+        Warehouse $warehouse,
+        Product $product,
+        ?ProductVariant $variant = null,
+        array $data = [],
+        ?User $actor = null,
+    ): Inventory {
+        if (! $warehouse->is_active) {
+            throw ValidationException::withMessages([
+                'warehouse_id' => 'Cannot assign inventory to an inactive warehouse.',
+            ]);
+        }
+
+        $stockable = $this->stockables->resolve($product, $variant);
+        $location = $this->resolveLocation($warehouse, $data['warehouse_location_id'] ?? null);
+
+        try {
+            $inventory = $this->getOrCreate($warehouse, $stockable, $location);
+        } catch (UniqueConstraintViolationException) {
+            $inventory = Inventory::query()
+                ->where('warehouse_id', $warehouse->id)
+                ->where('inventoryable_type', $stockable->getMorphClass())
+                ->where('inventoryable_id', $stockable->getKey())
+                ->firstOrFail();
+        }
+
+        $updates = [];
+
+        if (array_key_exists('reorder_level', $data)) {
+            $updates['reorder_level'] = $data['reorder_level'];
+        }
+
+        if (array_key_exists('reorder_quantity', $data)) {
+            $updates['reorder_quantity'] = $data['reorder_quantity'];
+        }
+
+        if (array_key_exists('warehouse_location_id', $data)) {
+            $updates['warehouse_location_id'] = $location?->id;
+        }
+
+        if ($updates !== []) {
+            $inventory->fill($updates);
+            $inventory->save();
+        }
+
+        $opening = (int) ($data['quantity'] ?? 0);
+
+        if ($opening > 0 && $inventory->quantity === 0 && $inventory->movements()->doesntExist()) {
+            $inventory = $this->increase(
+                $inventory,
+                $opening,
+                InventoryMovementType::OpeningStock,
+                reason: 'Warehouse assignment',
+                actor: $actor,
+            );
+        }
+
+        return $this->show($inventory);
+    }
+
+    /**
+     * Remove a zero-stock inventory assignment from a warehouse.
+     *
+     * @throws ValidationException
+     */
+    public function unassign(Inventory $inventory): void
+    {
+        if ($inventory->quantity > 0 || $inventory->reserved_quantity > 0) {
+            throw ValidationException::withMessages([
+                'inventory' => 'Cannot remove inventory that still has on-hand or reserved stock.',
+            ]);
+        }
+
+        $inventory->delete();
+    }
+
+    /**
+     * Resolve the catalogue record that should own warehouse inventory.
+     *
+     * @throws ValidationException
+     */
+    public function stockableFor(Product $product, ?ProductVariant $variant = null): Product|ProductVariant
+    {
+        return $this->stockables->resolve($product, $variant);
     }
 
     /**
@@ -344,6 +453,71 @@ class InventoryService
                 'to' => $toInventory,
             ];
         });
+    }
+
+    /**
+     * @param  array{product_id?: int|null, product_variant_id?: int|null}  $params
+     */
+    protected function constrainCatalogue(Builder $query, array $params): void
+    {
+        $variantId = $params['product_variant_id'] ?? null;
+
+        if ($variantId !== null) {
+            $query->where('inventoryable_type', (new ProductVariant)->getMorphClass())
+                ->where('inventoryable_id', (int) $variantId);
+
+            return;
+        }
+
+        $productId = $params['product_id'] ?? null;
+
+        if ($productId === null) {
+            return;
+        }
+
+        $product = Product::query()->with('variants:id,product_id')->find((int) $productId);
+
+        if ($product === null) {
+            $query->whereRaw('0 = 1');
+
+            return;
+        }
+
+        $variantIds = $product->variants->pluck('id')->all();
+
+        $query->where(function (Builder $query) use ($product, $variantIds): void {
+            $query->where(function (Builder $query) use ($product): void {
+                $query->where('inventoryable_type', $product->getMorphClass())
+                    ->where('inventoryable_id', $product->id);
+            });
+
+            if ($variantIds !== []) {
+                $query->orWhere(function (Builder $query) use ($variantIds): void {
+                    $query->where('inventoryable_type', (new ProductVariant)->getMorphClass())
+                        ->whereIn('inventoryable_id', $variantIds);
+                });
+            }
+        });
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    protected function resolveLocation(Warehouse $warehouse, mixed $locationId): ?WarehouseLocation
+    {
+        if ($locationId === null || $locationId === '') {
+            return null;
+        }
+
+        $location = WarehouseLocation::query()->find((int) $locationId);
+
+        if ($location === null || $location->warehouse_id !== $warehouse->id) {
+            throw ValidationException::withMessages([
+                'warehouse_location_id' => 'The location does not belong to the selected warehouse.',
+            ]);
+        }
+
+        return $location;
     }
 
     /**

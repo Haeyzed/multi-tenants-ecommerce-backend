@@ -22,8 +22,19 @@ use InvalidArgumentException;
  */
 class NotificationTemplateController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  NotificationTemplateService  $templates
+     */
     public function __construct(private readonly NotificationTemplateService $templates) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexNotificationTemplateRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Paginated notification templates.',
@@ -40,6 +51,12 @@ class NotificationTemplateController extends Controller
         );
     }
 
+    /**
+     * Return options for select inputs.
+     *
+     * @param  IndexNotificationTemplateRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Notification template options.',
@@ -53,6 +70,12 @@ class NotificationTemplateController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreNotificationTemplateRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'Created notification template.',
@@ -72,6 +95,12 @@ class NotificationTemplateController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  NotificationTemplate  $notificationTemplate
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'A notification template.',
@@ -85,6 +114,13 @@ class NotificationTemplateController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateNotificationTemplateRequest  $request
+     * @param  NotificationTemplate  $notificationTemplate
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Updated notification template.',
@@ -104,6 +140,12 @@ class NotificationTemplateController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  NotificationTemplate  $notificationTemplate
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Deleted notification template.',
@@ -116,6 +158,13 @@ class NotificationTemplateController extends Controller
         return $this->deleted('Notification template deleted successfully.');
     }
 
+    /**
+     * Preview.
+     *
+     * @param  PreviewNotificationTemplateRequest  $request
+     * @param  NotificationTemplate  $notificationTemplate
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Rendered notification template preview.',

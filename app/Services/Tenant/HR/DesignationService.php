@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\Tenant\Designation;
+use App\Models\HR\Designation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 

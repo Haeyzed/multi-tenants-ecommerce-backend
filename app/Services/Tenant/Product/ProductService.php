@@ -177,6 +177,8 @@ class ProductService
             'crossSells',
             'bundleItems.product',
             'bundleItems.variant',
+            'inventories.warehouse',
+            'variants.inventories.warehouse',
         ]);
     }
 

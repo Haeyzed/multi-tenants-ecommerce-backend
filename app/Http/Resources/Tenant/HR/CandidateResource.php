@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources\Tenant\HR;
 
 use App\Enums\Media\MediaCollection;
-use App\Models\Tenant\Candidate;
+use App\Models\HR\Candidate;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 

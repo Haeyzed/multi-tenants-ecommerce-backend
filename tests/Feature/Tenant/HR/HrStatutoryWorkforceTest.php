@@ -10,13 +10,13 @@ use App\Events\JobApplicationReceived;
 use App\Events\PayrollPaid;
 use App\Events\PayrollProcessed;
 use App\Events\PayslipAvailable;
-use App\Models\Tenant\Attendance;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\EmployeeSalary;
-use App\Models\Tenant\JobApplication;
-use App\Models\Tenant\JobOpening;
-use App\Models\Tenant\PerformanceCycle;
-use App\Models\Tenant\PerformanceReview;
+use App\Models\HR\Attendance;
+use App\Models\HR\Employee;
+use App\Models\HR\EmployeeSalary;
+use App\Models\HR\JobApplication;
+use App\Models\HR\JobOpening;
+use App\Models\HR\PerformanceCycle;
+use App\Models\HR\PerformanceReview;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\AttendanceService;
 use App\Services\Tenant\HR\HrSettingsService;
@@ -48,6 +48,7 @@ beforeEach(function (): void {
         '2026_08_17_212000_create_leave_requests_table.php',
         '2026_08_18_003141_create_leave_types_table.php',
         '2026_08_18_003144_create_leave_balances_table.php',
+        '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php',
         '2026_08_18_001426_create_employee_salaries_table.php',
         '2026_08_18_014811_create_employee_salary_components_table.php',
         '2026_08_18_001429_create_payroll_runs_table.php',
@@ -90,6 +91,7 @@ beforeEach(function (): void {
             '2026_08_17_212000_create_leave_requests_table.php' => 'leave_requests',
             '2026_08_18_003141_create_leave_types_table.php' => 'leave_types',
             '2026_08_18_003144_create_leave_balances_table.php' => 'leave_balances',
+            '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php' => null,
             '2026_08_18_001426_create_employee_salaries_table.php' => 'employee_salaries',
             '2026_08_18_014811_create_employee_salary_components_table.php' => 'employee_salary_components',
             '2026_08_18_001429_create_payroll_runs_table.php' => 'payroll_runs',
@@ -122,6 +124,10 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_014816_add_payroll_period_id_to_payroll_runs_table.php' && Schema::hasColumn('payroll_runs', 'payroll_period_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php' && Schema::hasColumn('leave_requests', 'leave_type_id')) {
             continue;
         }
 

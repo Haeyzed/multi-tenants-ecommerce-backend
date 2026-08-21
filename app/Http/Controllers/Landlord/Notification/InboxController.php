@@ -19,8 +19,19 @@ use Illuminate\Support\Facades\Auth;
  */
 class InboxController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  NotificationInboxService  $inbox
+     */
     public function __construct(private readonly NotificationInboxService $inbox) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @param  IndexInboxRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Paginated inbox notifications.',
@@ -37,6 +48,12 @@ class InboxController extends Controller
         );
     }
 
+    /**
+     * Unread.
+     *
+     * @param  IndexInboxRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Paginated unread notifications.',
@@ -53,6 +70,11 @@ class InboxController extends Controller
         );
     }
 
+    /**
+     * Unread count.
+     *
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Unread notification count.',
@@ -66,6 +88,12 @@ class InboxController extends Controller
         );
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  string  $notification
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'A single inbox notification.',
@@ -79,6 +107,12 @@ class InboxController extends Controller
         );
     }
 
+    /**
+     * Mark read.
+     *
+     * @param  string  $notification
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Notification marked as read.',
@@ -92,6 +126,12 @@ class InboxController extends Controller
         );
     }
 
+    /**
+     * Mark unread.
+     *
+     * @param  string  $notification
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Notification marked as unread.',
@@ -105,6 +145,11 @@ class InboxController extends Controller
         );
     }
 
+    /**
+     * Mark all read.
+     *
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'All notifications marked as read.',
@@ -118,6 +163,12 @@ class InboxController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  string  $notification
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Notification deleted.',
@@ -130,6 +181,11 @@ class InboxController extends Controller
         return $this->deleted('Notification deleted successfully.');
     }
 
+    /**
+     * Resolve the authenticated landlord user.
+     *
+     * @return User
+     */
     protected function actor(): User
     {
         /** @var User $user */

@@ -10,12 +10,12 @@ use App\Enums\Tenant\HR\LeaveType;
 use App\Events\EmployeeCreated;
 use App\Events\LeaveRequested;
 use App\Events\LeaveReviewed;
-use App\Models\Tenant\Attendance;
-use App\Models\Tenant\Department;
-use App\Models\Tenant\Designation;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\EmploymentRecord;
-use App\Models\Tenant\LeaveRequest;
+use App\Models\HR\Attendance;
+use App\Models\HR\Department;
+use App\Models\HR\Designation;
+use App\Models\HR\Employee;
+use App\Models\HR\EmploymentRecord;
+use App\Models\HR\LeaveRequest;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\AttendanceService;
 use App\Services\Tenant\HR\DepartmentService;
@@ -23,6 +23,7 @@ use App\Services\Tenant\HR\DesignationService;
 use App\Services\Tenant\HR\EmployeeService;
 use App\Services\Tenant\HR\HrSettingsService;
 use App\Services\Tenant\HR\LeaveRequestService;
+use App\Services\Tenant\HR\LeaveTypeService;
 use App\Services\Tenant\HR\OvertimePolicyService;
 use App\Services\Tenant\HR\PublicHolidayService;
 use App\Services\Tenant\HR\WorkScheduleService;
@@ -49,6 +50,7 @@ beforeEach(function (): void {
         '2026_08_17_212000_create_leave_requests_table.php',
         '2026_08_18_003141_create_leave_types_table.php',
         '2026_08_18_003144_create_leave_balances_table.php',
+        '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php',
         '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php',
         '2026_08_18_003148_add_manager_id_to_departments_table.php',
         '2026_08_18_014822_create_employment_records_table.php',
@@ -77,6 +79,7 @@ beforeEach(function (): void {
             '2026_08_17_212000_create_leave_requests_table.php' => 'leave_requests',
             '2026_08_18_003141_create_leave_types_table.php' => 'leave_types',
             '2026_08_18_003144_create_leave_balances_table.php' => 'leave_balances',
+            '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php' => null,
             '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php' => null,
             '2026_08_18_003148_add_manager_id_to_departments_table.php' => null,
             '2026_08_18_014822_create_employment_records_table.php' => 'employment_records',
@@ -112,6 +115,10 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_014825_add_leave_carry_over_and_overtime_columns.php' && Schema::hasColumn('attendances', 'overtime_minutes')) {
+            continue;
+        }
+
+        if ($file === '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php' && Schema::hasColumn('leave_requests', 'leave_type_id')) {
             continue;
         }
 
@@ -264,6 +271,21 @@ test('terminated employees cannot return to active', function (): void {
     ]))->toThrow(ValidationException::class);
 });
 
+test('terminated employees cannot be assigned as managers', function (): void {
+    $terminated = Employee::factory()->terminated()->create();
+    $user = User::factory()->create();
+
+    expect(fn () => app(EmployeeService::class)->store([
+        'user_id' => $user->id,
+        'manager_id' => $terminated->id,
+    ]))->toThrow(ValidationException::class);
+
+    expect(fn () => app(DepartmentService::class)->store([
+        'name' => 'Engineering',
+        'manager_id' => $terminated->id,
+    ]))->toThrow(ValidationException::class);
+});
+
 test('attendance clock in and out is unique per day', function (): void {
     app(HrSettingsService::class)->update([
         'hr.working_days' => '1,2,3,4,5,6,7',
@@ -304,7 +326,11 @@ test('leave requests can be submitted reviewed and cannot overlap when approved'
         'reason' => 'Family',
     ]);
 
-    expect($leave->status)->toBe(LeaveStatus::Pending);
+    $annual = app(LeaveTypeService::class)->findActiveByCode(LeaveType::Annual->value);
+
+    expect($leave->status)->toBe(LeaveStatus::Pending)
+        ->and($leave->leave_type_id)->toBe($annual->id)
+        ->and($leave->leaveType?->code)->toBe(LeaveType::Annual->value);
     Event::assertDispatched(LeaveRequested::class);
 
     $approved = $service->review($leave, LeaveStatus::Approved, $reviewer);

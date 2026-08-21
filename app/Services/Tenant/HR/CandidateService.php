@@ -6,8 +6,8 @@ namespace App\Services\Tenant\HR;
 
 use App\Enums\Media\MediaCollection;
 use App\Enums\Tenant\HR\CandidateStatus;
-use App\Models\Tenant\Candidate;
-use App\Models\Tenant\RecruitmentActivity;
+use App\Models\HR\Candidate;
+use App\Models\HR\RecruitmentActivity;
 use App\Services\Media\MediaService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;

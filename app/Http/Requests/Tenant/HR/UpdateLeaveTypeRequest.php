@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant\HR;
 
 use App\Http\Requests\BaseRequest;
-use App\Models\Tenant\LeaveType;
+use App\Models\HR\LeaveType;
 use Illuminate\Validation\Rule;
 
 class UpdateLeaveTypeRequest extends BaseRequest

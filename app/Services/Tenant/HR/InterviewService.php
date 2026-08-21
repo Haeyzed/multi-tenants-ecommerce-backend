@@ -12,9 +12,9 @@ use App\Events\InterviewCompleted;
 use App\Events\InterviewRescheduled;
 use App\Events\InterviewScheduled;
 use App\Exceptions\Interview\InterviewMeetingProviderException;
-use App\Models\Tenant\Interview;
-use App\Models\Tenant\InterviewFeedback;
-use App\Models\Tenant\JobApplication;
+use App\Models\HR\Interview;
+use App\Models\HR\InterviewFeedback;
+use App\Models\HR\JobApplication;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\Meetings\InterviewMeetingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -83,7 +83,11 @@ class InterviewService
         $this->syncInterviewers($interview, $data['interviewer_ids'] ?? []);
 
         try {
-            $this->meetings->maybeCreateForInterview($interview, $meetingInput);
+            if ($this->hasExplicitMeetingInput($meetingInput)) {
+                $this->meetings->createForInterview($interview, $meetingInput);
+            } else {
+                $this->meetings->maybeCreateForInterview($interview, $meetingInput);
+            }
         } catch (InterviewMeetingProviderException|ValidationException $exception) {
             $interview->delete();
 
@@ -163,11 +167,6 @@ class InterviewService
             event(new InterviewCompleted($fresh));
         }
 
-        if ($meetingInput !== [] && $fresh->currentMeeting === null) {
-            $this->meetings->maybeCreateForInterview($fresh, $meetingInput);
-            $fresh = $fresh->fresh(['application.candidate', 'application.jobOpening', 'interviewers', 'feedback', 'currentMeeting']) ?? $fresh;
-        }
-
         return $fresh;
     }
 
@@ -244,7 +243,7 @@ class InterviewService
             return;
         }
 
-        $users = User::query()->whereKey($ids)->get();
+        $users = User::query()->with('employee')->whereKey($ids)->get();
 
         if ($users->count() !== count($ids)) {
             throw ValidationException::withMessages([
@@ -253,6 +252,12 @@ class InterviewService
         }
 
         foreach ($users as $user) {
+            if ($user->employee === null || ! $user->employee->isAssignableStaff()) {
+                throw ValidationException::withMessages([
+                    'interviewer_ids' => ['Interviewers must have an active employee profile.'],
+                ]);
+            }
+
             if (
                 ! $user->can('hr.recruitment.view')
                 && ! $user->can('hr.recruitment.manage')
@@ -283,6 +288,26 @@ class InterviewService
         }
 
         return $input;
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    protected function hasExplicitMeetingInput(array $input): bool
+    {
+        foreach (['meeting_provider', 'provider', 'meeting_url', 'join_url', 'meeting_password'] as $key) {
+            if (! array_key_exists($key, $input)) {
+                continue;
+            }
+
+            $value = $input[$key];
+
+            if (is_string($value) && trim($value) !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

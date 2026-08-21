@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\PublicHoliday;
-use App\Models\Tenant\WorkSchedule;
-use App\Models\Tenant\WorkScheduleDay;
+use App\Models\HR\Employee;
+use App\Models\HR\PublicHoliday;
+use App\Models\HR\WorkSchedule;
+use App\Models\HR\WorkScheduleDay;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 

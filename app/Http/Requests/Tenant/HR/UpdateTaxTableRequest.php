@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant\HR;
 
 use App\Http\Requests\BaseRequest;
-use App\Models\Tenant\TaxTable;
+use App\Models\HR\TaxTable;
 use Illuminate\Validation\Rule;
 
 class UpdateTaxTableRequest extends BaseRequest

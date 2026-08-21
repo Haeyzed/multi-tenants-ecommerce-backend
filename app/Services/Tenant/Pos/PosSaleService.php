@@ -35,6 +35,7 @@ use App\Services\Tenant\Commerce\CartService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
 use App\Services\Tenant\Commerce\OrderInventoryService;
 use App\Services\Tenant\Commerce\RefundService;
+use App\Services\Tenant\Inventory\InventoryStockableResolver;
 use App\Services\Tenant\Tax\TaxService;
 use App\Support\Money;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -57,6 +58,7 @@ class PosSaleService
         private readonly OrderInventoryService $orderInventory,
         private readonly PaymentManager $paymentManager,
         private readonly RefundService $refundService,
+        private readonly InventoryStockableResolver $stockables,
         private readonly TaxService $taxService,
     ) {}
 
@@ -499,25 +501,24 @@ class PosSaleService
         int $quantity,
         int $warehouseId,
     ): ?Inventory {
-        $stockable = $variant ?? $product;
         $allowBackorder = $variant !== null
             ? (bool) ($variant->allow_backorder ?? $product->allow_backorder)
             : (bool) $product->allow_backorder;
 
-        /** @var Inventory|null $inventory */
-        $inventory = Inventory::query()
-            ->where('inventoryable_type', $stockable->getMorphClass())
-            ->where('inventoryable_id', $stockable->getKey())
-            ->where('warehouse_id', $warehouseId)
-            ->lockForUpdate()
-            ->first();
+        $inventories = Inventory::query()->where('warehouse_id', $warehouseId);
+        $this->stockables->constrainInventoryQuery($inventories, $product, $variant);
+        $inventories = $inventories->lockForUpdate()->get();
 
-        if ($inventory !== null && $inventory->availableQuantity() >= $quantity) {
-            return $inventory;
+        $withStock = $inventories
+            ->filter(fn (Inventory $inventory): bool => $inventory->availableQuantity() >= $quantity)
+            ->values();
+
+        if ($withStock->isNotEmpty()) {
+            return $withStock->first();
         }
 
         if ($allowBackorder) {
-            return $inventory;
+            return $inventories->first();
         }
 
         throw ValidationException::withMessages([

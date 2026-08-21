@@ -19,6 +19,9 @@ class GeolocateService
 {
     /**
      * Create a new service instance.
+     *
+     * @param  IndexAction  $indexAction
+     * @param  WorldGeolocateService  $worldGeolocate
      */
     public function __construct(
         private readonly IndexAction $indexAction,
@@ -28,8 +31,7 @@ class GeolocateService
     /**
      * Resolve the current client IP from the request.
      *
-     * When the request originates from a private/local address (common on Herd/localhost),
-     * fall back to an external lookup for the machine's public IP.
+     * @return string
      */
     public function ip(): string
     {
@@ -45,6 +47,7 @@ class GeolocateService
     /**
      * Geolocate an IP address, or auto-detect the client IP when omitted.
      *
+     * @param  ?string  $ip
      * @return Collection<string, mixed>
      *
      * @throws RuntimeException
@@ -67,6 +70,8 @@ class GeolocateService
 
     /**
      * Look up the public outbound IP, trying ipify then ip-api.com.
+     *
+     * @return ?string
      */
     protected function resolvePublicIp(): ?string
     {
@@ -82,6 +87,8 @@ class GeolocateService
 
     /**
      * Fetch the public IP from ipify.
+     *
+     * @return ?string
      */
     protected function fetchPublicIpFromIpify(): ?string
     {
@@ -107,6 +114,8 @@ class GeolocateService
 
     /**
      * Fetch the public IP from ip-api.com (same provider the World package uses).
+     *
+     * @return ?string
      */
     protected function fetchPublicIpFromIpApi(): ?string
     {

@@ -23,6 +23,8 @@ class TenantService
 {
     /**
      * Create a new tenant service.
+     *
+     * @param  DomainService  $domainService
      */
     public function __construct(private readonly DomainService $domainService) {}
 
@@ -74,12 +76,15 @@ class TenantService
      *     admin: array{first_name: string, last_name: string, email: string, phone?: string|null, password: string},
      *     profile?: array{display_name?: string, description?: string|null, is_public?: bool}|null
      * }  $data
+     * @return Tenant
      *
      * @throws ValidationException
      * @throws Throwable
      */
     public function store(array $data): Tenant
     {
+        $this->extendProvisioningTimeLimit();
+
         $admin = $data['admin'];
         $domain = $data['domain'];
         $profileData = $data['profile'] ?? [];
@@ -129,6 +134,9 @@ class TenantService
 
     /**
      * Retrieve a single tenant with relations.
+     *
+     * @param  Tenant  $tenant
+     * @return Tenant
      */
     public function show(Tenant $tenant): Tenant
     {
@@ -138,7 +146,9 @@ class TenantService
     /**
      * Update a tenant's platform fields.
      *
+     * @param  Tenant  $tenant
      * @param  array{name?: string, slug?: string, email?: string|null, phone?: string|null, status?: string, is_active?: bool}  $data
+     * @return Tenant
      */
     public function update(Tenant $tenant, array $data): Tenant
     {
@@ -149,16 +159,42 @@ class TenantService
 
     /**
      * Delete a tenant (Stancl pipeline deletes domains/database).
+     *
+     * @param  Tenant  $tenant
+     * @return void
      */
     public function destroy(Tenant $tenant): void
     {
+        $this->extendProvisioningTimeLimit();
+
         DB::transaction(function () use ($tenant): void {
             $tenant->delete();
         });
     }
 
     /**
+     * Allow enough wall-clock time for create DB + tenant migrations + seed.
+     *
+     * @return void
+     */
+    private function extendProvisioningTimeLimit(): void
+    {
+        $seconds = (int) config('tenancy.provisioning.max_execution_time', 300);
+
+        if ($seconds <= 0) {
+            set_time_limit(0);
+
+            return;
+        }
+
+        set_time_limit($seconds);
+    }
+
+    /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     private function perPage(array $params): int
     {

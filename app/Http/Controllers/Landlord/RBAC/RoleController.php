@@ -23,11 +23,16 @@ class RoleController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  RoleService  $roleService
      */
     public function __construct(private readonly RoleService $roleService) {}
 
     /**
      * List landlord roles with pagination and search.
+     *
+     * @param  IndexRoleRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -47,6 +52,9 @@ class RoleController extends Controller
 
     /**
      * Create a landlord role.
+     *
+     * @param  StoreRoleRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -65,6 +73,9 @@ class RoleController extends Controller
 
     /**
      * Show a landlord role.
+     *
+     * @param  Role  $role
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -81,6 +92,10 @@ class RoleController extends Controller
 
     /**
      * Update a landlord role.
+     *
+     * @param  UpdateRoleRequest  $request
+     * @param  Role  $role
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -99,6 +114,9 @@ class RoleController extends Controller
 
     /**
      * Delete a landlord role.
+     *
+     * @param  Role  $role
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -114,6 +132,10 @@ class RoleController extends Controller
 
     /**
      * Sync permissions for a landlord role.
+     *
+     * @param  SyncRolePermissionsRequest  $request
+     * @param  Role  $role
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

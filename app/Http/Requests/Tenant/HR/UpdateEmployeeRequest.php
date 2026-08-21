@@ -7,7 +7,7 @@ namespace App\Http\Requests\Tenant\HR;
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Enums\Tenant\HR\EmploymentType;
 use App\Http\Requests\BaseRequest;
-use App\Models\Tenant\Employee;
+use App\Models\HR\Employee;
 use Illuminate\Validation\Rule;
 
 class UpdateEmployeeRequest extends BaseRequest

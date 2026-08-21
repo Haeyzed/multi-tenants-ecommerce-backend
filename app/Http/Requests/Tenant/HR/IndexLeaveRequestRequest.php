@@ -18,6 +18,7 @@ class IndexLeaveRequestRequest extends BaseRequest
     {
         return [
             'employee_id' => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
+            'leave_type_id' => ['sometimes', 'nullable', 'integer', Rule::exists('leave_types', 'id')],
             'type' => ['sometimes', 'nullable', 'string', Rule::enum(LeaveType::class)],
             'status' => ['sometimes', 'nullable', 'string', Rule::enum(LeaveStatus::class)],
             'from' => ['sometimes', 'nullable', 'date'],

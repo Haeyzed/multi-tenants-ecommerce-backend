@@ -13,6 +13,7 @@ use App\Models\Tenant\Product;
 use App\Models\Tenant\ProductPrice;
 use App\Models\Tenant\ProductVariant;
 use App\Models\Tenant\SellerOffer;
+use App\Services\Tenant\Inventory\InventoryStockableResolver;
 use App\Services\Tenant\Product\ProductAvailabilityService;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,7 @@ class CartService
     public function __construct(
         private readonly CommerceSettingService $commerceSettings,
         private readonly FlashSaleService $flashSaleService,
+        private readonly InventoryStockableResolver $stockables,
         private readonly ProductAvailabilityService $availability,
     ) {}
 
@@ -477,9 +479,11 @@ class CartService
             return;
         }
 
-        $available = $variant !== null
-            ? $this->sumAvailable($variant)
-            : $this->sumAvailable($product);
+        $available = 0;
+
+        foreach ($this->stockables->stockHolders($product, $variant) as $holder) {
+            $available += $this->sumAvailable($holder);
+        }
 
         if ($quantity > $available) {
             throw ValidationException::withMessages([

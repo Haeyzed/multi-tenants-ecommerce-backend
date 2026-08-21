@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\PayrollRunStatus;
-use App\Models\Tenant\PayrollItem;
-use App\Models\Tenant\PayrollRun;
+use App\Models\HR\PayrollItem;
+use App\Models\HR\PayrollRun;
 use App\Support\Money;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;

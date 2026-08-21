@@ -9,7 +9,7 @@ use App\Http\Requests\Tenant\HR\IndexPerformanceCycleRequest;
 use App\Http\Requests\Tenant\HR\StorePerformanceCycleRequest;
 use App\Http\Requests\Tenant\HR\UpdatePerformanceCycleRequest;
 use App\Http\Resources\Tenant\HR\PerformanceCycleResource;
-use App\Models\Tenant\PerformanceCycle;
+use App\Models\HR\PerformanceCycle;
 use App\Services\Tenant\HR\PerformanceCycleService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

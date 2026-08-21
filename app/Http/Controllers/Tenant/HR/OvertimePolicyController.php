@@ -9,7 +9,7 @@ use App\Http\Requests\Tenant\HR\IndexOvertimePolicyRequest;
 use App\Http\Requests\Tenant\HR\StoreOvertimePolicyRequest;
 use App\Http\Requests\Tenant\HR\UpdateOvertimePolicyRequest;
 use App\Http\Resources\Tenant\HR\OvertimePolicyResource;
-use App\Models\Tenant\OvertimePolicy;
+use App\Models\HR\OvertimePolicy;
 use App\Services\Tenant\HR\OvertimePolicyService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

@@ -37,6 +37,10 @@ class PlatformSettingsService
 
     /**
      * Read a platform setting value.
+     *
+     * @param  string  $key
+     * @param  ?string  $default
+     * @return ?string
      */
     public function get(string $key, ?string $default = null): ?string
     {
@@ -47,6 +51,10 @@ class PlatformSettingsService
 
     /**
      * Persist a platform setting value.
+     *
+     * @param  string  $key
+     * @param  ?string  $value
+     * @return void
      */
     public function set(string $key, ?string $value): void
     {
@@ -59,6 +67,7 @@ class PlatformSettingsService
     /**
      * Known setting keys for a domain, cast with defaults.
      *
+     * @param  string  $domain
      * @return array<string, mixed>
      */
     public function getDomain(string $domain): array
@@ -81,6 +90,7 @@ class PlatformSettingsService
     /**
      * Validate against the domain allowlist and persist values.
      *
+     * @param  string  $domain
      * @param  array<string, mixed>  $values
      * @return array<string, mixed>
      */
@@ -103,6 +113,8 @@ class PlatformSettingsService
     }
 
     /**
+     * Domains.
+     *
      * @return list<string>
      */
     public function domains(): array
@@ -112,6 +124,9 @@ class PlatformSettingsService
 
     /**
      * Whether the given domain is a platform settings domain.
+     *
+     * @param  string  $domain
+     * @return bool
      */
     public function hasDomain(string $domain): bool
     {
@@ -119,6 +134,9 @@ class PlatformSettingsService
     }
 
     /**
+     * Domain schema.
+     *
+     * @param  string  $domain
      * @return array<string, array{type: string, default: mixed}>
      */
     protected function domainSchema(string $domain): array
@@ -132,6 +150,14 @@ class PlatformSettingsService
         return self::DOMAINS[$domain];
     }
 
+    /**
+     * Cast value.
+     *
+     * @param  ?string  $raw
+     * @param  string  $type
+     * @param  mixed  $default
+     * @return mixed
+     */
     protected function castValue(?string $raw, string $type, mixed $default): mixed
     {
         if ($raw === null) {
@@ -149,6 +175,13 @@ class PlatformSettingsService
         };
     }
 
+    /**
+     * Serialize value.
+     *
+     * @param  mixed  $value
+     * @param  string  $type
+     * @return ?string
+     */
     protected function serializeValue(mixed $value, string $type): ?string
     {
         if ($value === null) {

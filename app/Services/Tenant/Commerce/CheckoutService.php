@@ -27,6 +27,7 @@ use App\Models\Tenant\ShippingMethod;
 use App\Services\Landlord\Feature\FeatureGate;
 use App\Services\Landlord\Feature\UsageLimiter;
 use App\Services\Tenant\Accounting\AccountingService;
+use App\Services\Tenant\Inventory\InventoryStockableResolver;
 use App\Services\Tenant\Marketplace\CommissionService;
 use App\Services\Tenant\Marketplace\SellerOrderService;
 use App\Services\Tenant\Tax\TaxService;
@@ -50,6 +51,7 @@ class CheckoutService
         private readonly FeatureGate $featureGate,
         private readonly FlashSaleService $flashSaleService,
         private readonly GiftCardService $giftCardService,
+        private readonly InventoryStockableResolver $stockables,
         private readonly OrderInventoryService $orderInventory,
         private readonly SellerOrderService $sellerOrders,
         private readonly StoreCreditService $storeCreditService,
@@ -625,17 +627,13 @@ class CheckoutService
         ?ProductVariant $variant,
         int $quantity,
     ): ?Inventory {
-        $stockable = $variant ?? $product;
         $allowBackorder = $variant !== null
             ? (bool) ($variant->allow_backorder ?? $product->allow_backorder)
             : (bool) $product->allow_backorder;
 
-        $inventories = Inventory::query()
-            ->with('warehouse')
-            ->where('inventoryable_type', $stockable->getMorphClass())
-            ->where('inventoryable_id', $stockable->getKey())
-            ->lockForUpdate()
-            ->get();
+        $inventories = Inventory::query()->with('warehouse');
+        $this->stockables->constrainInventoryQuery($inventories, $product, $variant);
+        $inventories = $inventories->lockForUpdate()->get();
 
         $withStock = $inventories
             ->filter(fn (Inventory $inventory): bool => $inventory->availableQuantity() >= $quantity)

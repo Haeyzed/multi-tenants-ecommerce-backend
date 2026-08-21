@@ -31,6 +31,8 @@ class CountryService
     /**
      * Retrieve a single country by identifier.
      *
+     * @param  int  $id
+     * @return Country
      *
      * @throws ModelNotFoundException
      */
@@ -62,6 +64,7 @@ class CountryService
      * Resolve the page size for paginated listings.
      *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

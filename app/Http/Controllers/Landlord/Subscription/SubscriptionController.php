@@ -26,11 +26,16 @@ class SubscriptionController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  SubscriptionService  $subscriptionService
      */
     public function __construct(private readonly SubscriptionService $subscriptionService) {}
 
     /**
      * Show the tenant's current access-granting subscription.
+     *
+     * @param  Tenant  $tenant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -49,6 +54,10 @@ class SubscriptionController extends Controller
 
     /**
      * Subscribe a tenant to a plan.
+     *
+     * @param  SubscribeRequest  $request
+     * @param  Tenant  $tenant
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -70,6 +79,10 @@ class SubscriptionController extends Controller
 
     /**
      * Verify a pending payment and activate the subscription.
+     *
+     * @param  VerifyPaymentRequest  $request
+     * @param  Tenant  $tenant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -91,6 +104,11 @@ class SubscriptionController extends Controller
 
     /**
      * Cancel a tenant subscription.
+     *
+     * @param  CancelSubscriptionRequest  $request
+     * @param  Tenant  $tenant
+     * @param  Subscription  $subscription
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -114,6 +132,10 @@ class SubscriptionController extends Controller
 
     /**
      * Change the tenant's plan.
+     *
+     * @param  ChangePlanRequest  $request
+     * @param  Tenant  $tenant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -138,6 +160,8 @@ class SubscriptionController extends Controller
     }
 
     /**
+     * Subscription payload.
+     *
      * @param  array{subscription: Subscription, payment: PaymentInitiationResult|null}  $result
      * @return array{subscription: SubscriptionResource, payment: array<string, mixed>|null}
      */
@@ -150,6 +174,12 @@ class SubscriptionController extends Controller
     }
 
     /**
+     * Assert owns.
+     *
+     * @param  Tenant  $tenant
+     * @param  Subscription  $subscription
+     * @return void
+     *
      * @throws NotFoundHttpException
      */
     protected function assertOwns(Tenant $tenant, Subscription $subscription): void

@@ -30,8 +30,6 @@ class FeatureService
     /**
      * Retrieve feature options as label/value pairs for select inputs.
      *
-     * Value is the stable feature slug used by plan sync and entitlement checks.
-     *
      * @param  array{search?: string|null, is_active?: bool|null}  $params
      * @return Collection<int, array{label: string, value: string}>
      */
@@ -52,6 +50,7 @@ class FeatureService
      * Create a feature.
      *
      * @param  array{name: string, slug?: string|null, description?: string|null, is_active?: bool}  $data
+     * @return Feature
      */
     public function store(array $data): Feature
     {
@@ -63,6 +62,9 @@ class FeatureService
 
     /**
      * Show a feature.
+     *
+     * @param  Feature  $feature
+     * @return Feature
      */
     public function show(Feature $feature): Feature
     {
@@ -72,7 +74,9 @@ class FeatureService
     /**
      * Update a feature.
      *
+     * @param  Feature  $feature
      * @param  array{name?: string, slug?: string|null, description?: string|null, is_active?: bool}  $data
+     * @return Feature
      */
     public function update(Feature $feature, array $data): Feature
     {
@@ -84,6 +88,9 @@ class FeatureService
 
     /**
      * Delete a feature.
+     *
+     * @param  Feature  $feature
+     * @return void
      */
     public function destroy(Feature $feature): void
     {
@@ -91,7 +98,10 @@ class FeatureService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

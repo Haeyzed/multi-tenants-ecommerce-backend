@@ -25,6 +25,12 @@ use Illuminate\Validation\ValidationException;
  */
 class UsageLimiter
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  FeatureAccessService  $features
+     * @param  FeatureGate  $gate
+     */
     public function __construct(
         private readonly FeatureAccessService $features,
         private readonly FeatureGate $gate,
@@ -32,6 +38,11 @@ class UsageLimiter
 
     /**
      * Assert the tenant may create another unit of the given limited resource.
+     *
+     * @param  string  $featureSlug
+     * @param  ?Tenant  $tenant
+     * @param  int  $quantity
+     * @return void
      *
      * @throws ValidationException
      */
@@ -64,8 +75,10 @@ class UsageLimiter
     /**
      * Enforce a numeric plan cap when the feature exists on the plan.
      *
-     * Missing plan rows are treated as unlimited so optional limit slugs
-     * do not become an implicit access gate.
+     * @param  string  $featureSlug
+     * @param  ?Tenant  $tenant
+     * @param  int  $quantity
+     * @return void
      *
      * @throws ValidationException
      */
@@ -88,6 +101,11 @@ class UsageLimiter
 
     /**
      * Whether the tenant can create another unit of the resource.
+     *
+     * @param  string  $featureSlug
+     * @param  ?Tenant  $tenant
+     * @param  int  $quantity
+     * @return bool
      */
     public function canCreate(string $featureSlug, ?Tenant $tenant = null, int $quantity = 1): bool
     {
@@ -102,6 +120,10 @@ class UsageLimiter
 
     /**
      * Current usage count for a feature slug.
+     *
+     * @param  string  $featureSlug
+     * @param  ?Tenant  $tenant
+     * @return int
      */
     public function currentUsage(string $featureSlug, ?Tenant $tenant = null): int
     {
@@ -122,6 +144,10 @@ class UsageLimiter
 
     /**
      * Remaining units before the plan limit (null when unlimited / unavailable).
+     *
+     * @param  string  $featureSlug
+     * @param  ?Tenant  $tenant
+     * @return ?int
      */
     public function remaining(string $featureSlug, ?Tenant $tenant = null): ?int
     {
@@ -140,6 +166,11 @@ class UsageLimiter
         return max(0, $limit - $this->currentUsage($featureSlug, $tenant));
     }
 
+    /**
+     * Active job listings.
+     *
+     * @return int
+     */
     protected function activeJobListings(): int
     {
         if (! Schema::hasTable('job_openings')) {
@@ -155,6 +186,11 @@ class UsageLimiter
             ->count();
     }
 
+    /**
+     * Applications this month.
+     *
+     * @return int
+     */
     protected function applicationsThisMonth(): int
     {
         if (! Schema::hasTable('job_applications')) {
@@ -174,6 +210,11 @@ class UsageLimiter
             ->count();
     }
 
+    /**
+     * Orders this month.
+     *
+     * @return int
+     */
     protected function ordersThisMonth(): int
     {
         if (! Schema::hasTable('orders')) {
@@ -185,6 +226,11 @@ class UsageLimiter
         return Order::query()->where('placed_at', '>=', $start)->count();
     }
 
+    /**
+     * Current tenant.
+     *
+     * @return ?Tenant
+     */
     protected function currentTenant(): ?Tenant
     {
         $tenant = tenant();

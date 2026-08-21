@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\Tenant\Department;
-use App\Models\Tenant\Employee;
+use App\Models\HR\Department;
+use App\Models\HR\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -120,9 +120,9 @@ class DepartmentService
             return;
         }
 
-        if (! Employee::query()->whereKey((int) $managerId)->exists()) {
+        if (! Employee::query()->assignableStaff()->whereKey((int) $managerId)->exists()) {
             throw ValidationException::withMessages([
-                'manager_id' => ['The selected department manager is invalid.'],
+                'manager_id' => ['The selected department manager must have an active employee profile.'],
             ]);
         }
     }

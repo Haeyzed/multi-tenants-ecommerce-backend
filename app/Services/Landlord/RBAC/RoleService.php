@@ -41,6 +41,7 @@ class RoleService
      * Create a landlord role.
      *
      * @param  array{name: string, permissions?: list<string>}  $data
+     * @return Role
      */
     public function store(array $data): Role
     {
@@ -60,6 +61,9 @@ class RoleService
 
     /**
      * Retrieve a single landlord role.
+     *
+     * @param  Role  $role
+     * @return Role
      */
     public function show(Role $role): Role
     {
@@ -69,7 +73,9 @@ class RoleService
     /**
      * Update a landlord role.
      *
+     * @param  Role  $role
      * @param  array{name?: string, permissions?: list<string>}  $data
+     * @return Role
      */
     public function update(Role $role, array $data): Role
     {
@@ -89,6 +95,9 @@ class RoleService
 
     /**
      * Delete a landlord role.
+     *
+     * @param  Role  $role
+     * @return void
      */
     public function destroy(Role $role): void
     {
@@ -100,7 +109,9 @@ class RoleService
     /**
      * Sync permissions for a landlord role.
      *
+     * @param  Role  $role
      * @param  list<string>  $permissions
+     * @return Role
      */
     public function syncPermissions(Role $role, array $permissions): Role
     {
@@ -115,6 +126,7 @@ class RoleService
      * Resolve the page size for paginated listings.
      *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

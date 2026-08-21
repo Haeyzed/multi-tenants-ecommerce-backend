@@ -28,7 +28,10 @@ return new class extends Migration
             $table->timestamp('notified_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['customer_id', 'product_id', 'product_variant_id']);
+            $table->unique(
+                ['customer_id', 'product_id', 'product_variant_id'],
+                'product_stock_subscriptions_unique',
+            );
         });
     }
 

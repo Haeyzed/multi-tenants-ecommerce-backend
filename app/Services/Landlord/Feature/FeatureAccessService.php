@@ -15,6 +15,10 @@ class FeatureAccessService
 {
     /**
      * Whether the tenant's current plan includes an enabled feature.
+     *
+     * @param  Tenant  $tenant
+     * @param  string  $featureSlug
+     * @return bool
      */
     public function has(Tenant $tenant, string $featureSlug): bool
     {
@@ -25,6 +29,10 @@ class FeatureAccessService
 
     /**
      * Resolve the numeric limit for a feature, or null when unlimited / not present.
+     *
+     * @param  Tenant  $tenant
+     * @param  string  $featureSlug
+     * @return ?int
      */
     public function limit(Tenant $tenant, string $featureSlug): ?int
     {
@@ -42,7 +50,10 @@ class FeatureAccessService
     /**
      * Whether the tenant can use a feature given the current usage count.
      *
-     * Unlimited features (null limit) always pass when enabled.
+     * @param  Tenant  $tenant
+     * @param  string  $featureSlug
+     * @param  int  $currentUsage
+     * @return bool
      */
     public function canUse(Tenant $tenant, string $featureSlug, int $currentUsage = 0): bool
     {
@@ -62,6 +73,7 @@ class FeatureAccessService
     /**
      * List features available on the tenant's current plan with pivot data.
      *
+     * @param  Tenant  $tenant
      * @return Collection<int, Feature>
      */
     public function featuresForTenant(Tenant $tenant): Collection
@@ -78,6 +90,10 @@ class FeatureAccessService
     }
 
     /**
+     * Feature pivot.
+     *
+     * @param  Tenant  $tenant
+     * @param  string  $featureSlug
      * @return array{is_enabled?: bool|int|string, limit?: int|string|null}|null
      */
     protected function featurePivot(Tenant $tenant, string $featureSlug): ?array

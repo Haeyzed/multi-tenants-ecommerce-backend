@@ -51,31 +51,31 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::get('hr/reports/statutory', [HrReportController::class, 'statutory'])->middleware('permission:hr.reports.view|hr.view|hr.payroll.view')->name('tenant.hr.reports.statutory');
         Route::get('hr/reports/recruitment', [HrReportController::class, 'recruitment'])->middleware('permission:hr.reports.view|hr.view|hr.recruitment.view|hr.recruitment.manage')->name('tenant.hr.reports.recruitment');
 
-        Route::get('work-schedules/options', [WorkScheduleController::class, 'options'])->name('tenant.work-schedules.options');
-        Route::get('work-schedules', [WorkScheduleController::class, 'index'])->name('tenant.work-schedules.index');
-        Route::post('work-schedules', [WorkScheduleController::class, 'store'])->name('tenant.work-schedules.store');
-        Route::get('work-schedules/{work_schedule}', [WorkScheduleController::class, 'show'])->whereNumber('work_schedule')->name('tenant.work-schedules.show');
-        Route::match(['put', 'patch'], 'work-schedules/{work_schedule}', [WorkScheduleController::class, 'update'])->whereNumber('work_schedule')->name('tenant.work-schedules.update');
-        Route::delete('work-schedules/{work_schedule}', [WorkScheduleController::class, 'destroy'])->whereNumber('work_schedule')->name('tenant.work-schedules.destroy');
+        Route::get('work-schedules/options', [WorkScheduleController::class, 'options'])->middleware('permission:hr.view|hr.attendance.manage|hr.attendance.view')->name('tenant.work-schedules.options');
+        Route::get('work-schedules', [WorkScheduleController::class, 'index'])->middleware('permission:hr.view|hr.attendance.manage|hr.attendance.view')->name('tenant.work-schedules.index');
+        Route::post('work-schedules', [WorkScheduleController::class, 'store'])->middleware('permission:hr.attendance.manage')->name('tenant.work-schedules.store');
+        Route::get('work-schedules/{work_schedule}', [WorkScheduleController::class, 'show'])->middleware('permission:hr.view|hr.attendance.manage|hr.attendance.view')->whereNumber('work_schedule')->name('tenant.work-schedules.show');
+        Route::match(['put', 'patch'], 'work-schedules/{work_schedule}', [WorkScheduleController::class, 'update'])->middleware('permission:hr.attendance.manage')->whereNumber('work_schedule')->name('tenant.work-schedules.update');
+        Route::delete('work-schedules/{work_schedule}', [WorkScheduleController::class, 'destroy'])->middleware('permission:hr.attendance.manage')->whereNumber('work_schedule')->name('tenant.work-schedules.destroy');
 
-        Route::get('overtime-policies/options', [OvertimePolicyController::class, 'options'])->name('tenant.overtime-policies.options');
-        Route::get('overtime-policies', [OvertimePolicyController::class, 'index'])->name('tenant.overtime-policies.index');
-        Route::post('overtime-policies', [OvertimePolicyController::class, 'store'])->name('tenant.overtime-policies.store');
-        Route::get('overtime-policies/{overtime_policy}', [OvertimePolicyController::class, 'show'])->whereNumber('overtime_policy')->name('tenant.overtime-policies.show');
-        Route::match(['put', 'patch'], 'overtime-policies/{overtime_policy}', [OvertimePolicyController::class, 'update'])->whereNumber('overtime_policy')->name('tenant.overtime-policies.update');
-        Route::delete('overtime-policies/{overtime_policy}', [OvertimePolicyController::class, 'destroy'])->whereNumber('overtime_policy')->name('tenant.overtime-policies.destroy');
+        Route::get('overtime-policies/options', [OvertimePolicyController::class, 'options'])->middleware('permission:hr.view|hr.attendance.manage|hr.attendance.view|hr.payroll.manage')->name('tenant.overtime-policies.options');
+        Route::get('overtime-policies', [OvertimePolicyController::class, 'index'])->middleware('permission:hr.view|hr.attendance.manage|hr.attendance.view|hr.payroll.manage')->name('tenant.overtime-policies.index');
+        Route::post('overtime-policies', [OvertimePolicyController::class, 'store'])->middleware('permission:hr.attendance.manage|hr.payroll.manage')->name('tenant.overtime-policies.store');
+        Route::get('overtime-policies/{overtime_policy}', [OvertimePolicyController::class, 'show'])->middleware('permission:hr.view|hr.attendance.manage|hr.attendance.view|hr.payroll.manage')->whereNumber('overtime_policy')->name('tenant.overtime-policies.show');
+        Route::match(['put', 'patch'], 'overtime-policies/{overtime_policy}', [OvertimePolicyController::class, 'update'])->middleware('permission:hr.attendance.manage|hr.payroll.manage')->whereNumber('overtime_policy')->name('tenant.overtime-policies.update');
+        Route::delete('overtime-policies/{overtime_policy}', [OvertimePolicyController::class, 'destroy'])->middleware('permission:hr.attendance.manage|hr.payroll.manage')->whereNumber('overtime_policy')->name('tenant.overtime-policies.destroy');
 
-        Route::get('public-holidays', [PublicHolidayController::class, 'index'])->name('tenant.public-holidays.index');
-        Route::post('public-holidays', [PublicHolidayController::class, 'store'])->name('tenant.public-holidays.store');
-        Route::get('public-holidays/{public_holiday}', [PublicHolidayController::class, 'show'])->whereNumber('public_holiday')->name('tenant.public-holidays.show');
-        Route::match(['put', 'patch'], 'public-holidays/{public_holiday}', [PublicHolidayController::class, 'update'])->whereNumber('public_holiday')->name('tenant.public-holidays.update');
-        Route::delete('public-holidays/{public_holiday}', [PublicHolidayController::class, 'destroy'])->whereNumber('public_holiday')->name('tenant.public-holidays.destroy');
+        Route::get('public-holidays', [PublicHolidayController::class, 'index'])->middleware('permission:hr.view|hr.attendance.manage|hr.attendance.view|hr.leave.manage|hr.leave.view')->name('tenant.public-holidays.index');
+        Route::post('public-holidays', [PublicHolidayController::class, 'store'])->middleware('permission:hr.attendance.manage|hr.leave.manage')->name('tenant.public-holidays.store');
+        Route::get('public-holidays/{public_holiday}', [PublicHolidayController::class, 'show'])->middleware('permission:hr.view|hr.attendance.manage|hr.attendance.view|hr.leave.manage|hr.leave.view')->whereNumber('public_holiday')->name('tenant.public-holidays.show');
+        Route::match(['put', 'patch'], 'public-holidays/{public_holiday}', [PublicHolidayController::class, 'update'])->middleware('permission:hr.attendance.manage|hr.leave.manage')->whereNumber('public_holiday')->name('tenant.public-holidays.update');
+        Route::delete('public-holidays/{public_holiday}', [PublicHolidayController::class, 'destroy'])->middleware('permission:hr.attendance.manage|hr.leave.manage')->whereNumber('public_holiday')->name('tenant.public-holidays.destroy');
 
-        Route::get('tax-tables', [TaxTableController::class, 'index'])->name('tenant.tax-tables.index');
-        Route::post('tax-tables', [TaxTableController::class, 'store'])->name('tenant.tax-tables.store');
-        Route::get('tax-tables/{tax_table}', [TaxTableController::class, 'show'])->whereNumber('tax_table')->name('tenant.tax-tables.show');
-        Route::match(['put', 'patch'], 'tax-tables/{tax_table}', [TaxTableController::class, 'update'])->whereNumber('tax_table')->name('tenant.tax-tables.update');
-        Route::delete('tax-tables/{tax_table}', [TaxTableController::class, 'destroy'])->whereNumber('tax_table')->name('tenant.tax-tables.destroy');
+        Route::get('tax-tables', [TaxTableController::class, 'index'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->name('tenant.tax-tables.index');
+        Route::post('tax-tables', [TaxTableController::class, 'store'])->middleware('permission:hr.payroll.manage')->name('tenant.tax-tables.store');
+        Route::get('tax-tables/{tax_table}', [TaxTableController::class, 'show'])->middleware('permission:hr.payroll.view|hr.payroll.manage|hr.view')->whereNumber('tax_table')->name('tenant.tax-tables.show');
+        Route::match(['put', 'patch'], 'tax-tables/{tax_table}', [TaxTableController::class, 'update'])->middleware('permission:hr.payroll.manage')->whereNumber('tax_table')->name('tenant.tax-tables.update');
+        Route::delete('tax-tables/{tax_table}', [TaxTableController::class, 'destroy'])->middleware('permission:hr.payroll.manage')->whereNumber('tax_table')->name('tenant.tax-tables.destroy');
 
         Route::get('departments/options', [DepartmentController::class, 'options'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->name('tenant.departments.options');
         Route::get('departments', [DepartmentController::class, 'index'])->middleware('permission:hr.view|hr.departments.view|hr.departments.manage')->name('tenant.departments.index');
@@ -121,10 +121,10 @@ Route::middleware('feature:hr')->group(function (): void {
         Route::match(['put', 'patch'], 'attendances/{attendance}', [AttendanceController::class, 'update'])->middleware('permission:hr.attendance.manage')->whereNumber('attendance')->name('tenant.attendances.update');
         Route::delete('attendances/{attendance}', [AttendanceController::class, 'destroy'])->middleware('permission:hr.attendance.manage')->whereNumber('attendance')->name('tenant.attendances.destroy');
 
-        Route::get('leave-types/options', [LeaveTypeController::class, 'options'])->name('tenant.leave-types.options');
-        Route::get('leave-types', [LeaveTypeController::class, 'index'])->name('tenant.leave-types.index');
+        Route::get('leave-types/options', [LeaveTypeController::class, 'options'])->middleware('permission:hr.leave.view|hr.leave.manage|hr.view')->name('tenant.leave-types.options');
+        Route::get('leave-types', [LeaveTypeController::class, 'index'])->middleware('permission:hr.leave.view|hr.leave.manage|hr.view')->name('tenant.leave-types.index');
         Route::post('leave-types', [LeaveTypeController::class, 'store'])->middleware('permission:hr.leave.manage')->name('tenant.leave-types.store');
-        Route::get('leave-types/{leave_type}', [LeaveTypeController::class, 'show'])->whereNumber('leave_type')->name('tenant.leave-types.show');
+        Route::get('leave-types/{leave_type}', [LeaveTypeController::class, 'show'])->middleware('permission:hr.leave.view|hr.leave.manage|hr.view')->whereNumber('leave_type')->name('tenant.leave-types.show');
         Route::match(['put', 'patch'], 'leave-types/{leave_type}', [LeaveTypeController::class, 'update'])->middleware('permission:hr.leave.manage')->whereNumber('leave_type')->name('tenant.leave-types.update');
         Route::delete('leave-types/{leave_type}', [LeaveTypeController::class, 'destroy'])->middleware('permission:hr.leave.manage')->whereNumber('leave_type')->name('tenant.leave-types.destroy');
 

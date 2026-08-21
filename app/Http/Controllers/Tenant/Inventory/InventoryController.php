@@ -10,9 +10,12 @@ use App\Http\Requests\Tenant\Inventory\AdjustInventoryRequest;
 use App\Http\Requests\Tenant\Inventory\IndexInventoryRequest;
 use App\Http\Requests\Tenant\Inventory\ReleaseInventoryRequest;
 use App\Http\Requests\Tenant\Inventory\ReserveInventoryRequest;
+use App\Http\Requests\Tenant\Inventory\StoreInventoryRequest;
 use App\Http\Requests\Tenant\Inventory\TransferInventoryRequest;
 use App\Http\Resources\Tenant\Inventory\InventoryResource;
 use App\Models\Tenant\Inventory;
+use App\Models\Tenant\Product;
+use App\Models\Tenant\ProductVariant;
 use App\Models\Tenant\User;
 use App\Models\Tenant\Warehouse;
 use App\Services\Tenant\Inventory\InventoryService;
@@ -43,6 +46,58 @@ class InventoryController extends Controller
             InventoryResource::collection($inventories->items()),
             'Inventory records retrieved successfully.',
             $this->paginationMeta($inventories),
+        );
+    }
+
+    /**
+     * List inventory records for a warehouse.
+     */
+    #[Response(
+        status: 200,
+        description: 'Paginated inventory records for a warehouse.',
+        type: 'array{success: true, message: string, data: InventoryResource[], meta: '.ApiResponseSchema::PAGINATION_META.', errors: null}',
+    )]
+    public function indexForWarehouse(IndexInventoryRequest $request, Warehouse $warehouse): JsonResponse
+    {
+        $params = $request->validated();
+        $params['warehouse_id'] = $warehouse->id;
+        $inventories = $this->inventoryService->list($params);
+
+        return $this->success(
+            InventoryResource::collection($inventories->items()),
+            'Warehouse inventory retrieved successfully.',
+            $this->paginationMeta($inventories),
+        );
+    }
+
+    /**
+     * Assign a product or variant to a warehouse.
+     */
+    #[Response(
+        status: 201,
+        description: 'Created or existing inventory assignment.',
+        type: 'array{success: true, message: string, data: InventoryResource, meta: null, errors: null}',
+    )]
+    public function store(StoreInventoryRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $product = Product::query()->findOrFail((int) $validated['product_id']);
+        $variant = isset($validated['product_variant_id'])
+            ? ProductVariant::query()->find((int) $validated['product_variant_id'])
+            : null;
+        $warehouse = Warehouse::query()->findOrFail((int) $validated['warehouse_id']);
+
+        $inventory = $this->inventoryService->assign(
+            $warehouse,
+            $product,
+            $variant,
+            $validated,
+            $this->actor(),
+        );
+
+        return $this->created(
+            new InventoryResource($inventory),
+            'Inventory assigned successfully.',
         );
     }
 
@@ -148,6 +203,21 @@ class InventoryController extends Controller
             ],
             'Inventory transferred successfully.',
         );
+    }
+
+    /**
+     * Remove an empty inventory assignment.
+     */
+    #[Response(
+        status: 200,
+        description: 'Inventory assignment removed.',
+        type: 'array{success: true, message: string, data: null, meta: null, errors: null}',
+    )]
+    public function destroy(Inventory $inventory): JsonResponse
+    {
+        $this->inventoryService->unassign($inventory);
+
+        return $this->deleted('Inventory assignment removed successfully.');
     }
 
     protected function actor(): ?User

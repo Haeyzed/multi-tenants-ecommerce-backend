@@ -22,11 +22,16 @@ class TenantController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  TenantService  $tenantService
      */
     public function __construct(private readonly TenantService $tenantService) {}
 
     /**
      * List tenants with pagination and filters.
+     *
+     * @param  IndexTenantRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -46,6 +51,9 @@ class TenantController extends Controller
 
     /**
      * Return tenant options as label/value pairs.
+     *
+     * @param  IndexTenantRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -62,6 +70,9 @@ class TenantController extends Controller
 
     /**
      * Create and provision a tenant.
+     *
+     * @param  StoreTenantRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -80,6 +91,9 @@ class TenantController extends Controller
 
     /**
      * Show a tenant.
+     *
+     * @param  Tenant  $tenant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -96,6 +110,10 @@ class TenantController extends Controller
 
     /**
      * Update a tenant.
+     *
+     * @param  UpdateTenantRequest  $request
+     * @param  Tenant  $tenant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -114,6 +132,9 @@ class TenantController extends Controller
 
     /**
      * Delete a tenant.
+     *
+     * @param  Tenant  $tenant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

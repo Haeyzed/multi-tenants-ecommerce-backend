@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Tenant\HR;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Tenant\HR\LeaveBalanceResource;
-use App\Models\Tenant\Employee;
+use App\Models\HR\Employee;
 use App\Services\Tenant\HR\LeaveRequestService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;

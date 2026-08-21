@@ -23,11 +23,17 @@ class DomainController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  DomainService  $domainService
      */
     public function __construct(private readonly DomainService $domainService) {}
 
     /**
      * List domains for a tenant.
+     *
+     * @param  IndexDomainRequest  $request
+     * @param  Tenant  $tenant
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -47,6 +53,10 @@ class DomainController extends Controller
 
     /**
      * Create a domain for a tenant.
+     *
+     * @param  StoreDomainRequest  $request
+     * @param  Tenant  $tenant
+     * @return JsonResponse
      */
     #[Response(
         status: 201,
@@ -65,6 +75,10 @@ class DomainController extends Controller
 
     /**
      * Show a domain for a tenant.
+     *
+     * @param  Tenant  $tenant
+     * @param  Domain  $domain
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -81,6 +95,11 @@ class DomainController extends Controller
 
     /**
      * Update a domain for a tenant.
+     *
+     * @param  UpdateDomainRequest  $request
+     * @param  Tenant  $tenant
+     * @param  Domain  $domain
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -99,6 +118,10 @@ class DomainController extends Controller
 
     /**
      * Delete a domain for a tenant.
+     *
+     * @param  Tenant  $tenant
+     * @param  Domain  $domain
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -114,6 +137,10 @@ class DomainController extends Controller
 
     /**
      * Mark a domain as the tenant's primary domain.
+     *
+     * @param  Tenant  $tenant
+     * @param  Domain  $domain
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

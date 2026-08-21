@@ -40,6 +40,7 @@ class PermissionService
      * Create a landlord permission.
      *
      * @param  array{name: string}  $data
+     * @return Permission
      */
     public function store(array $data): Permission
     {
@@ -55,6 +56,9 @@ class PermissionService
 
     /**
      * Retrieve a single landlord permission.
+     *
+     * @param  Permission  $permission
+     * @return Permission
      */
     public function show(Permission $permission): Permission
     {
@@ -64,7 +68,9 @@ class PermissionService
     /**
      * Update a landlord permission.
      *
+     * @param  Permission  $permission
      * @param  array{name: string}  $data
+     * @return Permission
      */
     public function update(Permission $permission, array $data): Permission
     {
@@ -78,6 +84,9 @@ class PermissionService
 
     /**
      * Delete a landlord permission.
+     *
+     * @param  Permission  $permission
+     * @return void
      */
     public function destroy(Permission $permission): void
     {
@@ -90,6 +99,7 @@ class PermissionService
      * Resolve the page size for paginated listings.
      *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

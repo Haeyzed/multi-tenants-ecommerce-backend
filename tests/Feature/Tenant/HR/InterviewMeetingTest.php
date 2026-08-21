@@ -12,8 +12,9 @@ use App\Events\InterviewRescheduled;
 use App\Events\InterviewScheduled;
 use App\Exceptions\Interview\InterviewMeetingProviderException;
 use App\Exceptions\Interview\UnsupportedInterviewMeetingProviderException;
-use App\Models\Tenant\Interview;
-use App\Models\Tenant\InterviewMeeting;
+use App\Models\HR\Employee;
+use App\Models\HR\Interview;
+use App\Models\HR\InterviewMeeting;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\HrSettingsService;
 use App\Services\Tenant\HR\InterviewService;
@@ -134,6 +135,7 @@ function interviewMeetingApplication(): array
 {
     $admin = User::factory()->create();
     $admin->syncRoles(['admin']);
+    Employee::factory()->create(['user_id' => $admin->id]);
 
     $opening = app(JobOpeningService::class)->publish(app(JobOpeningService::class)->store(['title' => 'Engineer']));
     $application = app(JobApplicationService::class)->store([
@@ -161,6 +163,18 @@ test('meeting manager resolves registered drivers without interview switches', f
         ->and(app(HrSettingsService::class)->defaultInterviewMeetingProvider())->toBe('manual');
 
     expect(fn () => $manager->driver('webex'))->toThrow(UnsupportedInterviewMeetingProviderException::class);
+});
+
+test('interview meeting mutations require recruitment manage permission', function (): void {
+    $setup = interviewMeetingApplication();
+    $interview = Interview::factory()->create(['job_application_id' => $setup['applicationId']]);
+    $customer = User::factory()->create();
+    $customer->syncRoles(['customer']);
+
+    expect($setup['admin']->can('create', [InterviewMeeting::class, $interview]))->toBeTrue()
+        ->and($customer->can('create', [InterviewMeeting::class, $interview]))->toBeFalse()
+        ->and($setup['admin']->can('update', [InterviewMeeting::class, $interview]))->toBeTrue()
+        ->and($customer->can('delete', [InterviewMeeting::class, $interview]))->toBeFalse();
 });
 
 test('manual provider stores a supplied meeting url and skips external apis', function (): void {

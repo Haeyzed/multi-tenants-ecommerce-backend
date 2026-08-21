@@ -7,9 +7,9 @@ namespace App\Services\Tenant\HR;
 use App\Enums\Tenant\HR\PayFrequency;
 use App\Enums\Tenant\HR\PayrollLineType;
 use App\Enums\Tenant\HR\SalaryComponentCalculation;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\EmployeeSalary;
-use App\Models\Tenant\EmployeeSalaryRevision;
+use App\Models\HR\Employee;
+use App\Models\HR\EmployeeSalary;
+use App\Models\HR\EmployeeSalaryRevision;
 use App\Support\Money;
 use Illuminate\Validation\ValidationException;
 

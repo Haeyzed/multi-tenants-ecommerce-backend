@@ -10,7 +10,7 @@ use App\Http\Requests\Tenant\HR\IndexLeaveRequestRequest;
 use App\Http\Requests\Tenant\HR\ReviewLeaveRequestRequest;
 use App\Http\Requests\Tenant\HR\StoreLeaveRequestRequest;
 use App\Http\Resources\Tenant\HR\LeaveRequestResource;
-use App\Models\Tenant\LeaveRequest;
+use App\Models\HR\LeaveRequest;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\LeaveRequestService;
 use App\Support\ApiResponseSchema;

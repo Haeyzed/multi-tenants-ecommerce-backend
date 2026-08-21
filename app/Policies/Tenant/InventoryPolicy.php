@@ -59,4 +59,20 @@ class InventoryPolicy
     {
         return $user->can('inventory.transfer');
     }
+
+    /**
+     * Determine whether the user can assign inventory to a warehouse.
+     */
+    public function create(User $user): bool
+    {
+        return $user->can('inventory.adjust');
+    }
+
+    /**
+     * Determine whether the user can remove an empty inventory assignment.
+     */
+    public function delete(User $user, Inventory $inventory): bool
+    {
+        return $user->can('inventory.adjust');
+    }
 }

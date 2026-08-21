@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Models\Tenant\RecruitmentStage;
+use App\Models\HR\RecruitmentStage;
 use App\Models\Tenant\User;
 
 class RecruitmentStagePolicy

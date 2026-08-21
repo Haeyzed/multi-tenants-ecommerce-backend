@@ -11,7 +11,7 @@ use App\Http\Requests\Tenant\HR\StoreInterviewRequest;
 use App\Http\Requests\Tenant\HR\UpdateInterviewRequest;
 use App\Http\Resources\Tenant\HR\InterviewFeedbackResource;
 use App\Http\Resources\Tenant\HR\InterviewResource;
-use App\Models\Tenant\Interview;
+use App\Models\HR\Interview;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\InterviewService;
 use App\Support\ApiResponseSchema;

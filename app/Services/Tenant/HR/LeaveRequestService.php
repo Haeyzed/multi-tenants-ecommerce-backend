@@ -7,10 +7,10 @@ namespace App\Services\Tenant\HR;
 use App\Enums\Tenant\HR\LeaveStatus;
 use App\Events\LeaveRequested;
 use App\Events\LeaveReviewed;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\LeaveBalance;
-use App\Models\Tenant\LeaveRequest;
-use App\Models\Tenant\LeaveType;
+use App\Models\HR\Employee;
+use App\Models\HR\LeaveBalance;
+use App\Models\HR\LeaveRequest;
+use App\Models\HR\LeaveType;
 use App\Models\Tenant\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -25,6 +25,7 @@ class LeaveRequestService
         private readonly HrSettingsService $hrSettings,
         private readonly LeaveTypeService $leaveTypeService,
         private readonly WorkCalendarService $calendar,
+        private readonly HrActivityService $activities,
     ) {}
 
     /**
@@ -42,7 +43,7 @@ class LeaveRequestService
     public function list(array $params = []): LengthAwarePaginator
     {
         return LeaveRequest::query()
-            ->with(['employee.user', 'reviewer'])
+            ->with(['employee.user', 'reviewer', 'leaveType'])
             ->filter($params)
             ->applySort($params['sort'] ?? null)
             ->paginate($this->perPage($params));
@@ -51,7 +52,8 @@ class LeaveRequestService
     /**
      * @param  array{
      *     employee_id: int,
-     *     type: string,
+     *     leave_type_id?: int|null,
+     *     type?: string|null,
      *     start_date: string,
      *     end_date: string,
      *     reason?: string|null
@@ -64,7 +66,7 @@ class LeaveRequestService
         $this->hrSettings->assertLeaveEnabled();
 
         $employee = Employee::query()->findOrFail($data['employee_id']);
-        $leaveType = $this->leaveTypeService->findActiveByCode((string) $data['type']);
+        $leaveType = $this->resolveLeaveType($data);
 
         if ($data['end_date'] < $data['start_date']) {
             throw ValidationException::withMessages([
@@ -88,13 +90,18 @@ class LeaveRequestService
 
         $leaveRequest = LeaveRequest::query()->create([
             'employee_id' => $employee->id,
-            'type' => $leaveType->code,
+            'leave_type_id' => $leaveType->id,
             'start_date' => $data['start_date'],
             'end_date' => $data['end_date'],
             'status' => $autoApprove ? LeaveStatus::Approved : LeaveStatus::Pending,
             'reason' => $data['reason'] ?? null,
             'reviewed_at' => $autoApprove ? now() : null,
-        ])->load(['employee.user', 'reviewer']);
+        ])->load(['employee.user', 'reviewer', 'leaveType']);
+
+        $this->activities->record($leaveRequest, 'requested', null, [
+            'status' => $leaveRequest->status->value,
+            'leave_type_id' => $leaveType->id,
+        ]);
 
         event(new LeaveRequested($leaveRequest));
 
@@ -108,7 +115,7 @@ class LeaveRequestService
 
     public function show(LeaveRequest $leaveRequest): LeaveRequest
     {
-        return $leaveRequest->load(['employee.user', 'reviewer']);
+        return $leaveRequest->load(['employee.user', 'reviewer', 'leaveType']);
     }
 
     /**
@@ -140,7 +147,7 @@ class LeaveRequestService
                 $leaveRequest->id,
             );
 
-            $leaveType = $this->leaveTypeService->findActiveByCode($leaveRequest->type);
+            $leaveType = $leaveRequest->leaveType ?? $this->leaveTypeService->findActiveById((int) $leaveRequest->leave_type_id);
             $days = $this->countWorkingDays(
                 $leaveRequest->start_date->toDateString(),
                 $leaveRequest->end_date->toDateString(),
@@ -158,7 +165,11 @@ class LeaveRequestService
         ]);
         $leaveRequest->save();
 
-        $leaveRequest = $leaveRequest->fresh(['employee.user', 'reviewer']) ?? $leaveRequest;
+        $leaveRequest = $leaveRequest->fresh(['employee.user', 'reviewer', 'leaveType']) ?? $leaveRequest;
+
+        $this->activities->record($leaveRequest, $status->value, $reviewer, [
+            'leave_type_id' => $leaveRequest->leave_type_id,
+        ]);
 
         event(new LeaveReviewed($leaveRequest));
 
@@ -183,7 +194,13 @@ class LeaveRequestService
         $leaveRequest->status = LeaveStatus::Cancelled;
         $leaveRequest->save();
 
-        return $leaveRequest->fresh(['employee.user', 'reviewer']) ?? $leaveRequest;
+        $leaveRequest = $leaveRequest->fresh(['employee.user', 'reviewer', 'leaveType']) ?? $leaveRequest;
+
+        $this->activities->record($leaveRequest, 'cancelled', null, [
+            'leave_type_id' => $leaveRequest->leave_type_id,
+        ]);
+
+        return $leaveRequest;
     }
 
     /**
@@ -203,6 +220,26 @@ class LeaveRequestService
         }
 
         return $balances;
+    }
+
+    /**
+     * @param  array{leave_type_id?: int|null, type?: string|null}  $data
+     *
+     * @throws ValidationException
+     */
+    protected function resolveLeaveType(array $data): LeaveType
+    {
+        if (array_key_exists('leave_type_id', $data) && $data['leave_type_id'] !== null && $data['leave_type_id'] !== '') {
+            return $this->leaveTypeService->findActiveById((int) $data['leave_type_id']);
+        }
+
+        if (array_key_exists('type', $data) && is_string($data['type']) && $data['type'] !== '') {
+            return $this->leaveTypeService->findActiveByCode($data['type']);
+        }
+
+        throw ValidationException::withMessages([
+            'leave_type_id' => ['A leave type is required.'],
+        ]);
     }
 
     /**

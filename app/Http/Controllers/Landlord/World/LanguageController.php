@@ -19,11 +19,16 @@ class LanguageController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  LanguageService  $languageService
      */
     public function __construct(private readonly LanguageService $languageService) {}
 
     /**
      * List languages with pagination, search, and filters.
+     *
+     * @param  IndexLanguageRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -43,6 +48,9 @@ class LanguageController extends Controller
 
     /**
      * Return language options as label/value pairs.
+     *
+     * @param  IndexLanguageRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -59,6 +67,9 @@ class LanguageController extends Controller
 
     /**
      * Show a single language by identifier.
+     *
+     * @param  int  $language
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

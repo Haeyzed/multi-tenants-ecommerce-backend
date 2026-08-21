@@ -7,30 +7,23 @@ namespace App\Services\Tenant\HR;
 use App\Enums\Tenant\HR\AttendanceStatus;
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
-use App\Enums\Tenant\HR\PayFrequency;
 use App\Enums\Tenant\HR\PayrollLineType;
-use App\Enums\Tenant\HR\PayrollPeriodStatus;
 use App\Enums\Tenant\HR\PayrollRunStatus;
 use App\Enums\Tenant\HR\SalaryComponentCalculation;
 use App\Events\PayrollPaid;
 use App\Events\PayrollProcessed;
 use App\Events\PayslipAvailable;
-use App\Models\Tenant\Account;
-use App\Models\Tenant\Attendance;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\EmployeeSalaryComponent;
-use App\Models\Tenant\JournalEntry;
-use App\Models\Tenant\LeaveRequest;
-use App\Models\Tenant\LeaveType;
-use App\Models\Tenant\PayrollItem;
-use App\Models\Tenant\PayrollItemLine;
-use App\Models\Tenant\PayrollPeriod;
-use App\Models\Tenant\PayrollRun;
+use App\Models\HR\Attendance;
+use App\Models\HR\Employee;
+use App\Models\HR\EmployeeSalaryComponent;
+use App\Models\HR\LeaveRequest;
+use App\Models\HR\PayrollItem;
+use App\Models\HR\PayrollItemLine;
+use App\Models\HR\PayrollPeriod;
+use App\Models\HR\PayrollRun;
 use App\Models\Tenant\User;
-use App\Services\Tenant\Accounting\JournalEntryService;
 use App\Support\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -41,7 +34,6 @@ use Illuminate\Validation\ValidationException;
 class PayrollRunService
 {
     public function __construct(
-        private readonly JournalEntryService $journalEntryService,
         private readonly HrSettingsService $hrSettings,
         private readonly LeaveTypeService $leaveTypeService,
         private readonly WorkCalendarService $calendar,
@@ -49,6 +41,9 @@ class PayrollRunService
         private readonly PayeCalculatorService $paye,
         private readonly StatutoryContributionService $statutory,
         private readonly NibssPayrollProcessor $nibss,
+        private readonly PayrollRunAccountingService $accounting,
+        private readonly PayrollPeriodService $periods,
+        private readonly HrActivityService $activities,
     ) {}
 
     /**
@@ -227,6 +222,10 @@ class PayrollRunService
 
         $payrollRun = $this->show($payrollRun);
 
+        $this->activities->record($payrollRun, 'processed', $actor, [
+            'status' => $payrollRun->status->value,
+        ]);
+
         event(new PayrollProcessed($payrollRun));
 
         if ($status === PayrollRunStatus::Processed) {
@@ -295,8 +294,8 @@ class PayrollRunService
             ]);
             $payrollRun->save();
 
-            if ($this->shouldPostToAccounting($options)) {
-                $this->postToAccounting($payrollRun, $options);
+            if ($this->accounting->shouldPost($options)) {
+                $this->accounting->post($payrollRun, $options);
             }
 
             if ($this->shouldSubmitNibss()) {
@@ -304,6 +303,11 @@ class PayrollRunService
             }
 
             $payrollRun = $this->show($payrollRun);
+
+            $this->activities->record($payrollRun, 'paid', $actor, [
+                'status' => $payrollRun->status->value,
+            ]);
+
             event(new PayrollPaid($payrollRun));
 
             return $payrollRun;
@@ -328,7 +332,13 @@ class PayrollRunService
         $payrollRun->status = PayrollRunStatus::Cancelled;
         $payrollRun->save();
 
-        return $this->show($payrollRun);
+        $payrollRun = $this->show($payrollRun);
+
+        $this->activities->record($payrollRun, 'cancelled', null, [
+            'status' => $payrollRun->status->value,
+        ]);
+
+        return $payrollRun;
     }
 
     /**
@@ -654,18 +664,10 @@ class PayrollRunService
     {
         $this->leaveTypeService->ensureDefaults();
 
-        $unpaidCodes = LeaveType::query()
-            ->where('is_paid', false)
-            ->pluck('code');
-
-        if ($unpaidCodes->isEmpty()) {
-            $unpaidCodes = collect(['unpaid']);
-        }
-
         $requests = LeaveRequest::query()
             ->where('employee_id', $employee->id)
             ->where('status', LeaveStatus::Approved)
-            ->whereIn('type', $unpaidCodes->all())
+            ->whereHas('leaveType', fn ($query) => $query->where('is_paid', false))
             ->whereDate('start_date', '<=', $periodEnd)
             ->whereDate('end_date', '>=', $periodStart)
             ->get();
@@ -828,30 +830,11 @@ class PayrollRunService
     }
 
     /**
-     * @param  array{
-     *     post_to_accounting?: bool|null,
-     *     expense_account_id?: int|null,
-     *     payable_account_id?: int|null,
-     *     tax_payable_account_id?: int|null,
-     *     deduction_payable_account_id?: int|null
-     * }  $options
-     */
-    protected function shouldPostToAccounting(array $options): bool
-    {
-        if (array_key_exists('post_to_accounting', $options)) {
-            return (bool) $options['post_to_accounting'];
-        }
-
-        return $this->hrSettings->payrollExpenseAccountId() !== null
-            && $this->hrSettings->payrollPayableAccountId() !== null;
-    }
-
-    /**
      * @throws ValidationException
      */
     public function createFromCurrentPeriod(?string $currency = null, ?string $notes = null): PayrollRun
     {
-        $period = $this->ensureCurrentPeriod();
+        $period = $this->periods->ensureCurrentPeriod();
 
         return $this->create([
             'payroll_period_id' => $period->id,
@@ -864,9 +847,7 @@ class PayrollRunService
 
     public function ensureCurrentPeriod(?Carbon $asOf = null): PayrollPeriod
     {
-        $window = $this->periodWindow($asOf ?? now());
-
-        return $this->findOrCreatePeriod($window['period_start'], $window['period_end'], $window['payment_date']);
+        return $this->periods->ensureCurrentPeriod($asOf);
     }
 
     /**
@@ -878,7 +859,7 @@ class PayrollRunService
             return null;
         }
 
-        $period = $this->ensureCurrentPeriod();
+        $period = $this->periods->ensureCurrentPeriod();
 
         if (! $period->payment_date->isToday()) {
             return null;
@@ -911,198 +892,12 @@ class PayrollRunService
      */
     public function periodWindow(?Carbon $asOf = null): array
     {
-        $asOf ??= now();
-        $frequency = $this->hrSettings->payrollFrequency();
-
-        [$start, $end] = match ($frequency) {
-            PayFrequency::Weekly => [
-                $asOf->copy()->startOfWeek(),
-                $asOf->copy()->endOfWeek(),
-            ],
-            PayFrequency::Biweekly => $this->biweeklyBounds($asOf),
-            default => [
-                $asOf->copy()->startOfMonth(),
-                $asOf->copy()->endOfMonth(),
-            ],
-        };
-
-        $paymentDay = $this->hrSettings->payrollPaymentDay();
-        $paymentDate = $frequency === PayFrequency::Monthly
-            ? $start->copy()->day(min($paymentDay, $end->daysInMonth))
-            : $end->copy();
-
-        return [
-            'period_start' => $start->toDateString(),
-            'period_end' => $end->toDateString(),
-            'payment_date' => $paymentDate->toDateString(),
-        ];
+        return $this->periods->periodWindow($asOf);
     }
 
     protected function findOrCreatePeriod(string $periodStart, string $periodEnd, ?string $paymentDate = null): PayrollPeriod
     {
-        $periodStart = Carbon::parse($periodStart)->toDateString();
-        $periodEnd = Carbon::parse($periodEnd)->toDateString();
-
-        $existing = PayrollPeriod::query()
-            ->whereDate('period_start', $periodStart)
-            ->whereDate('period_end', $periodEnd)
-            ->first();
-
-        if ($existing !== null) {
-            return $existing;
-        }
-
-        $window = $this->periodWindow(Carbon::parse($periodStart));
-
-        try {
-            return PayrollPeriod::query()->create([
-                'period_start' => $periodStart,
-                'period_end' => $periodEnd,
-                'payment_date' => $paymentDate ?? $window['payment_date'],
-                'frequency' => $this->hrSettings->payrollFrequency(),
-                'status' => PayrollPeriodStatus::Open,
-            ]);
-        } catch (QueryException) {
-            $created = PayrollPeriod::query()
-                ->whereDate('period_start', $periodStart)
-                ->whereDate('period_end', $periodEnd)
-                ->first();
-
-            if ($created !== null) {
-                return $created;
-            }
-
-            throw ValidationException::withMessages([
-                'period_start' => ['Unable to create a payroll period for this window.'],
-            ]);
-        }
-    }
-
-    /**
-     * @return array{0: Carbon, 1: Carbon}
-     */
-    protected function biweeklyBounds(Carbon $asOf): array
-    {
-        $yearStart = $asOf->copy()->startOfYear();
-        $days = (int) $yearStart->diffInDays($asOf);
-        $bucket = intdiv($days, 14);
-        $start = $yearStart->copy()->addDays($bucket * 14);
-
-        return [$start, $start->copy()->addDays(13)];
-    }
-
-    /**
-     * @param  array{
-     *     expense_account_id?: int|null,
-     *     payable_account_id?: int|null,
-     *     tax_payable_account_id?: int|null,
-     *     deduction_payable_account_id?: int|null
-     * }  $options
-     *
-     * @throws ValidationException
-     */
-    protected function postToAccounting(PayrollRun $payrollRun, array $options): void
-    {
-        $expenseAccountId = (int) ($options['expense_account_id'] ?? $this->hrSettings->payrollExpenseAccountId() ?? 0);
-        $payableAccountId = (int) ($options['payable_account_id'] ?? $this->hrSettings->payrollPayableAccountId() ?? 0);
-        $taxPayableAccountId = (int) ($options['tax_payable_account_id'] ?? $this->hrSettings->payrollTaxPayableAccountId() ?? 0);
-        $deductionPayableAccountId = (int) ($options['deduction_payable_account_id'] ?? $this->hrSettings->payrollDeductionPayableAccountId() ?? 0);
-
-        if ($expenseAccountId <= 0 || $payableAccountId <= 0) {
-            throw ValidationException::withMessages([
-                'expense_account_id' => ['Expense and payable accounts are required when posting to accounting.'],
-            ]);
-        }
-
-        Account::query()->whereKey($expenseAccountId)->where('is_active', true)->firstOrFail();
-        Account::query()->whereKey($payableAccountId)->where('is_active', true)->firstOrFail();
-
-        $gross = Money::add((string) $payrollRun->gross_total, '0');
-
-        if (bccomp($gross, '0', 2) <= 0) {
-            return;
-        }
-
-        $payrollRun->loadMissing('items.lines');
-        $paye = '0.00';
-
-        foreach ($payrollRun->items as $item) {
-            foreach ($item->lines as $line) {
-                if ($line->code === 'paye') {
-                    $paye = Money::add($paye, (string) $line->amount);
-                }
-            }
-        }
-
-        $otherDeductions = Money::sub((string) $payrollRun->deduction_total, $paye);
-
-        if (bccomp($otherDeductions, '0', 2) < 0) {
-            $otherDeductions = '0.00';
-        }
-
-        $net = Money::add((string) $payrollRun->net_total, '0');
-        $lines = [
-            [
-                'account_id' => $expenseAccountId,
-                'debit' => $gross,
-                'credit' => '0.00',
-                'description' => 'Payroll expense',
-            ],
-        ];
-
-        if (bccomp($paye, '0', 2) > 0) {
-            if ($taxPayableAccountId <= 0) {
-                throw ValidationException::withMessages([
-                    'tax_payable_account_id' => ['A tax payable account is required when PAYE is withheld.'],
-                ]);
-            }
-
-            Account::query()->whereKey($taxPayableAccountId)->where('is_active', true)->firstOrFail();
-            $lines[] = [
-                'account_id' => $taxPayableAccountId,
-                'debit' => '0.00',
-                'credit' => $paye,
-                'description' => 'PAYE payable',
-            ];
-        }
-
-        $netCredit = $net;
-
-        if (bccomp($otherDeductions, '0', 2) > 0) {
-            if ($deductionPayableAccountId > 0) {
-                Account::query()->whereKey($deductionPayableAccountId)->where('is_active', true)->firstOrFail();
-                $lines[] = [
-                    'account_id' => $deductionPayableAccountId,
-                    'debit' => '0.00',
-                    'credit' => $otherDeductions,
-                    'description' => 'Payroll deductions payable',
-                ];
-            } else {
-                $netCredit = Money::add($netCredit, $otherDeductions);
-            }
-        }
-
-        if (bccomp($netCredit, '0', 2) > 0) {
-            $lines[] = [
-                'account_id' => $payableAccountId,
-                'debit' => '0.00',
-                'credit' => $netCredit,
-                'description' => 'Payroll payable',
-            ];
-        }
-
-        $this->journalEntryService->postUnique(
-            $payrollRun,
-            'payroll',
-            fn (JournalEntryService $service): JournalEntry => $service->createDraft(
-                reference: $payrollRun->reference,
-                description: 'Payroll '.$payrollRun->reference.' ('.$payrollRun->period_start->toDateString().' to '.$payrollRun->period_end->toDateString().')',
-                entryDate: $payrollRun->period_end->toDateString(),
-                lines: $lines,
-                source: $payrollRun,
-                entryType: 'payroll',
-            ),
-        );
+        return $this->periods->findOrCreatePeriod($periodStart, $periodEnd, $paymentDate);
     }
 
     protected function nextReference(): string

@@ -13,11 +13,18 @@ Route::prefix('public')->name('tenant.public.')->group(function (): void {
     Route::get('blog/posts/{slug}', [PublicCmsController::class, 'showPost'])->name('blog.posts.show');
     Route::get('blog/categories', [PublicCmsController::class, 'indexCategories'])->name('blog.categories.index');
 
-    Route::get('jobs', [PublicJobOpeningController::class, 'index'])->name('jobs.index');
-    Route::get('jobs/{slug}', [PublicJobOpeningController::class, 'show'])->name('jobs.show');
-    Route::post('jobs/{slug}/applications', [PublicJobOpeningController::class, 'apply'])->middleware('throttle:10,1')->name('jobs.apply');
+    Route::middleware('hr.recruitment.public:listings')->group(function (): void {
+        Route::get('jobs', [PublicJobOpeningController::class, 'index'])->name('jobs.index');
+        Route::get('jobs/{slug}', [PublicJobOpeningController::class, 'show'])->name('jobs.show');
+    });
 
-    Route::get('offers/{token}', [PublicJobOfferController::class, 'show'])->middleware('throttle:20,1')->name('offers.show');
-    Route::post('offers/{token}/accept', [PublicJobOfferController::class, 'accept'])->middleware('throttle:10,1')->name('offers.accept');
-    Route::post('offers/{token}/reject', [PublicJobOfferController::class, 'reject'])->middleware('throttle:10,1')->name('offers.reject');
+    Route::post('jobs/{slug}/applications', [PublicJobOpeningController::class, 'apply'])
+        ->middleware(['hr.recruitment.public:apply', 'throttle:10,1'])
+        ->name('jobs.apply');
+
+    Route::middleware('hr.recruitment.public:offers')->group(function (): void {
+        Route::get('offers/{token}', [PublicJobOfferController::class, 'show'])->middleware('throttle:20,1')->name('offers.show');
+        Route::post('offers/{token}/accept', [PublicJobOfferController::class, 'accept'])->middleware('throttle:10,1')->name('offers.accept');
+        Route::post('offers/{token}/reject', [PublicJobOfferController::class, 'reject'])->middleware('throttle:10,1')->name('offers.reject');
+    });
 });

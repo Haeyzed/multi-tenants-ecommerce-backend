@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Tenant\HR\PublicJobOfferController;
+use App\Http\Controllers\Tenant\HR\PublicJobOpeningController;
+use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Scramble;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Route as RouteFacade;
 use Illuminate\Support\Str;
+use ReflectionClass;
 
 test('default scramble docs route is disabled', function (): void {
     $this->get('http://localhost/docs/api')->assertNotFound();
@@ -77,4 +81,29 @@ test('tenant docs include tenant api routes and exclude landlord api routes', fu
     expect($documented->isNotEmpty())->toBeTrue()
         ->and($documented->every(fn (Route $route): bool => Str::startsWith($route->uri, 'api/')))->toBeTrue()
         ->and($documented->every(fn (Route $route): bool => $route->getDomain() === null))->toBeTrue();
+});
+
+test('tenant public recruitment controllers declare scramble groups', function (): void {
+    $controllers = [
+        PublicJobOpeningController::class => 'Public Recruitment / Job Listings',
+        PublicJobOfferController::class => 'Public Recruitment / Offers',
+    ];
+
+    foreach ($controllers as $class => $expectedGroup) {
+        $attributes = (new ReflectionClass($class))->getAttributes(Group::class);
+
+        expect($attributes)->not->toBeEmpty()
+            ->and($attributes[0]->newInstance()->name)->toBe($expectedGroup);
+    }
+});
+
+test('tenant scramble docs include public recruitment routes', function (): void {
+    $filter = Scramble::getGeneratorConfig('tenant')->routes();
+    $publicRecruitment = collect(RouteFacade::getRoutes())->filter(
+        fn (Route $route): bool => $filter($route) && Str::contains($route->uri, 'public/')
+    );
+
+    expect($publicRecruitment->isNotEmpty())->toBeTrue()
+        ->and($publicRecruitment->contains(fn (Route $route): bool => Str::contains($route->uri, 'public/jobs')))->toBeTrue()
+        ->and($publicRecruitment->contains(fn (Route $route): bool => Str::contains($route->uri, 'public/offers')))->toBeTrue();
 });

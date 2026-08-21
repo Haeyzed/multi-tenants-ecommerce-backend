@@ -46,8 +46,10 @@ Route::patch('reviews/{review}/status', [ProductReviewController::class, 'modera
 Route::delete('reviews/{review}', [ProductReviewController::class, 'destroy'])->middleware('permission:reviews.delete')->whereNumber('review')->name('tenant.reviews.destroy');
 
 Route::get('inventory', [InventoryController::class, 'index'])->middleware('permission:inventory.view')->name('tenant.inventory.index');
+Route::post('inventory', [InventoryController::class, 'store'])->middleware('permission:inventory.adjust')->name('tenant.inventory.store');
 Route::get('inventory/{inventory}', [InventoryController::class, 'show'])->middleware('permission:inventory.view')->whereNumber('inventory')->name('tenant.inventory.show');
 Route::post('inventory/{inventory}/adjust', [InventoryController::class, 'adjust'])->middleware('permission:inventory.adjust')->whereNumber('inventory')->name('tenant.inventory.adjust');
 Route::post('inventory/{inventory}/reserve', [InventoryController::class, 'reserve'])->middleware('permission:inventory.adjust')->whereNumber('inventory')->name('tenant.inventory.reserve');
 Route::post('inventory/{inventory}/release', [InventoryController::class, 'release'])->middleware('permission:inventory.adjust')->whereNumber('inventory')->name('tenant.inventory.release');
 Route::post('inventory/{inventory}/transfer', [InventoryController::class, 'transfer'])->middleware('permission:inventory.transfer')->whereNumber('inventory')->name('tenant.inventory.transfer');
+Route::delete('inventory/{inventory}', [InventoryController::class, 'destroy'])->middleware('permission:inventory.adjust')->whereNumber('inventory')->name('tenant.inventory.destroy');

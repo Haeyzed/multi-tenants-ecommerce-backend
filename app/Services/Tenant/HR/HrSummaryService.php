@@ -10,17 +10,18 @@ use App\Enums\Tenant\HR\JobOpeningStatus;
 use App\Enums\Tenant\HR\LeaveStatus;
 use App\Enums\Tenant\HR\PayrollPeriodStatus;
 use App\Enums\Tenant\HR\PayrollRunStatus;
-use App\Models\Tenant\Attendance;
-use App\Models\Tenant\Candidate;
-use App\Models\Tenant\Department;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\Interview;
-use App\Models\Tenant\JobApplication;
-use App\Models\Tenant\JobOffer;
-use App\Models\Tenant\JobOpening;
-use App\Models\Tenant\LeaveRequest;
-use App\Models\Tenant\PayrollPeriod;
-use App\Models\Tenant\PayrollRun;
+use App\Models\HR\Attendance;
+use App\Models\HR\Candidate;
+use App\Models\HR\Department;
+use App\Models\HR\Employee;
+use App\Models\HR\Interview;
+use App\Models\HR\JobApplication;
+use App\Models\HR\JobOffer;
+use App\Models\HR\JobOpening;
+use App\Models\HR\LeaveRequest;
+use App\Models\HR\PayrollPeriod;
+use App\Models\HR\PayrollRun;
+use App\Services\Tenant\HR\Reports\HrReportQuery;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -28,14 +29,14 @@ use Illuminate\Support\Facades\Schema;
  */
 class HrSummaryService
 {
-    public function __construct(private readonly PayrollRunService $payrollRuns) {}
+    public function __construct(private readonly HrReportQuery $queries) {}
 
     /**
      * @return array<string, mixed>
      */
     public function summary(): array
     {
-        $currentPeriod = $this->payrollRuns->periodWindow();
+        $currentPeriod = $this->queries->periodWindow();
 
         return [
             'employees' => [
@@ -49,10 +50,11 @@ class HrSummaryService
                 'active' => Department::query()->where('is_active', true)->count(),
             ],
             'attendance_today' => Attendance::query()->whereDate('work_date', now()->toDateString())->count(),
-            'overtime_minutes_this_period' => Attendance::query()
-                ->whereDate('work_date', '>=', $currentPeriod['period_start'])
-                ->whereDate('work_date', '<=', $currentPeriod['period_end'])
-                ->sum('overtime_minutes'),
+            'overtime_minutes_this_period' => $this->queries->attendancesInWindow(
+                [],
+                $currentPeriod['period_start'],
+                $currentPeriod['period_end'],
+            )->sum('overtime_minutes'),
             'leave' => [
                 'pending' => LeaveRequest::query()->where('status', LeaveStatus::Pending)->count(),
                 'approved' => LeaveRequest::query()->where('status', LeaveStatus::Approved)->count(),

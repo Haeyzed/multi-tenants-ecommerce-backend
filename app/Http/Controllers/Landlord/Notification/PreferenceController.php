@@ -17,8 +17,18 @@ use Illuminate\Support\Facades\Auth;
  */
 class PreferenceController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  NotificationPreferenceService  $preferences
+     */
     public function __construct(private readonly NotificationPreferenceService $preferences) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Notification preferences for the authenticated user.',
@@ -32,6 +42,12 @@ class PreferenceController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdatePreferenceRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Updated notification preferences.',
@@ -47,6 +63,11 @@ class PreferenceController extends Controller
         );
     }
 
+    /**
+     * Resolve the authenticated landlord user.
+     *
+     * @return User
+     */
     protected function actor(): User
     {
         /** @var User $user */

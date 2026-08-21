@@ -16,10 +16,19 @@ use Illuminate\Validation\ValidationException;
  */
 class FeatureGate
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  FeatureAccessService  $features
+     */
     public function __construct(private readonly FeatureAccessService $features) {}
 
     /**
      * Whether the tenant's plan includes the feature.
+     *
+     * @param  string  $featureSlug
+     * @param  ?Tenant  $tenant
+     * @return bool
      */
     public function allows(string $featureSlug, ?Tenant $tenant = null): bool
     {
@@ -35,6 +44,10 @@ class FeatureGate
     /**
      * Assert the feature is enabled or throw a validation exception.
      *
+     * @param  string  $featureSlug
+     * @param  ?Tenant  $tenant
+     * @return void
+     *
      * @throws ValidationException
      */
     public function assert(string $featureSlug, ?Tenant $tenant = null): void
@@ -48,6 +61,10 @@ class FeatureGate
 
     /**
      * Resolve the plan limit for a feature (null = unlimited or unavailable).
+     *
+     * @param  string  $featureSlug
+     * @param  ?Tenant  $tenant
+     * @return ?int
      */
     public function limit(string $featureSlug, ?Tenant $tenant = null): ?int
     {
@@ -63,6 +80,7 @@ class FeatureGate
     /**
      * Features available on the tenant's current plan.
      *
+     * @param  ?Tenant  $tenant
      * @return Collection<int, Feature>
      */
     public function features(?Tenant $tenant = null): Collection
@@ -76,6 +94,11 @@ class FeatureGate
         return $this->features->featuresForTenant($tenant);
     }
 
+    /**
+     * Current tenant.
+     *
+     * @return ?Tenant
+     */
     protected function currentTenant(): ?Tenant
     {
         $tenant = tenant();

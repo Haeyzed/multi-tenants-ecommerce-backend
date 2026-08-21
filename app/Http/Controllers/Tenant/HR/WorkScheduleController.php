@@ -9,7 +9,7 @@ use App\Http\Requests\Tenant\HR\IndexWorkScheduleRequest;
 use App\Http\Requests\Tenant\HR\StoreWorkScheduleRequest;
 use App\Http\Requests\Tenant\HR\UpdateWorkScheduleRequest;
 use App\Http\Resources\Tenant\HR\WorkScheduleResource;
-use App\Models\Tenant\WorkSchedule;
+use App\Models\HR\WorkSchedule;
 use App\Services\Tenant\HR\WorkScheduleService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

@@ -19,11 +19,16 @@ class CountryController extends Controller
 {
     /**
      * Create a new controller instance.
+     *
+     * @param  CountryService  $countryService
      */
     public function __construct(private readonly CountryService $countryService) {}
 
     /**
      * List countries with pagination, search, and filters.
+     *
+     * @param  IndexCountryRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -43,6 +48,9 @@ class CountryController extends Controller
 
     /**
      * Return country options as label/value pairs.
+     *
+     * @param  IndexCountryRequest  $request
+     * @return JsonResponse
      */
     #[Response(
         status: 200,
@@ -59,6 +67,9 @@ class CountryController extends Controller
 
     /**
      * Show a single country by identifier.
+     *
+     * @param  int  $country
+     * @return JsonResponse
      */
     #[Response(
         status: 200,

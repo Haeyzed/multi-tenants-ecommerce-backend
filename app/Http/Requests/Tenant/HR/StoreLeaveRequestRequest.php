@@ -16,7 +16,8 @@ class StoreLeaveRequestRequest extends BaseRequest
     {
         return [
             'employee_id' => ['required', 'integer', 'exists:employees,id'],
-            'type' => ['required', 'string', 'max:50', Rule::exists('leave_types', 'code')],
+            'leave_type_id' => ['required_without:type', 'integer', Rule::exists('leave_types', 'id')],
+            'type' => ['required_without:leave_type_id', 'string', 'max:50', Rule::exists('leave_types', 'code')],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'reason' => ['sometimes', 'nullable', 'string'],

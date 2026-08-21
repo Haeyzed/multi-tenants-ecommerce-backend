@@ -19,8 +19,18 @@ use Illuminate\Support\Facades\Auth;
  */
 class DeviceController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  DeviceTokenService  $devices
+     */
     public function __construct(private readonly DeviceTokenService $devices) {}
 
+    /**
+     * List resources with pagination and filters.
+     *
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Registered device tokens.',
@@ -34,6 +44,12 @@ class DeviceController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreDeviceTokenRequest  $request
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'Registered device token.',
@@ -49,6 +65,12 @@ class DeviceController extends Controller
         );
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  DeviceToken  $device
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Device token removed.',
@@ -61,6 +83,11 @@ class DeviceController extends Controller
         return $this->deleted('Device token removed successfully.');
     }
 
+    /**
+     * Resolve the authenticated landlord user.
+     *
+     * @return User
+     */
     protected function actor(): User
     {
         /** @var User $user */

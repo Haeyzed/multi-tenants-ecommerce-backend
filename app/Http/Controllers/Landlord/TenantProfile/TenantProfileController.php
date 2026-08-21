@@ -21,8 +21,19 @@ use Illuminate\Http\JsonResponse;
  */
 class TenantProfileController extends Controller
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  TenantProfileService  $tenantProfileService
+     */
     public function __construct(private readonly TenantProfileService $tenantProfileService) {}
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Tenant  $tenant
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Tenant profile.',
@@ -36,6 +47,13 @@ class TenantProfileController extends Controller
         );
     }
 
+    /**
+     * Create a resource.
+     *
+     * @param  StoreTenantProfileRequest  $request
+     * @param  Tenant  $tenant
+     * @return JsonResponse
+     */
     #[Response(
         status: 201,
         description: 'Created tenant profile.',
@@ -58,6 +76,13 @@ class TenantProfileController extends Controller
         );
     }
 
+    /**
+     * Update a resource.
+     *
+     * @param  UpdateTenantProfileRequest  $request
+     * @param  Tenant  $tenant
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Updated tenant profile.',
@@ -80,6 +105,13 @@ class TenantProfileController extends Controller
         );
     }
 
+    /**
+     * Store logo.
+     *
+     * @param  StoreLogoRequest  $request
+     * @param  Tenant  $tenant
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Uploaded tenant profile logo.',
@@ -95,6 +127,12 @@ class TenantProfileController extends Controller
         );
     }
 
+    /**
+     * Destroy logo.
+     *
+     * @param  Tenant  $tenant
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Deleted tenant profile logo.',
@@ -107,6 +145,13 @@ class TenantProfileController extends Controller
         return $this->deleted('Tenant logo deleted successfully.');
     }
 
+    /**
+     * Store cover.
+     *
+     * @param  StoreCoverRequest  $request
+     * @param  Tenant  $tenant
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Uploaded tenant profile cover.',
@@ -122,6 +167,12 @@ class TenantProfileController extends Controller
         );
     }
 
+    /**
+     * Destroy cover.
+     *
+     * @param  Tenant  $tenant
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Deleted tenant profile cover.',
@@ -134,6 +185,12 @@ class TenantProfileController extends Controller
         return $this->deleted('Tenant cover deleted successfully.');
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Tenant  $tenant
+     * @return JsonResponse
+     */
     #[Response(
         status: 200,
         description: 'Deleted tenant profile confirmation.',

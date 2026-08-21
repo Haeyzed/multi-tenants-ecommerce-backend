@@ -5,9 +5,9 @@ declare(strict_types=1);
 use App\Enums\Tenant\HR\LeaveStatus;
 use App\Enums\Tenant\HR\LeaveType as LeaveTypeCode;
 use App\Http\Middleware\EnsureHrEnabled;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\LeaveBalance;
-use App\Models\Tenant\LeaveType;
+use App\Models\HR\Employee;
+use App\Models\HR\LeaveBalance;
+use App\Models\HR\LeaveType;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\HrReportService;
 use App\Services\Tenant\HR\HrSettingsService;
@@ -38,6 +38,7 @@ beforeEach(function (): void {
         '2026_08_17_212000_create_leave_requests_table.php',
         '2026_08_18_003141_create_leave_types_table.php',
         '2026_08_18_003144_create_leave_balances_table.php',
+        '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php',
         '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php',
         '2026_08_18_003148_add_manager_id_to_departments_table.php',
         '2026_08_18_001429_create_payroll_runs_table.php',
@@ -68,6 +69,7 @@ beforeEach(function (): void {
             '2026_08_17_212000_create_leave_requests_table.php' => 'leave_requests',
             '2026_08_18_003141_create_leave_types_table.php' => 'leave_types',
             '2026_08_18_003144_create_leave_balances_table.php' => 'leave_balances',
+            '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php' => null,
             '2026_08_18_003146_add_hr_profile_fields_to_employees_table.php' => null,
             '2026_08_18_003148_add_manager_id_to_departments_table.php' => null,
             '2026_08_18_001429_create_payroll_runs_table.php' => 'payroll_runs',
@@ -101,6 +103,10 @@ beforeEach(function (): void {
         }
 
         if ($file === '2026_08_18_003148_add_manager_id_to_departments_table.php' && Schema::hasColumn('departments', 'manager_id')) {
+            continue;
+        }
+
+        if ($file === '2026_08_19_182044_add_leave_type_id_to_leave_requests_table.php' && Schema::hasColumn('leave_requests', 'leave_type_id')) {
             continue;
         }
 

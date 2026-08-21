@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant\HR;
 
 use App\Http\Requests\BaseRequest;
-use App\Models\Tenant\Designation;
+use App\Models\HR\Designation;
 use Illuminate\Validation\Rule;
 
 class UpdateDesignationRequest extends BaseRequest

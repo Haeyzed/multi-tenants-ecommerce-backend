@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Events;
 
 use App\Enums\Tenant\HR\JobApplicationStatus;
-use App\Models\Tenant\JobApplication;
+use App\Models\HR\JobApplication;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

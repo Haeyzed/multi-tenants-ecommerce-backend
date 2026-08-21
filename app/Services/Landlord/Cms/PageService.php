@@ -17,9 +17,16 @@ use Illuminate\Http\UploadedFile;
  */
 class PageService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
     /**
+     * Retrieve a paginated list of resources.
+     *
      * @param  array{search?: string|null, status?: string|null, per_page?: int|null}  $params
      * @return LengthAwarePaginator<int, Page>
      */
@@ -32,6 +39,8 @@ class PageService
     }
 
     /**
+     * title: string, slug?: string|null, content?: string|null, status?: CmsContentStatus|string|null, published_at?: string|null, seo?: array<string, mixed>|null }  $data
+     *
      * @param  array{
      *     title: string,
      *     slug?: string|null,
@@ -40,6 +49,7 @@ class PageService
      *     published_at?: string|null,
      *     seo?: array<string, mixed>|null
      * }  $data
+     * @return Page
      */
     public function store(array $data): Page
     {
@@ -59,11 +69,23 @@ class PageService
         return $page->load('seo');
     }
 
+    /**
+     * Retrieve a single resource.
+     *
+     * @param  Page  $page
+     * @return Page
+     */
     public function show(Page $page): Page
     {
         return $page->load('seo');
     }
 
+    /**
+     * Retrieve a published resource by slug.
+     *
+     * @param  string  $slug
+     * @return Page
+     */
     public function showPublicBySlug(string $slug): Page
     {
         $page = Page::query()
@@ -80,7 +102,11 @@ class PageService
     }
 
     /**
+     * Update a resource.
+     *
+     * @param  Page  $page
      * @param  array<string, mixed>  $data
+     * @return Page
      */
     public function update(Page $page, array $data): Page
     {
@@ -94,6 +120,12 @@ class PageService
         return $page->fresh('seo') ?? $page;
     }
 
+    /**
+     * Delete a resource.
+     *
+     * @param  Page  $page
+     * @return void
+     */
     public function destroy(Page $page): void
     {
         $page->seo()?->delete();
@@ -102,6 +134,10 @@ class PageService
 
     /**
      * Replace the featured image for a landlord page.
+     *
+     * @param  Page  $page
+     * @param  UploadedFile  $image
+     * @return Page
      */
     public function storeFeaturedImage(Page $page, UploadedFile $image): Page
     {
@@ -112,6 +148,9 @@ class PageService
 
     /**
      * Remove the featured image for a landlord page.
+     *
+     * @param  Page  $page
+     * @return Page
      */
     public function destroyFeaturedImage(Page $page): Page
     {
@@ -121,7 +160,11 @@ class PageService
     }
 
     /**
+     * Sync seo.
+     *
+     * @param  Page  $page
      * @param  array<string, mixed>|null  $seo
+     * @return void
      */
     protected function syncSeo(Page $page, ?array $seo): void
     {
@@ -140,7 +183,10 @@ class PageService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

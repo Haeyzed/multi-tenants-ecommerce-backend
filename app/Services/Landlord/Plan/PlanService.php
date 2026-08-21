@@ -85,6 +85,7 @@ class PlanService
      *     sort_order?: int,
      *     features?: list<array{slug: string, is_enabled?: bool, limit?: int|null}>
      * }  $data
+     * @return Plan
      */
     public function store(array $data): Plan
     {
@@ -116,6 +117,9 @@ class PlanService
 
     /**
      * Show a plan.
+     *
+     * @param  Plan  $plan
+     * @return Plan
      */
     public function show(Plan $plan): Plan
     {
@@ -124,6 +128,9 @@ class PlanService
 
     /**
      * Show a publicly available plan.
+     *
+     * @param  Plan  $plan
+     * @return Plan
      */
     public function showPublic(Plan $plan): Plan
     {
@@ -137,6 +144,7 @@ class PlanService
     /**
      * Update a plan.
      *
+     * @param  Plan  $plan
      * @param  array{
      *     name?: string,
      *     slug?: string|null,
@@ -152,6 +160,7 @@ class PlanService
      *     sort_order?: int,
      *     features?: list<array{slug: string, is_enabled?: bool, limit?: int|null}>
      * }  $data
+     * @return Plan
      */
     public function update(Plan $plan, array $data): Plan
     {
@@ -173,6 +182,9 @@ class PlanService
 
     /**
      * Delete a plan.
+     *
+     * @param  Plan  $plan
+     * @return void
      */
     public function destroy(Plan $plan): void
     {
@@ -189,9 +201,9 @@ class PlanService
     /**
      * Sync plan features by feature slug.
      *
-     * Accepts either `feature`/`enabled` (API contract) or `slug`/`is_enabled`.
-     *
+     * @param  Plan  $plan
      * @param  list<array{feature?: string, slug?: string, enabled?: bool, is_enabled?: bool, limit?: int|null}>  $features
+     * @return Plan
      *
      * @throws ValidationException
      */
@@ -231,7 +243,10 @@ class PlanService
     }
 
     /**
+     * Resolve the page size for paginated listings.
+     *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {

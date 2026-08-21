@@ -8,11 +8,10 @@ use App\Enums\Tenant\HR\EmploymentChangeType;
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Events\EmployeeCreated;
 use App\Events\EmployeeStatusChanged;
-use App\Models\Tenant\Designation;
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\EmploymentRecord;
+use App\Models\HR\Designation;
+use App\Models\HR\Employee;
+use App\Models\HR\EmploymentRecord;
 use App\Models\Tenant\User;
-use App\Models\Tenant\WorkLocation;
 use App\Services\Media\MediaService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -28,6 +27,8 @@ class EmployeeService
     public function __construct(
         private readonly MediaService $mediaService,
         private readonly HrSettingsService $hrSettings,
+        private readonly WorkLocationService $workLocations,
+        private readonly HrActivityService $activities,
     ) {}
 
     /**
@@ -87,7 +88,7 @@ class EmployeeService
 
         $this->assertManager($data['manager_id'] ?? null);
 
-        $payload = $this->syncDesignationDepartment($this->syncWorkLocation([
+        $payload = $this->syncDesignationDepartment($this->workLocations->applySnapshot([
             'user_id' => $user->id,
             'department_id' => $data['department_id'] ?? null,
             'designation_id' => $data['designation_id'] ?? null,
@@ -118,6 +119,10 @@ class EmployeeService
         $employee = Employee::query()->create($payload)->load($this->employeeRelations());
 
         $this->recordEmployment($employee, EmploymentChangeType::Hired, $employee->hired_at?->toDateString());
+
+        $this->activities->record($employee, 'created', null, [
+            'employment_status' => $employee->employment_status->value,
+        ]);
 
         event(new EmployeeCreated($employee));
 
@@ -188,13 +193,17 @@ class EmployeeService
             }
         }
 
-        $employee->fill($this->syncDesignationDepartment($this->syncWorkLocation($data), $employee));
+        $employee->fill($this->syncDesignationDepartment($this->workLocations->applySnapshot($data), $employee));
         $employee->save();
 
         $employee = $employee->fresh($this->employeeRelations()) ?? $employee;
 
         if ($employee->employment_status !== $previousStatus) {
             $this->recordEmployment($employee, EmploymentChangeType::StatusChanged);
+            $this->activities->record($employee, 'status_changed', null, [
+                'from' => $previousStatus->value,
+                'to' => $employee->employment_status->value,
+            ]);
             event(new EmployeeStatusChanged($employee, $previousStatus, $employee->employment_status));
         } elseif ($this->assignmentSnapshot($employee) !== $previousAssignment) {
             $this->recordEmployment($employee, EmploymentChangeType::AssignmentChanged);
@@ -329,27 +338,6 @@ class EmployeeService
     }
 
     /**
-     * Copy the location name onto the snapshot string when a location is assigned.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    protected function syncWorkLocation(array $data): array
-    {
-        if (! Schema::hasTable('work_locations') || ! array_key_exists('work_location_id', $data) || $data['work_location_id'] === null || $data['work_location_id'] === '') {
-            return $data;
-        }
-
-        $location = WorkLocation::query()->find((int) $data['work_location_id']);
-
-        if ($location !== null && (! array_key_exists('work_location', $data) || $data['work_location'] === null || $data['work_location'] === '')) {
-            $data['work_location'] = $location->name;
-        }
-
-        return $data;
-    }
-
-    /**
      * @throws ValidationException
      */
     protected function assertStatusTransition(Employee $employee, EmploymentStatus|string $status): void
@@ -382,9 +370,9 @@ class EmployeeService
             ]);
         }
 
-        if (! Employee::query()->whereKey($managerId)->exists()) {
+        if (! Employee::query()->assignableStaff()->whereKey($managerId)->exists()) {
             throw ValidationException::withMessages([
-                'manager_id' => ['The selected manager is invalid.'],
+                'manager_id' => ['The selected manager must have an active employee profile.'],
             ]);
         }
     }

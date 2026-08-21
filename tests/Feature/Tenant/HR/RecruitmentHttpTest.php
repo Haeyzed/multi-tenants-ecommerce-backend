@@ -11,6 +11,7 @@ use App\Events\JobOfferSent;
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\User;
 use App\Services\Landlord\Tenant\TenantService;
+use App\Services\Tenant\HR\HrSettingsService;
 use App\Services\Tenant\HR\JobApplicationService;
 use App\Services\Tenant\HR\JobOfferService;
 use App\Services\Tenant\HR\JobOpeningService;
@@ -144,4 +145,19 @@ test('public career endpoints hide drafts and let candidates accept offers by to
 
     $this->postJson('http://'.$domain.'/api/public/offers/'.$token.'/accept')
         ->assertUnprocessable();
+});
+
+test('public career endpoints return forbidden when recruitment is disabled', function (): void {
+    $provisioned = provisionAtsTenant();
+    $domain = $provisioned['domain'];
+
+    $provisioned['tenant']->run(function (): void {
+        app(HrSettingsService::class)->update([
+            'hr.recruitment.enabled' => false,
+        ]);
+    });
+
+    $this->getJson('http://'.$domain.'/api/public/jobs')
+        ->assertForbidden()
+        ->assertJsonPath('success', false);
 });

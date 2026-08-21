@@ -18,6 +18,11 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class UserService
 {
+    /**
+     * Create a new class instance.
+     *
+     * @param  MediaService  $mediaService
+     */
     public function __construct(private readonly MediaService $mediaService) {}
 
     /**
@@ -39,6 +44,9 @@ class UserService
      * Create a new landlord user.
      *
      * @param  array{first_name: string, last_name: string, email: string, phone?: string|null, password: string, roles?: list<string>, permissions?: list<string>}  $data
+     * @param  ?UploadedFile  $avatar
+     * @param  ?User  $actor
+     * @return User
      */
     public function store(array $data, ?UploadedFile $avatar = null, ?User $actor = null): User
     {
@@ -73,6 +81,9 @@ class UserService
 
     /**
      * Retrieve a single landlord user.
+     *
+     * @param  User  $user
+     * @return User
      */
     public function show(User $user): User
     {
@@ -82,7 +93,11 @@ class UserService
     /**
      * Update a landlord user.
      *
+     * @param  User  $user
      * @param  array{first_name?: string, last_name?: string, email?: string, phone?: string|null, password?: string, roles?: list<string>, permissions?: list<string>}  $data
+     * @param  ?UploadedFile  $avatar
+     * @param  ?User  $actor
+     * @return User
      *
      * @throws AuthorizationException
      */
@@ -119,6 +134,9 @@ class UserService
 
     /**
      * Delete a landlord user.
+     *
+     * @param  User  $user
+     * @return void
      */
     public function destroy(User $user): void
     {
@@ -132,7 +150,10 @@ class UserService
     /**
      * Sync roles for a landlord user.
      *
+     * @param  User  $user
      * @param  list<string>  $roles
+     * @param  User  $actor
+     * @return User
      *
      * @throws AuthorizationException
      */
@@ -150,7 +171,9 @@ class UserService
     /**
      * Sync direct permissions for a landlord user.
      *
+     * @param  User  $user
      * @param  list<string>  $permissions
+     * @return User
      */
     public function syncPermissions(User $user, array $permissions): User
     {
@@ -165,6 +188,7 @@ class UserService
      * Resolve the page size for paginated listings.
      *
      * @param  array{per_page?: int|null}  $params
+     * @return int
      */
     protected function perPage(array $params): int
     {
@@ -175,6 +199,8 @@ class UserService
      * Ensure only super-admins can assign the super-admin role.
      *
      * @param  list<string>  $roles
+     * @param  ?User  $actor
+     * @return void
      *
      * @throws AuthorizationException
      */

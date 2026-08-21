@@ -9,6 +9,7 @@ use App\Http\Controllers\Tenant\Catalog\ProductOptionController;
 use App\Http\Controllers\Tenant\Catalog\ProductTagController;
 use App\Http\Controllers\Tenant\Catalog\SeoController;
 use App\Http\Controllers\Tenant\Category\CategoryController;
+use App\Http\Controllers\Tenant\Inventory\InventoryController;
 use App\Http\Controllers\Tenant\Unit\UnitController;
 use App\Http\Controllers\Tenant\Warehouse\WarehouseController;
 use Illuminate\Support\Facades\Route;
@@ -80,6 +81,7 @@ Route::get('warehouses/options', [WarehouseController::class, 'options'])->middl
 Route::get('warehouses', [WarehouseController::class, 'index'])->middleware('permission:warehouses.view')->name('tenant.warehouses.index');
 Route::post('warehouses', [WarehouseController::class, 'store'])->middleware('permission:warehouses.create')->name('tenant.warehouses.store');
 Route::get('warehouses/{warehouse}', [WarehouseController::class, 'show'])->middleware('permission:warehouses.show')->whereNumber('warehouse')->name('tenant.warehouses.show');
+Route::get('warehouses/{warehouse}/inventory', [InventoryController::class, 'indexForWarehouse'])->middleware('permission:inventory.view')->whereNumber('warehouse')->name('tenant.warehouses.inventory.index');
 Route::match(['put', 'patch'], 'warehouses/{warehouse}', [WarehouseController::class, 'update'])->middleware('permission:warehouses.update')->whereNumber('warehouse')->name('tenant.warehouses.update');
 Route::delete('warehouses/{warehouse}', [WarehouseController::class, 'destroy'])->middleware('permission:warehouses.delete')->whereNumber('warehouse')->name('tenant.warehouses.destroy');
 Route::get('warehouses/{warehouse}/locations', [WarehouseController::class, 'indexLocations'])->middleware('permission:warehouses.view')->whereNumber('warehouse')->name('tenant.warehouses.locations.index');

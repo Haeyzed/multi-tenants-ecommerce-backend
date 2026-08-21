@@ -19,6 +19,8 @@ class IndexInventoryRequest extends BaseRequest
         return [
             'warehouse_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'warehouse_location_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'product_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'product_variant_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'sort' => ['sometimes', 'nullable', 'string', 'max:50'],
             'per_page' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:100'],
         ];

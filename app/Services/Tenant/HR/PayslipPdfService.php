@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\Tenant\Employee;
-use App\Models\Tenant\PayrollItem;
-use App\Models\Tenant\PayrollItemLine;
-use App\Models\Tenant\PayrollRun;
+use App\Models\HR\Employee;
+use App\Models\HR\PayrollItem;
+use App\Models\HR\PayrollItemLine;
+use App\Models\HR\PayrollRun;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
