@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Tenant\Cms;
+namespace App\Http\Controllers\Tenant\Content;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Tenant\Cms\BlogCategoryResource;
-use App\Http\Resources\Tenant\Cms\BlogPostResource;
-use App\Http\Resources\Tenant\Cms\PageResource;
-use App\Services\Tenant\Cms\BlogCategoryService;
-use App\Services\Tenant\Cms\BlogPostService;
-use App\Services\Tenant\Cms\PageService;
+use App\Http\Resources\Tenant\Content\BlogCategoryResource;
+use App\Http\Resources\Tenant\Content\BlogPostResource;
+use App\Http\Resources\Tenant\Content\PageResource;
+use App\Services\Tenant\Content\BlogCategoryService;
+use App\Services\Tenant\Content\BlogPostService;
+use App\Services\Tenant\Content\PageService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Public tenant CMS storefront endpoints.
+ * Public tenant CONTENT storefront endpoints.
  */
-class PublicCmsController extends Controller
+class PublicContentController extends Controller
 {
     /**
      * Create a new class instance.

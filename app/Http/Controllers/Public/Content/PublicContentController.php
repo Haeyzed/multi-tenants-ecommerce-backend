@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Public\Cms;
+namespace App\Http\Controllers\Public\Content;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Landlord\Cms\BlogPostResource;
-use App\Http\Resources\Landlord\Cms\PageResource;
-use App\Services\Landlord\Cms\BlogPostService;
-use App\Services\Landlord\Cms\PageService;
+use App\Http\Resources\Landlord\Content\BlogPostResource;
+use App\Http\Resources\Landlord\Content\PageResource;
+use App\Services\Landlord\Content\BlogPostService;
+use App\Services\Landlord\Content\PageService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Public landlord CMS endpoints.
+ * Public landlord CONTENT endpoints.
  */
-class PublicCmsController extends Controller
+class PublicContentController extends Controller
 {
     public function __construct(
         private readonly PageService $pageService,

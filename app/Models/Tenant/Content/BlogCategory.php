@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Tenant\Content;
 
-use Database\Factories\Tenant\Cms\BlogCategoryFactory;
+use Database\Factories\Tenant\Content\BlogCategoryFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

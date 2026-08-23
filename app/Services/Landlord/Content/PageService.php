@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Landlord\Cms;
+namespace App\Services\Landlord\Content;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Enums\Media\MediaCollection;
-use App\Models\Landlord\Cms\Page;
+use App\Models\Landlord\Content\Page;
 use App\Services\Media\MediaService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 
 /**
- * Landlord CMS page CRUD and public show.
+ * Landlord CONTENT page CRUD and public show.
  */
 class PageService
 {
@@ -39,13 +39,13 @@ class PageService
     }
 
     /**
-     * title: string, slug?: string|null, content?: string|null, status?: CmsContentStatus|string|null, published_at?: string|null, seo?: array<string, mixed>|null }  $data
+     * title: string, slug?: string|null, content?: string|null, status?: ContentStatus|string|null, published_at?: string|null, seo?: array<string, mixed>|null }  $data
      *
      * @param  array{
      *     title: string,
      *     slug?: string|null,
      *     content?: string|null,
-     *     status?: CmsContentStatus|string|null,
+     *     status?: ContentStatus|string|null,
      *     published_at?: string|null,
      *     seo?: array<string, mixed>|null
      * }  $data
@@ -60,7 +60,7 @@ class PageService
             'title' => $data['title'],
             'slug' => $data['slug'] ?? null,
             'content' => $data['content'] ?? null,
-            'status' => $data['status'] ?? CmsContentStatus::Draft,
+            'status' => $data['status'] ?? ContentStatus::Draft,
             'published_at' => $data['published_at'] ?? null,
         ]);
 

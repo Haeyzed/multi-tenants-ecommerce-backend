@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Enums\Cms\CmsContentStatus;
-use App\Models\Landlord\Cms\BlogCategory;
-use App\Models\Landlord\Cms\BlogPost;
-use App\Models\Landlord\Cms\Page;
-use App\Services\Landlord\Cms\BlogCategoryService;
-use App\Services\Landlord\Cms\BlogPostService;
-use App\Services\Landlord\Cms\PageService;
+use App\Enums\Content\ContentStatus;
+use App\Models\Landlord\Content\BlogCategory;
+use App\Models\Landlord\Content\BlogPost;
+use App\Models\Landlord\Content\Page;
+use App\Services\Landlord\Content\BlogCategoryService;
+use App\Services\Landlord\Content\BlogPostService;
+use App\Services\Landlord\Content\PageService;
 use Database\Seeders\Landlord\PermissionSeeder;
 use Database\Seeders\Landlord\RoleSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -31,13 +31,13 @@ test('landlord draft content is not publicly visible', function (): void {
     $page = $pageService->store([
         'title' => 'Draft About',
         'content' => 'Secret',
-        'status' => CmsContentStatus::Draft->value,
+        'status' => ContentStatus::Draft->value,
     ]);
 
     $post = $postService->store([
         'title' => 'Draft Post',
         'content' => 'Hidden',
-        'status' => CmsContentStatus::Draft->value,
+        'status' => ContentStatus::Draft->value,
     ]);
 
     expect(fn () => $pageService->showPublicBySlug($page->slug))
@@ -57,7 +57,7 @@ test('landlord published content is publicly visible', function (): void {
     $page = $pageService->store([
         'title' => 'About Us',
         'content' => 'Public page',
-        'status' => CmsContentStatus::Published->value,
+        'status' => ContentStatus::Published->value,
         'published_at' => now()->subMinute()->toDateTimeString(),
         'seo' => ['meta_title' => 'About'],
     ]);
@@ -66,7 +66,7 @@ test('landlord published content is publicly visible', function (): void {
         'title' => 'Launch Day',
         'excerpt' => 'We launched',
         'content' => 'Public post',
-        'status' => CmsContentStatus::Published->value,
+        'status' => ContentStatus::Published->value,
         'published_at' => now()->subMinute()->toDateTimeString(),
         'blog_category_id' => $category->id,
     ]);

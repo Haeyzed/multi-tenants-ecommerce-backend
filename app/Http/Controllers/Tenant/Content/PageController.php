@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Tenant\Cms;
+namespace App\Http\Controllers\Tenant\Content;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Tenant\Cms\StoreFeaturedImageRequest;
-use App\Http\Requests\Tenant\Cms\StorePageRequest;
-use App\Http\Requests\Tenant\Cms\UpdatePageRequest;
-use App\Http\Resources\Tenant\Cms\PageResource;
+use App\Http\Requests\Tenant\Content\StoreFeaturedImageRequest;
+use App\Http\Requests\Tenant\Content\StorePageRequest;
+use App\Http\Requests\Tenant\Content\UpdatePageRequest;
+use App\Http\Resources\Tenant\Content\PageResource;
 use App\Models\Tenant\Content\Page;
-use App\Services\Tenant\Cms\PageService;
+use App\Services\Tenant\Content\PageService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;

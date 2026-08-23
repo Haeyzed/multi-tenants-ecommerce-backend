@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\Landlord\Cms;
+namespace App\Http\Requests\Landlord\Content;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Http\Requests\BaseRequest;
-use App\Models\Landlord\Cms\BlogPost;
+use App\Models\Landlord\Content\BlogPost;
 use Illuminate\Validation\Rule;
 
 class UpdateBlogPostRequest extends BaseRequest
@@ -24,7 +24,7 @@ class UpdateBlogPostRequest extends BaseRequest
             'slug' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('landlord_blog_posts', 'slug')->ignore($post->id)],
             'excerpt' => ['sometimes', 'nullable', 'string'],
             'content' => ['sometimes', 'nullable', 'string'],
-            'status' => ['sometimes', 'string', Rule::enum(CmsContentStatus::class)],
+            'status' => ['sometimes', 'string', Rule::enum(ContentStatus::class)],
             'published_at' => ['sometimes', 'nullable', 'date'],
             'author_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'blog_category_id' => ['sometimes', 'nullable', 'integer', 'exists:landlord_blog_categories,id'],

@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 /**
  * Documents DB-per-tenant isolation invariants.
  *
- * Runtime dual-tenant Seller/HR/CMS isolation smoke:
+ * Runtime dual-tenant Seller/HR/CONTENT isolation smoke:
  * tests/Feature/Tenancy/DualTenantIsolationSmokeTest.php
  *
  * Cross-tenant SaaS IDOR coverage for landlord subscription endpoints lives in

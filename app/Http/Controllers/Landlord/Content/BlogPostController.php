@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Landlord\Cms;
+namespace App\Http\Controllers\Landlord\Content;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Landlord\Cms\StoreBlogPostRequest;
-use App\Http\Requests\Landlord\Cms\StoreFeaturedImageRequest;
-use App\Http\Requests\Landlord\Cms\UpdateBlogPostRequest;
-use App\Http\Resources\Landlord\Cms\BlogPostResource;
-use App\Models\Landlord\Cms\BlogPost;
-use App\Services\Landlord\Cms\BlogPostService;
+use App\Http\Requests\Landlord\Content\StoreBlogPostRequest;
+use App\Http\Requests\Landlord\Content\StoreFeaturedImageRequest;
+use App\Http\Requests\Landlord\Content\UpdateBlogPostRequest;
+use App\Http\Resources\Landlord\Content\BlogPostResource;
+use App\Models\Landlord\Content\BlogPost;
+use App\Services\Landlord\Content\BlogPostService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;

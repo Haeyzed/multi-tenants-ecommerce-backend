@@ -8,7 +8,7 @@ use App\Http\Requests\BaseRequest;
 use App\Support\Media\MediaValidation;
 
 /**
- * Validates landlord CMS featured image upload.
+ * Validates landlord CONTENT featured image upload.
  */
 class StoreFeaturedImageRequest extends BaseRequest
 {

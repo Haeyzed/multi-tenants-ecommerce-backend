@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Tenant\Cms;
+namespace App\Services\Tenant\Content;
 
 use App\Models\Tenant\Content\BlogCategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

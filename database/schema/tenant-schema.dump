@@ -3506,7 +3506,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (122,'2026_08_16_16
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (123,'2026_08_16_161032_create_employees_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (124,'2026_08_16_161047_create_blog_categories_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (125,'2026_08_16_161055_create_blog_posts_table',1);
-INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (126,'2026_08_16_161108_create_cms_pages_table',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (126,'2026_08_16_161108_create_content_pages_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (127,'2026_08_17_211947_create_designations_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (128,'2026_08_17_211951_add_designation_id_to_employees_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (129,'2026_08_17_211954_create_attendances_table',1);

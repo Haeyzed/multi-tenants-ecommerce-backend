@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Models\Tenant\Content\Page;
 use App\Models\Tenant\User;
 
 /**
- * Authorization for tenant CMS pages.
+ * Authorization for tenant CONTENT pages.
  */
 class PagePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('cms.view') || $user->can('cms.manage');
+        return $user->can('content.view') || $user->can('cms.manage');
     }
 
     public function view(User $user, Page $page): bool
@@ -36,7 +36,7 @@ class PagePolicy
 
         $status = request()->input('status');
 
-        if ($status === CmsContentStatus::Published->value || $status === CmsContentStatus::Published) {
+        if ($status === ContentStatus::Published->value || $status === ContentStatus::Published) {
             return $user->can('cms.publish');
         }
 

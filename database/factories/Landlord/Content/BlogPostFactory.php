@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Database\Factories\Landlord\Cms;
+namespace Database\Factories\Landlord\Content;
 
-use App\Enums\Cms\CmsContentStatus;
-use App\Models\Landlord\Cms\BlogPost;
+use App\Enums\Content\ContentStatus;
+use App\Models\Landlord\Content\BlogPost;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,7 +24,7 @@ class BlogPostFactory extends Factory
             'title' => fake()->unique()->sentence(3),
             'excerpt' => fake()->optional()->sentence(),
             'content' => fake()->optional()->paragraphs(2, true),
-            'status' => CmsContentStatus::Draft,
+            'status' => ContentStatus::Draft,
             'published_at' => null,
             'author_id' => null,
             'blog_category_id' => null,
@@ -34,7 +34,7 @@ class BlogPostFactory extends Factory
     public function published(): static
     {
         return $this->state(fn (): array => [
-            'status' => CmsContentStatus::Published,
+            'status' => ContentStatus::Published,
             'published_at' => now()->subHour(),
         ]);
     }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Database\Factories\Tenant\Cms;
+namespace Database\Factories\Tenant\Content;
 
 use App\Models\Tenant\Content\BlogCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\Landlord\Cms;
+namespace App\Http\Requests\Landlord\Content;
 
 use App\Http\Requests\BaseRequest;
-use App\Models\Landlord\Cms\BlogCategory;
+use App\Models\Landlord\Content\BlogCategory;
 use Illuminate\Validation\Rule;
 
 class UpdateBlogCategoryRequest extends BaseRequest

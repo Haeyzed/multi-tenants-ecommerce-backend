@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Models\Landlord\Cms;
+namespace App\Models\Landlord\Content;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Enums\Media\MediaCollection;
 use App\Enums\Media\MediaConversion;
 use App\Models\Concerns\HasLandlordSeo;
-use Database\Factories\Landlord\Cms\PageFactory;
+use Database\Factories\Landlord\Content\PageFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,13 +22,13 @@ use Spatie\Sluggable\SlugOptions;
 use Stancl\Tenancy\Database\Concerns\CentralConnection;
 
 /**
- * Landlord CMS page.
+ * Landlord CONTENT page.
  *
  * @property int $id
  * @property string $title
  * @property string $slug
  * @property string|null $content
- * @property CmsContentStatus $status
+ * @property ContentStatus $status
  * @property Carbon|null $published_at
  */
 class Page extends Model implements HasMedia
@@ -65,7 +65,7 @@ class Page extends Model implements HasMedia
     protected function casts(): array
     {
         return [
-            'status' => CmsContentStatus::class,
+            'status' => ContentStatus::class,
             'published_at' => 'datetime',
         ];
     }
@@ -102,7 +102,7 @@ class Page extends Model implements HasMedia
     public function scopePublished(Builder $query): Builder
     {
         return $query
-            ->where('status', CmsContentStatus::Published)
+            ->where('status', ContentStatus::Published)
             ->where(function (Builder $query): void {
                 $query->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());
@@ -132,5 +132,4 @@ class Page extends Model implements HasMedia
     protected static function newFactory(): PageFactory
     {
         return PageFactory::new();
-    }
-}
+    

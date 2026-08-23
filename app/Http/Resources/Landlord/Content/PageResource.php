@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Resources\Landlord\Cms;
+namespace App\Http\Resources\Landlord\Content;
 
 use App\Enums\Media\MediaCollection;
-use App\Models\Landlord\Cms\Page;
+use App\Models\Landlord\Content\Page;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 

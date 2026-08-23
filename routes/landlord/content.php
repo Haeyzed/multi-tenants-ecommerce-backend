@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Landlord\Cms\BlogCategoryController as LandlordBlogCategoryController;
-use App\Http\Controllers\Landlord\Cms\BlogPostController as LandlordBlogPostController;
-use App\Http\Controllers\Landlord\Cms\PageController as LandlordPageController;
+use App\Http\Controllers\Landlord\Content\BlogCategoryController as LandlordBlogCategoryController;
+use App\Http\Controllers\Landlord\Content\BlogPostController as LandlordBlogPostController;
+use App\Http\Controllers\Landlord\Content\PageController as LandlordPageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('blog-categories/options', [LandlordBlogCategoryController::class, 'options'])->middleware('permission:cms.view|cms.manage')->name('landlord.blog-categories.options');

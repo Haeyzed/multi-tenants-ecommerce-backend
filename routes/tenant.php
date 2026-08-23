@@ -51,7 +51,7 @@ Route::middleware([
                 require __DIR__.'/tenant/drivers.php';
                 require __DIR__.'/tenant/settings.php';
                 require __DIR__.'/tenant/hr.php';
-                require __DIR__.'/tenant/cms.php';
+                require __DIR__ . '/tenant/content.php';
                 require __DIR__.'/tenant/deliveries.php';
                 require __DIR__.'/tenant/pos.php';
                 require __DIR__.'/tenant/marketplace.php';

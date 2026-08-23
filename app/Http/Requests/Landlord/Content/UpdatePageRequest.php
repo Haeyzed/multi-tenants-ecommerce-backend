@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\Landlord\Cms;
+namespace App\Http\Requests\Landlord\Content;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Http\Requests\BaseRequest;
-use App\Models\Landlord\Cms\Page;
+use App\Models\Landlord\Content\Page;
 use Illuminate\Validation\Rule;
 
 class UpdatePageRequest extends BaseRequest
@@ -23,7 +23,7 @@ class UpdatePageRequest extends BaseRequest
             'title' => ['sometimes', 'string', 'max:255'],
             'slug' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('landlord_pages', 'slug')->ignore($page->id)],
             'content' => ['sometimes', 'nullable', 'string'],
-            'status' => ['sometimes', 'string', Rule::enum(CmsContentStatus::class)],
+            'status' => ['sometimes', 'string', Rule::enum(ContentStatus::class)],
             'published_at' => ['sometimes', 'nullable', 'date'],
             'seo' => ['sometimes', 'nullable', 'array'],
             'seo.meta_title' => ['sometimes', 'nullable', 'string', 'max:255'],

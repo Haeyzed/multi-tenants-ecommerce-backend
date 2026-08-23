@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Models\Landlord\Cms;
+namespace App\Models\Landlord\Content;
 
-use Database\Factories\Landlord\Cms\BlogCategoryFactory;
+use Database\Factories\Landlord\Content\BlogCategoryFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

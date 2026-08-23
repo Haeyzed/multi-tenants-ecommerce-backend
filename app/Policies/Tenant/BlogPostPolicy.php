@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Models\Tenant\Content\BlogPost;
 use App\Models\Tenant\User;
 
@@ -36,7 +36,7 @@ class BlogPostPolicy
 
         $status = request()->input('status');
 
-        if ($status === CmsContentStatus::Published->value || $status === CmsContentStatus::Published) {
+        if ($status === ContentStatus::Published->value || $status === ContentStatus::Published) {
             return $user->can('cms.publish');
         }
 

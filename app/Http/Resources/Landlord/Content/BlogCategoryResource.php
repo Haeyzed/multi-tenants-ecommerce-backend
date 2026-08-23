@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Resources\Landlord\Cms;
+namespace App\Http\Resources\Landlord\Content;
 
-use App\Models\Landlord\Cms\BlogCategory;
+use App\Models\Landlord\Content\BlogCategory;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Database\Factories\Tenant\Cms;
+namespace Database\Factories\Tenant\Content;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Models\Tenant\Content\Page;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,7 +23,7 @@ class PageFactory extends Factory
         return [
             'title' => fake()->unique()->sentence(2),
             'content' => fake()->optional()->paragraphs(2, true),
-            'status' => CmsContentStatus::Draft,
+            'status' => ContentStatus::Draft,
             'published_at' => null,
         ];
     }
@@ -31,7 +31,7 @@ class PageFactory extends Factory
     public function published(): static
     {
         return $this->state(fn (): array => [
-            'status' => CmsContentStatus::Published,
+            'status' => ContentStatus::Published,
             'published_at' => now()->subHour(),
         ]);
     }

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Tenant\Cms;
+namespace App\Services\Tenant\Content;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Enums\Media\MediaCollection;
 use App\Models\Tenant\Content\Page;
 use App\Services\Media\MediaService;
@@ -15,7 +15,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Tenant CMS page CRUD and public show.
+ * Tenant CONTENT page CRUD and public show.
  */
 class PageService
 {
@@ -45,13 +45,13 @@ class PageService
     }
 
     /**
-     * title: string, slug?: string|null, content?: string|null, status?: CmsContentStatus|string|null, published_at?: string|null, seo?: array<string, mixed>|null }  $data
+     * title: string, slug?: string|null, content?: string|null, status?: ContentStatus|string|null, published_at?: string|null, seo?: array<string, mixed>|null }  $data
      *
      * @param  array{
      *     title: string,
      *     slug?: string|null,
      *     content?: string|null,
-     *     status?: CmsContentStatus|string|null,
+     *     status?: ContentStatus|string|null,
      *     published_at?: string|null,
      *     seo?: array<string, mixed>|null
      * }  $data
@@ -66,7 +66,7 @@ class PageService
             'title' => $data['title'],
             'slug' => $data['slug'] ?? null,
             'content' => $data['content'] ?? null,
-            'status' => $data['status'] ?? CmsContentStatus::Draft,
+            'status' => $data['status'] ?? ContentStatus::Draft,
             'published_at' => $data['published_at'] ?? null,
         ]);
 
@@ -95,13 +95,13 @@ class PageService
     public function showPublicBySlug(string $slug): Page
     {
         $enabled = filter_var(
-            $this->commerceSettings->get('cms.pages_enabled', 'true'),
+            $this->commerceSettings->get('content.pages_enabled', 'true'),
             FILTER_VALIDATE_BOOLEAN
         );
 
         if (! $enabled) {
             throw ValidationException::withMessages([
-                'cms' => ['Pages are disabled for this store.'],
+                'content' => ['Pages are disabled for this store.'],
             ]);
         }
 

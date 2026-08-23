@@ -14,26 +14,26 @@ class BlogCategoryPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('cms.view') || $user->can('cms.manage');
+        return $user->can('content.view') || $user->can('content.manage');
     }
 
     public function view(User $user, BlogCategory $blogCategory): bool
     {
-        return $user->can('cms.view') || $user->can('cms.manage');
+        return $user->can('content.view') || $user->can('content.manage');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('cms.manage');
+        return $user->can('content.manage');
     }
 
     public function update(User $user, BlogCategory $blogCategory): bool
     {
-        return $user->can('cms.manage');
+        return $user->can('content.manage');
     }
 
     public function delete(User $user, BlogCategory $blogCategory): bool
     {
-        return $user->can('cms.manage');
+        return $user->can('content.manage');
     }
 }

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Tenant\Cms;
+namespace App\Services\Tenant\Content;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Enums\Media\MediaCollection;
 use App\Models\Tenant\Content\BlogPost;
 use App\Services\Media\MediaService;
@@ -74,14 +74,14 @@ class BlogPostService
     }
 
     /**
-     * title: string, slug?: string|null, excerpt?: string|null, content?: string|null, status?: CmsContentStatus|string|null, published_at?: string|null, author_id?: int|null, blog_category_id?: int|null, seo?: array<string, mixed>|null }  $data
+     * title: string, slug?: string|null, excerpt?: string|null, content?: string|null, status?: ContentStatus|string|null, published_at?: string|null, author_id?: int|null, blog_category_id?: int|null, seo?: array<string, mixed>|null }  $data
      *
      * @param  array{
      *     title: string,
      *     slug?: string|null,
      *     excerpt?: string|null,
      *     content?: string|null,
-     *     status?: CmsContentStatus|string|null,
+     *     status?: ContentStatus|string|null,
      *     published_at?: string|null,
      *     author_id?: int|null,
      *     blog_category_id?: int|null,
@@ -99,7 +99,7 @@ class BlogPostService
             'slug' => $data['slug'] ?? null,
             'excerpt' => $data['excerpt'] ?? null,
             'content' => $data['content'] ?? null,
-            'status' => $data['status'] ?? CmsContentStatus::Draft,
+            'status' => $data['status'] ?? ContentStatus::Draft,
             'published_at' => $data['published_at'] ?? null,
             'author_id' => $data['author_id'] ?? null,
             'blog_category_id' => $data['blog_category_id'] ?? null,
@@ -210,13 +210,13 @@ class BlogPostService
     protected function assertBlogEnabled(): void
     {
         $enabled = filter_var(
-            $this->commerceSettings->get('cms.blog_enabled', 'true'),
+            $this->commerceSettings->get('content.blog_enabled', 'true'),
             FILTER_VALIDATE_BOOLEAN
         );
 
         if (! $enabled) {
             throw ValidationException::withMessages([
-                'cms' => ['Blog is disabled for this store.'],
+                'content' => ['Blog is disabled for this store.'],
             ]);
         }
     }

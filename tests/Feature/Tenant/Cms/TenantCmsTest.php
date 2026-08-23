@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Models\Tenant\Content\BlogCategory;
 use App\Models\Tenant\Content\BlogPost;
 use App\Models\Tenant\Content\Page;
 use App\Models\Tenant\User;
-use App\Services\Tenant\Cms\BlogCategoryService;
-use App\Services\Tenant\Cms\BlogPostService;
-use App\Services\Tenant\Cms\PageService;
 use App\Services\Tenant\Commerce\CommerceSettingService;
+use App\Services\Tenant\Content\BlogCategoryService;
+use App\Services\Tenant\Content\BlogPostService;
+use App\Services\Tenant\Content\PageService;
 use Database\Seeders\Tenant\PermissionSeeder;
 use Database\Seeders\Tenant\RoleSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -31,7 +31,7 @@ beforeEach(function (): void {
             '2026_08_15_060001_create_commerce_settings_table.php',
             '2026_08_16_161047_create_blog_categories_table.php',
             '2026_08_16_161055_create_blog_posts_table.php',
-            '2026_08_16_161108_create_cms_pages_table.php',
+            '2026_08_16_161108_create_content_pages_table.php',
         ] as $file) {
             $this->artisan('migrate', [
                 '--path' => database_path('migrations/tenant/'.$file),
@@ -53,12 +53,12 @@ test('tenant draft content is not publicly visible', function (): void {
 
     $page = $pageService->store([
         'title' => 'Draft FAQ',
-        'status' => CmsContentStatus::Draft->value,
+        'status' => ContentStatus::Draft->value,
     ]);
 
     $post = $postService->store([
         'title' => 'Draft Article',
-        'status' => CmsContentStatus::Draft->value,
+        'status' => ContentStatus::Draft->value,
     ]);
 
     expect(fn () => $pageService->showPublicBySlug($page->slug))
@@ -79,7 +79,7 @@ test('tenant published content is publicly visible with morph seo', function ():
     $page = $pageService->store([
         'title' => 'Shipping Policy',
         'content' => 'Ships in 2 days',
-        'status' => CmsContentStatus::Published->value,
+        'status' => ContentStatus::Published->value,
         'published_at' => now()->subMinute()->toDateTimeString(),
         'seo' => ['meta_title' => 'Shipping'],
     ]);
@@ -88,7 +88,7 @@ test('tenant published content is publicly visible with morph seo', function ():
         'title' => 'How to Order',
         'excerpt' => 'A short guide',
         'content' => 'Step by step',
-        'status' => CmsContentStatus::Published->value,
+        'status' => ContentStatus::Published->value,
         'published_at' => now()->subMinute()->toDateTimeString(),
         'author_id' => $author->id,
         'blog_category_id' => $category->id,
@@ -103,7 +103,7 @@ test('tenant published content is publicly visible with morph seo', function ():
         ->and($post->fresh('seo')->seo?->meta_title)->toBe('Order Guide');
 });
 
-test('tenant cms slugs are unique', function (): void {
+test('tenant content slugs are unique', function (): void {
     Page::factory()->create(['slug' => 'tenant-page']);
     BlogPost::factory()->create(['slug' => 'tenant-post']);
     BlogCategory::factory()->create(['slug' => 'tenant-category']);
@@ -131,24 +131,24 @@ test('tenant cms slugs are unique', function (): void {
         ]))->toThrow(Exception::class);
 });
 
-test('cms settings domain defaults enable blog and pages', function (): void {
+test('content settings domain defaults enable blog and pages', function (): void {
     $commerce = app(CommerceSettingService::class);
 
-    $cms = $commerce->getDomain('cms');
+    $content = $commerce->getDomain('content');
 
-    expect($cms['cms.blog_enabled'])->toBeTrue()
-        ->and($cms['cms.pages_enabled'])->toBeTrue();
+    expect($content['content.blog_enabled'])->toBeTrue()
+        ->and($content['content.pages_enabled'])->toBeTrue();
 
-    $updated = $commerce->updateDomain('cms', [
-        'cms.blog_enabled' => false,
-        'cms.pages_enabled' => false,
+    $updated = $commerce->updateDomain('content', [
+        'content.blog_enabled' => false,
+        'content.pages_enabled' => false,
     ]);
 
-    expect($updated['cms.blog_enabled'])->toBeFalse()
-        ->and($updated['cms.pages_enabled'])->toBeFalse();
+    expect($updated['content.blog_enabled'])->toBeFalse()
+        ->and($updated['content.pages_enabled'])->toBeFalse();
 });
 
-test('tenant cms permissions isolate customer role', function (): void {
+test('tenant content permissions isolate customer role', function (): void {
     $admin = User::factory()->create();
     $admin->syncRoles(['admin']);
 
@@ -157,18 +157,18 @@ test('tenant cms permissions isolate customer role', function (): void {
 
     expect($admin->can('viewAny', BlogPost::class))->toBeTrue()
         ->and($admin->can('create', Page::class))->toBeTrue()
-        ->and($admin->can('cms.publish'))->toBeTrue()
+        ->and($admin->can('content.publish'))->toBeTrue()
         ->and($customer->can('viewAny', BlogPost::class))->toBeFalse()
-        ->and($customer->can('cms.manage'))->toBeFalse();
+        ->and($customer->can('content.manage'))->toBeFalse();
 });
 
-test('tenant cms featured image can be attached and removed', function (): void {
+test('tenant content featured image can be attached and removed', function (): void {
     Storage::fake('public');
 
     $page = app(PageService::class)->store([
         'title' => 'Media Page',
         'content' => 'Body',
-        'status' => CmsContentStatus::Draft->value,
+        'status' => ContentStatus::Draft->value,
     ]);
 
     $updated = app(PageService::class)->storeFeaturedImage(
@@ -184,8 +184,8 @@ test('tenant cms featured image can be attached and removed', function (): void 
 });
 
 /*
-| Tenant isolation note: CMS tables live in each tenant database. Dual-DB
+| Tenant isolation note: CONTENT tables live in each tenant database. Dual-DB
 | isolation is enforced by tenancy connection switching rather than a
-| tenant_id column on these models. Landlord CMS uses landlord_* tables
+| tenant_id column on these models. Landlord CONTENT uses landlord_* tables
 | on the central connection to avoid shared-sqlite collisions in tests.
 */

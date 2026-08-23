@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\Tenant\Cms;
+namespace App\Http\Requests\Tenant\Content;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Http\Requests\BaseRequest;
 use App\Models\Tenant\Content\BlogPost;
 use Illuminate\Validation\Rule;
@@ -24,7 +24,7 @@ class UpdateBlogPostRequest extends BaseRequest
             'slug' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('blog_posts', 'slug')->ignore($post->id)],
             'excerpt' => ['sometimes', 'nullable', 'string'],
             'content' => ['sometimes', 'nullable', 'string'],
-            'status' => ['sometimes', 'string', Rule::enum(CmsContentStatus::class)],
+            'status' => ['sometimes', 'string', Rule::enum(ContentStatus::class)],
             'published_at' => ['sometimes', 'nullable', 'date'],
             'author_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'blog_category_id' => ['sometimes', 'nullable', 'integer', 'exists:blog_categories,id'],

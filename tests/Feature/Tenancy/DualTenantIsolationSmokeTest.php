@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Enums\Landlord\TenantStatus;
 use App\Enums\Tenant\HR\EmploymentStatus;
 use App\Enums\Tenant\HR\JobOpeningStatus;
@@ -29,7 +29,7 @@ uses(RefreshDatabase::class);
 /**
  * Dual-tenant DB isolation smoke for CI.
  *
- * Provisions exactly two tenant databases once, then asserts Seller / HR / CMS
+ * Provisions exactly two tenant databases once, then asserts Seller / HR / CONTENT
  * rows, domain resolution, and seller Sanctum tokens do not leak across tenants.
  */
 beforeEach(function (): void {
@@ -148,7 +148,7 @@ function seedTenantIsolationFixtures(string $label): array
         'title' => "About {$label}",
         'slug' => $pageSlug,
         'content' => "Private content for {$label}",
-        'status' => CmsContentStatus::Published,
+        'status' => ContentStatus::Published,
         'published_at' => now()->subMinute(),
     ]);
 
@@ -161,7 +161,7 @@ function seedTenantIsolationFixtures(string $label): array
     ];
 }
 
-test('dual tenant isolation smoke covers seller hr cms domain and tokens', function (): void {
+test('dual tenant isolation smoke covers seller hr content domain and tokens', function (): void {
     $tenantA = provisionIsolatedTenant('a');
     $tenantB = provisionIsolatedTenant('b');
 
