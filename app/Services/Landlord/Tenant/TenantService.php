@@ -6,12 +6,9 @@ namespace App\Services\Landlord\Tenant;
 
 use App\Enums\Landlord\TenantStatus;
 use App\Events\TenantActivated;
-use App\Events\TenantProvisioned;
 use App\Events\TenantSuspended;
-use App\Events\UserCreated;
 use App\Models\Landlord\Tenant;
 use App\Models\Landlord\TenantProfile;
-use App\Models\Tenant\User as TenantUser;
 use App\Services\Landlord\Domain\DomainService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -66,7 +63,10 @@ class TenantService
     }
 
     /**
-     * Create and provision a tenant (database, domain, profile, initial admin).
+     * Create a tenant and enqueue Stancl DB provision (migrate/seed/admin).
+     *
+     * Domain and profile are stored on the central connection immediately.
+     * Admin user is created by FinalizeTenantProvision after SeedDatabase.
      *
      * @param  array{
      *     name: string,
@@ -86,11 +86,10 @@ class TenantService
      */
     public function store(array $data): Tenant
     {
-        $this->extendProvisioningTimeLimit();
-
         $admin = $data['admin'];
         $domain = $data['domain'];
         $profileData = $data['profile'] ?? [];
+        $intendedStatus = $data['status'] ?? TenantStatus::Active->value;
         unset($data['admin'], $data['domain'], $data['profile']);
 
         $tenant = Tenant::query()->create([
@@ -98,8 +97,13 @@ class TenantService
             'slug' => $data['slug'] ?? null,
             'email' => $data['email'] ?? $admin['email'],
             'phone' => $data['phone'] ?? null,
-            'status' => $data['status'] ?? TenantStatus::Active->value,
+            'status' => TenantStatus::Pending->value,
             'is_active' => $data['is_active'] ?? true,
+            'pending_provision' => [
+                'admin' => $admin,
+                'intended_status' => $intendedStatus,
+            ],
+            'provision_error' => null,
         ]);
 
         $this->domainService->store($tenant, [
@@ -116,25 +120,7 @@ class TenantService
             'is_public' => $profileData['is_public'] ?? false,
         ]);
 
-        $tenant->run(function () use ($admin): void {
-            $user = TenantUser::query()->create([
-                'first_name' => $admin['first_name'],
-                'last_name' => $admin['last_name'],
-                'email' => $admin['email'],
-                'phone' => $admin['phone'] ?? null,
-                'password' => $admin['password'],
-            ]);
-
-            $user->assignRole('admin');
-
-            event(new UserCreated($user));
-        });
-
-        $tenant = $tenant->load(['domains', 'profile']);
-
-        event(new TenantProvisioned($tenant));
-
-        return $tenant;
+        return $tenant->fresh(['domains', 'profile']) ?? $tenant->load(['domains', 'profile']);
     }
 
     /**
@@ -192,7 +178,7 @@ class TenantService
     }
 
     /**
-     * Allow enough wall-clock time for create DB + tenant migrations + seed.
+     * Allow enough wall-clock time for tenant DB teardown (and queued migrate workers).
      *
      * @return void
      */

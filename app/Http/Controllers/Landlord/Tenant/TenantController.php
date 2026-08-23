@@ -69,23 +69,23 @@ class TenantController extends Controller
     }
 
     /**
-     * Create and provision a tenant.
+     * Create a tenant and enqueue database provisioning.
      *
      * @param  StoreTenantRequest  $request
      * @return JsonResponse
      */
     #[Response(
-        status: 201,
-        description: 'Created tenant.',
+        status: 202,
+        description: 'Tenant accepted; database provisioning runs asynchronously.',
         type: 'array{success: true, message: string, data: TenantResource, meta: null, errors: null}',
     )]
     public function store(StoreTenantRequest $request): JsonResponse
     {
         $tenant = $this->tenantService->store($request->validated());
 
-        return $this->created(
+        return $this->accepted(
             new TenantResource($tenant),
-            'Tenant created successfully.',
+            'Tenant accepted for provisioning.',
         );
     }
 

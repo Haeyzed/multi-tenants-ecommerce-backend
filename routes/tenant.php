@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Tenant\HomeController;
+use App\Http\Middleware\InitializeTenancyByDomainOrHeader;
+use App\Http\Middleware\PreventAccessFromUnwantedDomainsUnlessTenantHeader;
 use Illuminate\Support\Facades\Route;
-use Stancl\Tenancy\Middleware;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,8 +19,8 @@ use Stancl\Tenancy\Middleware;
 */
 
 Route::middleware([
-    Middleware\InitializeTenancyByDomain::class,
-    Middleware\PreventAccessFromUnwantedDomains::class,
+    InitializeTenancyByDomainOrHeader::class,
+    PreventAccessFromUnwantedDomainsUnlessTenantHeader::class,
 ])->group(function (): void {
     Route::get('/', HomeController::class)->name('tenant.home');
 
@@ -51,7 +52,7 @@ Route::middleware([
                 require __DIR__.'/tenant/drivers.php';
                 require __DIR__.'/tenant/settings.php';
                 require __DIR__.'/tenant/hr.php';
-                require __DIR__ . '/tenant/content.php';
+                require __DIR__.'/tenant/content.php';
                 require __DIR__.'/tenant/deliveries.php';
                 require __DIR__.'/tenant/pos.php';
                 require __DIR__.'/tenant/marketplace.php';

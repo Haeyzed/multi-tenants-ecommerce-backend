@@ -152,6 +152,7 @@ use App\Policies\Tenant\UnitPolicy;
 use App\Policies\Tenant\WarehousePolicy;
 use App\Policies\Tenant\WorkLocationPolicy;
 use App\Policies\Tenant\WorkSchedulePolicy;
+use App\Routing\Matching\SkipCentralDomainWhenTenantHeaderValidator;
 use App\Services\Notification\ChannelResolver;
 use App\Services\Notification\Channels\DatabaseChannel;
 use App\Services\Notification\Channels\EmailChannel;
@@ -174,6 +175,7 @@ use App\Services\Tenant\Catalog\Recommendations\RelatedProductsProvider;
 use App\Services\Tenant\Delivery\DriverAssignmentManager;
 use App\Services\Tenant\HR\Meetings\InterviewMeetingManager;
 use App\Services\Tenant\Marketplace\Payout\ManualPayoutDriver;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -237,6 +239,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // BFF hits the central Host with X-Tenant-Domain; skip landlord domain routes
+        // so overlapping tenant paths (e.g. /api/auth/login) resolve to tenant controllers.
+        Route::$validators = array_merge(Route::getValidators(), [
+            new SkipCentralDomainWhenTenantHeaderValidator,
+        ]);
+
         Gate::policy(Brand::class, BrandPolicy::class);
         Gate::policy(Category::class, CategoryPolicy::class);
         Gate::policy(Coupon::class, CouponPolicy::class);

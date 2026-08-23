@@ -96,6 +96,30 @@ trait APIResponse
     }
 
     /**
+     * Return a successful API response for an accepted async resource.
+     *
+     * @template TData
+     *
+     * @param  TData  $data  Accepted resource payload.
+     * @param  string  $message  Human-readable success message.
+     * @param  array<string, mixed>|null  $meta  Optional metadata.
+     * @return JsonResponse<array{success: true, message: string, data: TData, meta: array<string, mixed>|null, errors: null}, 202>
+     */
+    protected function accepted(
+        mixed $data = null,
+        string $message = 'Request accepted.',
+        ?array $meta = null,
+    ): JsonResponse {
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => $this->normalizeData($data),
+            'meta' => $meta,
+            'errors' => null,
+        ], Response::HTTP_ACCEPTED);
+    }
+
+    /**
      * Return a successful API response for an updated resource.
      *
      * @template TData

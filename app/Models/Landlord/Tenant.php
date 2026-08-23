@@ -26,6 +26,8 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
  * @property string|null $phone
  * @property TenantStatus $status
  * @property bool $is_active
+ * @property array<string, mixed>|null $pending_provision
+ * @property string|null $provision_error
  */
 class Tenant extends BaseTenant implements TenantWithDatabase
 {

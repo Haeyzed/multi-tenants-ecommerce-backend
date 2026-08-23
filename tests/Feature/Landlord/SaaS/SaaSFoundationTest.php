@@ -166,15 +166,29 @@ test('landlord can create retrieve update and delete a tenant with provisioning'
         ],
     ]);
 
-    $create->assertCreated()
+    $create->assertAccepted()
         ->assertJsonPath('success', true)
         ->assertJsonPath('data.name', 'Provisioned Store');
 
     $tenantId = $create->json('data.id');
 
+    // Sync queue completes the pipeline before/around the response; database queue needs a short wait.
+    $deadline = now()->addSeconds(120);
+    do {
+        $tenant = Tenant::query()->find($tenantId);
+        if ($tenant !== null && $tenant->status !== TenantStatus::Pending) {
+            break;
+        }
+        usleep(100_000);
+    } while (now()->lt($deadline));
+
+    expect($tenant?->status)->toBe(TenantStatus::Active)
+        ->and($tenant?->pending_provision)->toBeNull();
+
     $this->getJson("/api/tenants/{$tenantId}")
         ->assertOk()
         ->assertJsonPath('data.id', $tenantId)
+        ->assertJsonPath('data.is_provisioned', true)
         ->assertJsonPath('data.domains.0.domain', 'provisioned-store.test');
 
     $this->putJson("/api/tenants/{$tenantId}", [
