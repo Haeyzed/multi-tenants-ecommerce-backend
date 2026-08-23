@@ -485,7 +485,7 @@ return [
     ],
 
     /**
-     * Tenant provisioning runs synchronously (create DB, ~185 migrations, seed).
+     * Tenant provisioning runs synchronously (create DB, migrate, seed).
      * Raise PHP's execution limit for HTTP/API requests so MySQL provisioning can finish.
      */
     'provisioning' => [
@@ -498,7 +498,6 @@ return [
     'migration_parameters' => [
         '--force' => true, // This needs to be true to run migrations in production.
         '--path' => [database_path('migrations/tenant')],
-        '--schema-path' => database_path('schema/tenant-schema.dump'),
         '--realpath' => true,
     ],
 
