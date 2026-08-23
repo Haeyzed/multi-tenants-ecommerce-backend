@@ -132,4 +132,5 @@ class Page extends Model implements HasMedia
     protected static function newFactory(): PageFactory
     {
         return PageFactory::new();
-    
+    }
+}

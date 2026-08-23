@@ -6,8 +6,14 @@ use App\DTO\Notification\NotificationPayload;
 use App\Enums\Notification\NotificationChannel;
 use App\Events\PasswordChanged;
 use App\Events\PaymentSucceeded;
+use App\Events\TenantActivated;
+use App\Events\TenantProvisioned;
+use App\Events\TenantSuspended;
 use App\Listeners\Notification\SendPasswordChangedNotification;
 use App\Listeners\Notification\SendPaymentSucceededNotification;
+use App\Listeners\Notification\SendTenantActivatedNotification;
+use App\Listeners\Notification\SendTenantProvisionedNotification;
+use App\Listeners\Notification\SendTenantSuspendedNotification;
 use App\Models\Landlord\PaymentTransaction;
 use App\Models\Landlord\Plan;
 use App\Models\Landlord\Subscription;
@@ -249,6 +255,72 @@ test('payment succeeded listener notifies landlord admins with subscriptions.vie
     app(SendPaymentSucceededNotification::class)->handle(
         new PaymentSucceeded($transaction),
     );
+
+    Notification::assertSentTo($admin, TemplatedNotification::class);
+});
+
+test('tenant provisioned listener delivers when notifications are queued without tenant id', function (): void {
+    Notification::fake();
+
+    config([
+        'notifications.queue' => true,
+        'queue.default' => 'sync',
+    ]);
+
+    $admin = notifLandlord(['admin']);
+
+    $tenant = Tenant::withoutEvents(fn (): Tenant => Tenant::query()->create([
+        'id' => (string) Str::uuid(),
+        'name' => 'Acme Shop',
+        'slug' => 'acme-shop-'.uniqid(),
+        'email' => 'acme@example.com',
+        'status' => 'active',
+        'is_active' => true,
+    ]));
+
+    app(SendTenantProvisionedNotification::class)->handle(
+        new TenantProvisioned($tenant),
+    );
+
+    Notification::assertSentTo($admin, TemplatedNotification::class);
+});
+
+test('tenant status listeners notify landlord admins', function (): void {
+    Notification::fake();
+
+    $admin = notifLandlord(['admin']);
+
+    $tenant = Tenant::withoutEvents(fn (): Tenant => Tenant::query()->create([
+        'id' => (string) Str::uuid(),
+        'name' => 'Status Shop',
+        'slug' => 'status-shop-'.uniqid(),
+        'email' => 'status@example.com',
+        'status' => 'pending',
+        'is_active' => true,
+    ]));
+
+    app(SendTenantActivatedNotification::class)->handle(new TenantActivated($tenant));
+    app(SendTenantSuspendedNotification::class)->handle(new TenantSuspended($tenant));
+
+    Notification::assertSentTo($admin, TemplatedNotification::class, fn (TemplatedNotification $n): bool => $n->payload->key === 'tenant.activated');
+    Notification::assertSentTo($admin, TemplatedNotification::class, fn (TemplatedNotification $n): bool => $n->payload->key === 'tenant.suspended');
+});
+
+test('queued send notification job delivers landlord notifiables without tenant id', function (): void {
+    Notification::fake();
+
+    config([
+        'notifications.queue' => true,
+        'queue.default' => 'sync',
+    ]);
+
+    $admin = notifLandlord(['admin']);
+
+    app(NotificationService::class)->send($admin, 'tenant.created', [
+        'tenant_name' => 'Queued Tenant',
+        'tenant_id' => (string) Str::uuid(),
+        'tenant_email' => 'queued@example.com',
+    ]);
 
     Notification::assertSentTo($admin, TemplatedNotification::class);
 });

@@ -82,9 +82,9 @@ class CommerceSettingService
             'shipping.enabled' => ['type' => 'bool', 'default' => true],
             'shipping.free_shipping_minimum' => ['type' => 'money', 'default' => '0'],
         ],
-        'cms' => [
-            'cms.blog_enabled' => ['type' => 'bool', 'default' => true],
-            'cms.pages_enabled' => ['type' => 'bool', 'default' => true],
+        'content' => [
+            'content.blog_enabled' => ['type' => 'bool', 'default' => true],
+            'content.pages_enabled' => ['type' => 'bool', 'default' => true],
         ],
         'hr' => [
             'hr.enabled' => ['type' => 'bool', 'default' => true],

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Stancl\Tenancy\Database\Concerns\CentralConnection;
 
 /**
- * SEO metadata for a morphable landlord CMS entity.
+ * SEO metadata for a morphable landlord CONTENT entity.
  *
  * @property int $id
  * @property string $seoable_type

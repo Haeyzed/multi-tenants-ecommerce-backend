@@ -54185,7 +54185,7 @@
             },
             "CmsContentStatus": {
                 "type": "string",
-                "description": "Shared CMS publication status for landlord and tenant content.\n",
+                "description": "Shared CONTENT publication status for landlord and tenant content.\n",
                 "enum": [
                     "draft",
                     "scheduled",
@@ -64981,7 +64981,7 @@
             },
             "StoreFeaturedImageRequest": {
                 "type": "object",
-                "description": "Validates CMS featured image upload.",
+                "description": "Validates CONTENT featured image upload.",
                 "properties": {
                     "featured_image": {
                         "type": "string",

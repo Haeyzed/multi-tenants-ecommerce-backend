@@ -248,9 +248,9 @@ class RoleSeeder extends Seeder
             'hr.recruitment.hire',
             'hr.performance.view',
             'hr.performance.manage',
-            'cms.view',
-            'cms.manage',
-            'cms.publish',
+            'content.view',
+            'content.manage',
+            'content.publish',
         ]);
 
         Role::findOrCreate('customer', self::GUARD);

@@ -9,6 +9,7 @@ use App\Enums\Landlord\SubscriptionStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Stancl\Tenancy\Database\Concerns\CentralConnection;
 
 /**
@@ -71,6 +72,22 @@ class Subscription extends Model
     public function grantsAccess(): bool
     {
         return $this->status->grantsAccess();
+    }
+
+    /**
+     * When paid/trial access ends for lifecycle and reminders.
+     */
+    public function accessEndsAt(): ?Carbon
+    {
+        if ($this->ends_at !== null) {
+            return $this->ends_at;
+        }
+
+        if ($this->status === SubscriptionStatus::Trialing && $this->trial_ends_at !== null) {
+            return $this->trial_ends_at;
+        }
+
+        return $this->current_period_end;
     }
 
     /**

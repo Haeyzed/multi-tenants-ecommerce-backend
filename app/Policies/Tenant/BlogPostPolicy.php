@@ -15,29 +15,29 @@ class BlogPostPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('cms.view') || $user->can('cms.manage');
+        return $user->can('content.view') || $user->can('content.manage');
     }
 
     public function view(User $user, BlogPost $blogPost): bool
     {
-        return $user->can('cms.view') || $user->can('cms.manage');
+        return $user->can('content.view') || $user->can('content.manage');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('cms.manage');
+        return $user->can('content.manage');
     }
 
     public function update(User $user, BlogPost $blogPost): bool
     {
-        if (! $user->can('cms.manage')) {
+        if (! $user->can('content.manage')) {
             return false;
         }
 
         $status = request()->input('status');
 
         if ($status === ContentStatus::Published->value || $status === ContentStatus::Published) {
-            return $user->can('cms.publish');
+            return $user->can('content.publish');
         }
 
         return true;
@@ -45,6 +45,6 @@ class BlogPostPolicy
 
     public function delete(User $user, BlogPost $blogPost): bool
     {
-        return $user->can('cms.manage');
+        return $user->can('content.manage');
     }
 }

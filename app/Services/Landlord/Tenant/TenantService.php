@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Services\Landlord\Tenant;
 
 use App\Enums\Landlord\TenantStatus;
+use App\Events\TenantActivated;
 use App\Events\TenantProvisioned;
+use App\Events\TenantSuspended;
+use App\Events\UserCreated;
 use App\Models\Landlord\Tenant;
 use App\Models\Landlord\TenantProfile;
 use App\Models\Tenant\User as TenantUser;
@@ -123,6 +126,8 @@ class TenantService
             ]);
 
             $user->assignRole('admin');
+
+            event(new UserCreated($user));
         });
 
         $tenant = $tenant->load(['domains', 'profile']);
@@ -152,9 +157,23 @@ class TenantService
      */
     public function update(Tenant $tenant, array $data): Tenant
     {
+        $previousStatus = $tenant->status;
+
         $tenant->update($data);
 
-        return $tenant->fresh(['domains', 'profile']);
+        $tenant = $tenant->fresh(['domains', 'profile']) ?? $tenant;
+
+        if ($previousStatus !== $tenant->status) {
+            if ($tenant->status === TenantStatus::Active) {
+                event(new TenantActivated($tenant));
+            }
+
+            if ($tenant->status === TenantStatus::Suspended) {
+                event(new TenantSuspended($tenant));
+            }
+        }
+
+        return $tenant;
     }
 
     /**

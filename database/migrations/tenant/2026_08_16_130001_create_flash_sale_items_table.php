@@ -11,6 +11,10 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * MySQL cannot combine a foreign key on product_variant_id with a generated
+     * column that references that same column (error 1215). Use a functional
+     * unique index instead; MySQL requires the expression wrapped in parentheses.
      */
     public function up(): void
     {
@@ -46,9 +50,12 @@ return new class extends Migration
             $table->index(['product_id', 'product_variant_id']);
         });
 
-        // COALESCE makes the unique constraint work with nullable variants on SQLite/MySQL.
+        $coalesce = Schema::getConnection()->getDriverName() === 'sqlite'
+            ? 'COALESCE(product_variant_id, 0)'
+            : '(COALESCE(product_variant_id, 0))';
+
         DB::statement(
-            'CREATE UNIQUE INDEX flash_sale_items_sale_product_variant_unique ON flash_sale_items (flash_sale_id, product_id, COALESCE(product_variant_id, 0))'
+            "CREATE UNIQUE INDEX flash_sale_items_sale_product_variant_unique ON flash_sale_items (flash_sale_id, product_id, {$coalesce})"
         );
     }
 

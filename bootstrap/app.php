@@ -13,6 +13,7 @@ use App\Http\Middleware\SetTenantGuard;
 use App\Jobs\CleanupDriverLocationsJob;
 use App\Jobs\EnsureCurrentPayrollPeriodJob;
 use App\Jobs\MarkAbandonedCartsJob;
+use App\Jobs\ProcessSubscriptionLifecycleJob;
 use App\Jobs\ReconcileProcessingRefundsJob;
 use App\Jobs\RefreshCustomerSegmentStatsJob;
 use App\Jobs\SendInterviewRemindersJob;
@@ -71,6 +72,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 SendInterviewRemindersJob::dispatch($tenant->getTenantKey());
             });
         })->hourly()->name('send-interview-reminders')->withoutOverlapping();
+
+        $schedule->job(new ProcessSubscriptionLifecycleJob)
+            ->daily()
+            ->name('process-subscription-lifecycle')
+            ->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Enums\Content;
 
 /**
- * Shared CMS publication status for landlord and tenant content.
+ * Shared CONTENT publication status for landlord and tenant content.
  */
 enum ContentStatus: string
 {

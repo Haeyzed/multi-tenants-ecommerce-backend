@@ -71,9 +71,9 @@ class UpdateSettingsDomainRequest extends BaseRequest
                 'marketplace\.refund_window_days' => ['sometimes', 'integer', 'min:0'],
                 'seller\.allow_registration' => ['sometimes', 'boolean'],
             ],
-            'cms' => [
-                'cms\.blog_enabled' => ['sometimes', 'boolean'],
-                'cms\.pages_enabled' => ['sometimes', 'boolean'],
+            'content' => [
+                'content\.blog_enabled' => ['sometimes', 'boolean'],
+                'content\.pages_enabled' => ['sometimes', 'boolean'],
             ],
             'customer' => [
                 'customer\.registration_enabled' => ['sometimes', 'boolean'],

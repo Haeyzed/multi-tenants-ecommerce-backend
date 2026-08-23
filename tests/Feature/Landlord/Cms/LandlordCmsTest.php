@@ -77,7 +77,7 @@ test('landlord published content is publicly visible', function (): void {
         ->and($page->fresh('seo')->seo?->meta_title)->toBe('About');
 });
 
-test('landlord cms slugs are unique', function (): void {
+test('landlord content slugs are unique', function (): void {
     Page::factory()->create(['slug' => 'unique-page']);
     BlogPost::factory()->create(['slug' => 'unique-post']);
     BlogCategory::factory()->create(['slug' => 'unique-category']);

@@ -36,13 +36,9 @@ class SendNotificationJob implements ShouldQueue
     public function handle(NotificationService $notifications): void
     {
         $callback = function () use ($notifications): void {
-            $class = Relation::getMorphedModel($this->notifiableType) ?? $this->notifiableType;
+            $class = $this->resolveNotifiableClass();
 
-            if (! class_exists($class)) {
-                Log::warning('SendNotificationJob: notifiable class missing', [
-                    'type' => $this->notifiableType,
-                ]);
-
+            if ($class === null) {
                 return;
             }
 
@@ -79,10 +75,11 @@ class SendNotificationJob implements ShouldQueue
             return;
         }
 
-        // Queued workers must not touch the central connection. Synchronous
-        // handle() (tests / same-request) may run on the current connection.
-        if ($this->job !== null) {
-            Log::warning('SendNotificationJob: tenant id is required for queued delivery', [
+        $class = $this->resolveNotifiableClass();
+
+        // Tenant models must not be resolved on the central connection.
+        if ($this->isTenantNotifiable($class)) {
+            Log::warning('SendNotificationJob: tenant id is required for tenant notifiable', [
                 'notification_key' => $this->notificationKey,
                 'notifiable_type' => $this->notifiableType,
                 'notifiable_id' => $this->notifiableId,
@@ -91,6 +88,37 @@ class SendNotificationJob implements ShouldQueue
             return;
         }
 
+        // Landlord / central delivery — leave any leftover tenant context.
+        if (function_exists('tenancy') && tenancy()->initialized) {
+            tenancy()->end();
+        }
+
         $callback();
+    }
+
+    /**
+     * @return class-string|null
+     */
+    private function resolveNotifiableClass(): ?string
+    {
+        $class = Relation::getMorphedModel($this->notifiableType) ?? $this->notifiableType;
+
+        if (! is_string($class) || ! class_exists($class)) {
+            Log::warning('SendNotificationJob: notifiable class missing', [
+                'type' => $this->notifiableType,
+            ]);
+
+            return null;
+        }
+
+        return $class;
+    }
+
+    /**
+     * @param  class-string|null  $class
+     */
+    private function isTenantNotifiable(?string $class): bool
+    {
+        return is_string($class) && str_starts_with($class, 'App\\Models\\Tenant\\');
     }
 }
