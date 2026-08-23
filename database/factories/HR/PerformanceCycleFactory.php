@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\PerformanceCycleStatus;
-use App\Models\HR\PerformanceCycle;
+use App\Models\Tenant\HR\PerformanceCycle;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

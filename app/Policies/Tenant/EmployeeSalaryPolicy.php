@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Models\HR\EmployeeSalary;
+use App\Models\Tenant\HR\EmployeeSalary;
 use App\Models\Tenant\User;
 
 /**

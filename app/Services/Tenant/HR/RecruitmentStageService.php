@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\JobApplicationStatus;
-use App\Models\HR\RecruitmentStage;
+use App\Models\Tenant\HR\RecruitmentStage;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;

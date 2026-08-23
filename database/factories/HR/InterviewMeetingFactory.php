@@ -6,8 +6,8 @@ namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\InterviewMeetingStatus;
 use App\Enums\Tenant\HR\MeetingProvider;
-use App\Models\HR\Interview;
-use App\Models\HR\InterviewMeeting;
+use App\Models\Tenant\HR\Interview;
+use App\Models\Tenant\HR\InterviewMeeting;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

@@ -9,7 +9,7 @@ use App\Http\Requests\Tenant\HR\IndexPerformanceReviewRequest;
 use App\Http\Requests\Tenant\HR\StorePerformanceReviewRequest;
 use App\Http\Requests\Tenant\HR\UpdatePerformanceReviewRequest;
 use App\Http\Resources\Tenant\HR\PerformanceReviewResource;
-use App\Models\HR\PerformanceReview;
+use App\Models\Tenant\HR\PerformanceReview;
 use App\Services\Tenant\HR\PerformanceReviewService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

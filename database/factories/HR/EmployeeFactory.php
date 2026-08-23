@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\EmploymentStatus;
-use App\Models\HR\Department;
-use App\Models\HR\Employee;
+use App\Models\Tenant\HR\Department;
+use App\Models\Tenant\HR\Employee;
 use App\Models\Tenant\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

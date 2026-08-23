@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories\HR;
 
-use App\Models\HR\WorkLocation;
+use App\Models\Tenant\HR\WorkLocation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

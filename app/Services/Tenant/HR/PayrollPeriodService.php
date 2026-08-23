@@ -6,7 +6,7 @@ namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\PayFrequency;
 use App\Enums\Tenant\HR\PayrollPeriodStatus;
-use App\Models\HR\PayrollPeriod;
+use App\Models\Tenant\HR\PayrollPeriod;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;

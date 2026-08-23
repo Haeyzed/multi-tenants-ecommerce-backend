@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Tenant\HR;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Tenant\HR\EmploymentRecordResource;
-use App\Models\HR\Employee;
+use App\Models\Tenant\HR\Employee;
 use App\Services\Tenant\HR\EmployeeService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;

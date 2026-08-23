@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Throwable;
 
 /**
  * Landlord authentication, profile, and password workflows.
@@ -141,9 +142,10 @@ class AuthService
     /**
      * Replace the authenticated user's avatar.
      *
-     * @param  User  $user
-     * @param  UploadedFile  $avatar
+     * @param User $user
+     * @param UploadedFile $avatar
      * @return Media
+     * @throws Throwable
      */
     public function replaceAvatar(User $user, UploadedFile $avatar): Media
     {

@@ -13,7 +13,7 @@ use App\Http\Requests\Tenant\HR\UpdateCandidateRequest;
 use App\Http\Resources\Media\MediaResource;
 use App\Http\Resources\Tenant\HR\CandidateResource;
 use App\Http\Resources\Tenant\HR\RecruitmentActivityResource;
-use App\Models\HR\Candidate;
+use App\Models\Tenant\HR\Candidate;
 use App\Services\Tenant\HR\CandidateService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

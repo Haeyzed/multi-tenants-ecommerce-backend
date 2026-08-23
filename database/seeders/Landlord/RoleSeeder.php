@@ -26,7 +26,9 @@ class RoleSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        Role::findOrCreate('super-admin', self::GUARD);
+        $superAdmin = Role::findOrCreate('super-admin', self::GUARD);
+        // Persist all permissions on the role so /me returns them; Gate::before still bypasses checks.
+        $superAdmin->syncPermissions(RbacPermissions::NAMES);
 
         $admin = Role::findOrCreate('admin', self::GUARD);
         $admin->syncPermissions(RbacPermissions::NAMES);

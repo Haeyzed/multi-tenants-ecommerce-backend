@@ -25,7 +25,7 @@ $registerLandlordApi = function (): void {
             require __DIR__.'/landlord/tenants.php';
             require __DIR__.'/landlord/plans.php';
             require __DIR__.'/landlord/settings.php';
-            require __DIR__.'/landlord/cms.php';
+            require __DIR__ . '/landlord/content.php';
             require __DIR__.'/landlord/media.php';
             require __DIR__.'/landlord/notifications.php';
         });

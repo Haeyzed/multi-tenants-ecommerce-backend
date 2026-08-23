@@ -49,6 +49,11 @@ class SellerPolicy
         return false;
     }
 
+    public function delete(Authenticatable $actor, Seller $seller): bool
+    {
+        return $actor instanceof User && $actor->can('sellers.delete');
+    }
+
     public function approve(Authenticatable $actor, Seller $seller): bool
     {
         return $actor instanceof User && $actor->can('sellers.approve');

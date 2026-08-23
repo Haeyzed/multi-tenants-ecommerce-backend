@@ -6,8 +6,8 @@ namespace App\Models\Tenant;
 
 use App\Enums\Media\MediaCollection;
 use App\Enums\Media\MediaConversion;
-use App\Models\HR\Employee;
-use App\Models\HR\Interview;
+use App\Models\Tenant\HR\Employee;
+use App\Models\Tenant\HR\Interview;
 use Database\Factories\Tenant\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\AttendanceStatus;
-use App\Models\HR\Attendance;
-use App\Models\HR\Employee;
+use App\Models\Tenant\HR\Attendance;
+use App\Models\Tenant\HR\Employee;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

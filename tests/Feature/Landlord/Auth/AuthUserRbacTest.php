@@ -200,6 +200,14 @@ test('landlord admin can manage roles and permissions', function (): void {
     expect(Permission::where('guard_name', 'landlord')->count())->toBeGreaterThan(0);
 });
 
+test('landlord super-admin has all permissions synced and passes gate checks', function (): void {
+    $user = landlordUser(['super-admin']);
+
+    expect($user->getAllPermissions()->pluck('name'))->toContain('users.view')
+        ->and($user->can('users.view'))->toBeTrue()
+        ->and($user->can('tenants.delete'))->toBeTrue();
+});
+
 test('landlord can sync roles onto a user', function (): void {
     $admin = landlordUser(['admin']);
     $target = landlordUser([]);

@@ -6,7 +6,7 @@ namespace App\Services\Tenant\HR;
 
 use App\Enums\Media\MediaCollection;
 use App\Enums\Tenant\HR\JobOpeningStatus;
-use App\Models\HR\JobOpening;
+use App\Models\Tenant\HR\JobOpening;
 use App\Services\Landlord\Feature\UsageLimiter;
 use App\Services\Media\MediaService;
 use App\Services\Tenant\Catalog\SeoService;

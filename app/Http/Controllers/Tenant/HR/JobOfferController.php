@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\HR\StoreJobOfferRequest;
 use App\Http\Requests\Tenant\HR\UpdateJobOfferRequest;
 use App\Http\Resources\Tenant\HR\JobOfferResource;
-use App\Models\HR\JobOffer;
+use App\Models\Tenant\HR\JobOffer;
 use App\Models\Tenant\User;
 use App\Services\Tenant\HR\JobOfferService;
 use Dedoc\Scramble\Attributes\Group;

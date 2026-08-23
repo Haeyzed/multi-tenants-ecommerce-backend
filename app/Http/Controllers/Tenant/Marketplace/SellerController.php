@@ -116,6 +116,26 @@ class SellerController extends Controller
     }
 
     /**
+     * Soft-delete a seller.
+     *
+     * @param  Seller  $seller
+     * @return JsonResponse
+     */
+    #[Response(
+        status: 200,
+        description: 'Seller deleted.',
+        type: 'array{success: true, message: string, data: null, meta: null, errors: null}',
+    )]
+    public function destroy(Seller $seller): JsonResponse
+    {
+        $this->authorize('delete', $seller);
+
+        $this->sellerService->destroy($seller);
+
+        return $this->deleted('Seller deleted successfully.');
+    }
+
+    /**
      * Approve.
      *
      * @param  Seller  $seller

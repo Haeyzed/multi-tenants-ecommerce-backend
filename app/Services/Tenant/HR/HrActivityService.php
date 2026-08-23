@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\HR\Employee;
-use App\Models\HR\HrActivity;
-use App\Models\HR\LeaveRequest;
-use App\Models\HR\PayrollRun;
+use App\Models\Tenant\HR\Employee;
+use App\Models\Tenant\HR\HrActivity;
+use App\Models\Tenant\HR\LeaveRequest;
+use App\Models\Tenant\HR\PayrollRun;
 use App\Models\Tenant\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;

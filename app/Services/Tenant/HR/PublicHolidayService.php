@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\HR\PublicHoliday;
+use App\Models\Tenant\HR\PublicHoliday;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 

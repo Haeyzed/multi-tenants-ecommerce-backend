@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use App\Enums\Cms\CmsContentStatus;
-use App\Models\Tenant\Cms\BlogCategory;
-use App\Models\Tenant\Cms\BlogPost;
-use App\Models\Tenant\Cms\Page;
+use App\Models\Tenant\Content\BlogCategory;
+use App\Models\Tenant\Content\BlogPost;
+use App\Models\Tenant\Content\Page;
 use App\Models\Tenant\User;
 use App\Services\Tenant\Cms\BlogCategoryService;
 use App\Services\Tenant\Cms\BlogPostService;

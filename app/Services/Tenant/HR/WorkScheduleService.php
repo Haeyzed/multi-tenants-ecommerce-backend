@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\HR\WorkSchedule;
+use App\Models\Tenant\HR\WorkSchedule;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\PayFrequency;
-use App\Models\HR\TaxTable;
-use App\Models\HR\TaxTableBand;
+use App\Models\Tenant\HR\TaxTable;
+use App\Models\Tenant\HR\TaxTableBand;
 use App\Support\Money;
 
 /**

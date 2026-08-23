@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\LeaveType as LeaveTypeCode;
-use App\Models\HR\LeaveType;
+use App\Models\Tenant\HR\LeaveType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

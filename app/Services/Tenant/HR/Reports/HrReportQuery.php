@@ -6,12 +6,12 @@ namespace App\Services\Tenant\HR\Reports;
 
 use App\Enums\Tenant\HR\AttendanceStatus;
 use App\Enums\Tenant\HR\PayrollRunStatus;
-use App\Models\HR\Attendance;
-use App\Models\HR\Employee;
-use App\Models\HR\JobApplication;
-use App\Models\HR\LeaveRequest;
-use App\Models\HR\PayrollItem;
-use App\Models\HR\PayrollItemLine;
+use App\Models\Tenant\HR\Attendance;
+use App\Models\Tenant\HR\Employee;
+use App\Models\Tenant\HR\JobApplication;
+use App\Models\Tenant\HR\LeaveRequest;
+use App\Models\Tenant\HR\PayrollItem;
+use App\Models\Tenant\HR\PayrollItemLine;
 use App\Services\Tenant\HR\PayrollPeriodService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;

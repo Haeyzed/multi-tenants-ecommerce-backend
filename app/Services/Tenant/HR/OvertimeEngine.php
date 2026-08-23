@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\OvertimeDayType;
-use App\Models\HR\Attendance;
-use App\Models\HR\Employee;
-use App\Models\HR\OvertimePolicy;
+use App\Models\Tenant\HR\Attendance;
+use App\Models\Tenant\HR\Employee;
+use App\Models\Tenant\HR\OvertimePolicy;
 use Illuminate\Support\Carbon;
 
 /**

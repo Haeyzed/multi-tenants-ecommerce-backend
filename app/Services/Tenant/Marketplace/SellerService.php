@@ -211,6 +211,18 @@ class SellerService
     }
 
     /**
+     * Soft-delete a seller and revoke API tokens.
+     *
+     * @param  Seller  $seller
+     * @return void
+     */
+    public function destroy(Seller $seller): void
+    {
+        $seller->tokens()->delete();
+        $seller->delete();
+    }
+
+    /**
      * Resolve the page size for paginated listings.
      *
      * @param  array{per_page?: int|null}  $params

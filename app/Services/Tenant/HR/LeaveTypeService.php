@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\LeaveType as LeaveTypeCode;
-use App\Models\HR\LeaveRequest;
-use App\Models\HR\LeaveType;
+use App\Models\Tenant\HR\LeaveRequest;
+use App\Models\Tenant\HR\LeaveType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;

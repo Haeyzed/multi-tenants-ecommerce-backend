@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Models\Tenant\Cms;
+namespace App\Models\Tenant\Content;
 
-use App\Enums\Cms\CmsContentStatus;
+use App\Enums\Content\ContentStatus;
 use App\Enums\Media\MediaCollection;
 use App\Enums\Media\MediaConversion;
 use App\Models\Concerns\HasSeo;
 use App\Models\Tenant\User;
-use Database\Factories\Tenant\Cms\BlogPostFactory;
+use Database\Factories\Tenant\Content\BlogPostFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,7 +30,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string|null $excerpt
  * @property string|null $content
- * @property CmsContentStatus $status
+ * @property ContentStatus $status
  * @property Carbon|null $published_at
  * @property int|null $author_id
  * @property int|null $blog_category_id
@@ -72,7 +72,7 @@ class BlogPost extends Model implements HasMedia
     protected function casts(): array
     {
         return [
-            'status' => CmsContentStatus::class,
+            'status' => ContentStatus::class,
             'published_at' => 'datetime',
             'author_id' => 'integer',
             'blog_category_id' => 'integer',
@@ -127,7 +127,7 @@ class BlogPost extends Model implements HasMedia
     public function scopePublished(Builder $query): Builder
     {
         return $query
-            ->where('status', CmsContentStatus::Published)
+            ->where('status', ContentStatus::Published)
             ->where(function (Builder $query): void {
                 $query->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());

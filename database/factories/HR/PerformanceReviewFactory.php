@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\PerformanceReviewStatus;
-use App\Models\HR\Employee;
-use App\Models\HR\PerformanceCycle;
-use App\Models\HR\PerformanceReview;
+use App\Models\Tenant\HR\Employee;
+use App\Models\Tenant\HR\PerformanceCycle;
+use App\Models\Tenant\HR\PerformanceReview;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

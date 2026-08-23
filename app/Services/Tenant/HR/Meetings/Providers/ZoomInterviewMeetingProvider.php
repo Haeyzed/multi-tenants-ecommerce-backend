@@ -31,7 +31,7 @@ class ZoomInterviewMeetingProvider implements InterviewMeetingProvider
     /**
      * @var list<string>
      */
-    private const REQUIRED_KEYS = ['account_id', 'client_id', 'client_secret', 'host_user_id'];
+    private const array REQUIRED_KEYS = ['account_id', 'client_id', 'client_secret', 'host_user_id'];
 
     /**
      * Name.

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\HR\Candidate;
-use App\Models\HR\Interview;
-use App\Models\HR\JobApplication;
-use App\Models\HR\JobOffer;
-use App\Models\HR\RecruitmentActivity;
+use App\Models\Tenant\HR\Candidate;
+use App\Models\Tenant\HR\Interview;
+use App\Models\Tenant\HR\JobApplication;
+use App\Models\Tenant\HR\JobOffer;
+use App\Models\Tenant\HR\RecruitmentActivity;
 use App\Models\Tenant\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;

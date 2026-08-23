@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Tenant;
 
-use App\Models\Tenant\Cms\BlogCategory;
+use App\Models\Tenant\Content\BlogCategory;
 use App\Models\Tenant\User;
 
 /**

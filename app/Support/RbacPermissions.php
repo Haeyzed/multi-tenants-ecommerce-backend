@@ -163,6 +163,7 @@ final class RbacPermissions
         'sellers.view',
         'sellers.create',
         'sellers.update',
+        'sellers.delete',
         'sellers.approve',
         'sellers.reject',
         'sellers.suspend',

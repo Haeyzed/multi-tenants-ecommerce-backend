@@ -6,8 +6,8 @@ namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\PayrollRunStatus;
 use App\Enums\Tenant\HR\StatutoryReturnKind;
-use App\Models\HR\PayrollItem;
-use App\Models\HR\PayrollItemLine;
+use App\Models\Tenant\HR\PayrollItem;
+use App\Models\Tenant\HR\PayrollItemLine;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;

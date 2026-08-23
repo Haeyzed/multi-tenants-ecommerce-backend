@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Tenant\HR;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Tenant\HR\PayrollPeriodResource;
-use App\Models\HR\PayrollPeriod;
-use App\Models\HR\PayrollRun;
+use App\Models\Tenant\HR\PayrollPeriod;
+use App\Models\Tenant\HR\PayrollRun;
 use App\Services\Tenant\HR\PayrollRunService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;

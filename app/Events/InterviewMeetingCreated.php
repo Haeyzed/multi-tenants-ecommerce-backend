@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Events;
 
-use App\Models\HR\Interview;
-use App\Models\HR\InterviewMeeting;
+use App\Models\Tenant\HR\Interview;
+use App\Models\Tenant\HR\InterviewMeeting;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

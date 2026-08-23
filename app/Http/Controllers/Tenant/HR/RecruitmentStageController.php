@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\HR\StoreRecruitmentStageRequest;
 use App\Http\Requests\Tenant\HR\UpdateRecruitmentStageRequest;
 use App\Http\Resources\Tenant\HR\RecruitmentStageResource;
-use App\Models\HR\RecruitmentStage;
+use App\Models\Tenant\HR\RecruitmentStage;
 use App\Services\Tenant\HR\RecruitmentStageService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;

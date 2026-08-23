@@ -11,7 +11,7 @@ use App\Http\Requests\Tenant\HR\StoreEmployeeRequest;
 use App\Http\Requests\Tenant\HR\UpdateEmployeeRequest;
 use App\Http\Resources\Media\MediaResource;
 use App\Http\Resources\Tenant\HR\EmployeeResource;
-use App\Models\HR\Employee;
+use App\Models\Tenant\HR\Employee;
 use App\Services\Tenant\HR\EmployeeService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

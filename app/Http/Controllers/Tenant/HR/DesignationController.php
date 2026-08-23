@@ -9,7 +9,7 @@ use App\Http\Requests\Tenant\HR\IndexDesignationRequest;
 use App\Http\Requests\Tenant\HR\StoreDesignationRequest;
 use App\Http\Requests\Tenant\HR\UpdateDesignationRequest;
 use App\Http\Resources\Tenant\HR\DesignationResource;
-use App\Models\HR\Designation;
+use App\Models\Tenant\HR\Designation;
 use App\Services\Tenant\HR\DesignationService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

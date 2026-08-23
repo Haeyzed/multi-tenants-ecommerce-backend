@@ -6,8 +6,8 @@ namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\InterviewStatus;
 use App\Enums\Tenant\HR\InterviewType;
-use App\Models\HR\Interview;
-use App\Models\HR\JobApplication;
+use App\Models\Tenant\HR\Interview;
+use App\Models\Tenant\HR\JobApplication;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

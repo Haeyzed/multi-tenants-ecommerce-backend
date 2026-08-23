@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\InterviewRecommendation;
-use App\Models\HR\Interview;
-use App\Models\HR\InterviewFeedback;
+use App\Models\Tenant\HR\Interview;
+use App\Models\Tenant\HR\InterviewFeedback;
 use App\Models\Tenant\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

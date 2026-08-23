@@ -6,9 +6,9 @@ namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\ApplicationSource;
 use App\Enums\Tenant\HR\JobApplicationStatus;
-use App\Models\HR\Candidate;
-use App\Models\HR\JobApplication;
-use App\Models\HR\JobOpening;
+use App\Models\Tenant\HR\Candidate;
+use App\Models\Tenant\HR\JobApplication;
+use App\Models\Tenant\HR\JobOpening;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

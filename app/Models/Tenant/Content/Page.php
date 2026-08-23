@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models\Tenant\Cms;
+namespace App\Models\Tenant\Content;
 
 use App\Enums\Cms\CmsContentStatus;
 use App\Enums\Media\MediaCollection;

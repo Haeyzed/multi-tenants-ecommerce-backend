@@ -6,8 +6,8 @@ namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\PerformanceCycleStatus;
 use App\Enums\Tenant\HR\PerformanceReviewStatus;
-use App\Models\HR\PerformanceCycle;
-use App\Models\HR\PerformanceReview;
+use App\Models\Tenant\HR\PerformanceCycle;
+use App\Models\Tenant\HR\PerformanceReview;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 

@@ -9,7 +9,7 @@ use App\Http\Requests\Tenant\HR\IndexDepartmentRequest;
 use App\Http\Requests\Tenant\HR\StoreDepartmentRequest;
 use App\Http\Requests\Tenant\HR\UpdateDepartmentRequest;
 use App\Http\Resources\Tenant\HR\DepartmentResource;
-use App\Models\HR\Department;
+use App\Models\Tenant\HR\Department;
 use App\Services\Tenant\HR\DepartmentService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

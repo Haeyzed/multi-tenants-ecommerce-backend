@@ -9,7 +9,7 @@ use App\Http\Requests\Tenant\HR\IndexPublicHolidayRequest;
 use App\Http\Requests\Tenant\HR\StorePublicHolidayRequest;
 use App\Http\Requests\Tenant\HR\UpdatePublicHolidayRequest;
 use App\Http\Resources\Tenant\HR\PublicHolidayResource;
-use App\Models\HR\PublicHoliday;
+use App\Models\Tenant\HR\PublicHoliday;
 use App\Services\Tenant\HR\PublicHolidayService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

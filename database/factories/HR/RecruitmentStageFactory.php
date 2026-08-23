@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\JobApplicationStatus;
-use App\Models\HR\RecruitmentStage;
+use App\Models\Tenant\HR\RecruitmentStage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

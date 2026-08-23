@@ -22,6 +22,7 @@ Route::middleware('marketplace.enabled')->group(function (): void {
     Route::post('sellers', [SellerController::class, 'store'])->middleware('permission:sellers.create')->name('tenant.sellers.store');
     Route::get('sellers/{seller}', [SellerController::class, 'show'])->middleware('permission:sellers.view')->whereNumber('seller')->name('tenant.sellers.show');
     Route::match(['put', 'patch'], 'sellers/{seller}', [SellerController::class, 'update'])->middleware('permission:sellers.update')->whereNumber('seller')->name('tenant.sellers.update');
+    Route::delete('sellers/{seller}', [SellerController::class, 'destroy'])->middleware('permission:sellers.delete')->whereNumber('seller')->name('tenant.sellers.destroy');
     Route::patch('sellers/{seller}/approve', [SellerController::class, 'approve'])->middleware('permission:sellers.approve')->whereNumber('seller')->name('tenant.sellers.approve');
     Route::patch('sellers/{seller}/reject', [SellerController::class, 'reject'])->middleware('permission:sellers.reject')->whereNumber('seller')->name('tenant.sellers.reject');
     Route::patch('sellers/{seller}/suspend', [SellerController::class, 'suspend'])->middleware('permission:sellers.suspend')->whereNumber('seller')->name('tenant.sellers.suspend');

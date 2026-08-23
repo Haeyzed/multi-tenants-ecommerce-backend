@@ -8,7 +8,7 @@ use App\Enums\Tenant\HR\EmploymentType;
 use App\Enums\Tenant\HR\JobOpeningStatus;
 use App\Enums\Tenant\HR\JobRemoteType;
 use App\Http\Requests\BaseRequest;
-use App\Models\HR\JobOpening;
+use App\Models\Tenant\HR\JobOpening;
 use Illuminate\Validation\Rule;
 
 class UpdateJobOpeningRequest extends BaseRequest

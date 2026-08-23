@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant\HR;
 
 use App\Http\Requests\BaseRequest;
-use App\Models\HR\Department;
+use App\Models\Tenant\HR\Department;
 use Illuminate\Validation\Rule;
 
 class UpdateDepartmentRequest extends BaseRequest

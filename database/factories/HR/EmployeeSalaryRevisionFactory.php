@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\PayFrequency;
-use App\Models\HR\Employee;
-use App\Models\HR\EmployeeSalaryRevision;
+use App\Models\Tenant\HR\Employee;
+use App\Models\Tenant\HR\EmployeeSalaryRevision;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

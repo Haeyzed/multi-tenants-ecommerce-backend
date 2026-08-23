@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant\HR;
 
 use App\Http\Requests\BaseRequest;
-use App\Models\HR\WorkLocation;
+use App\Models\Tenant\HR\WorkLocation;
 use Illuminate\Validation\Rule;
 
 class UpdateWorkLocationRequest extends BaseRequest

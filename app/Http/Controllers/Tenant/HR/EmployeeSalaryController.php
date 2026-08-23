@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\HR\UpsertEmployeeSalaryRequest;
 use App\Http\Resources\Tenant\HR\EmployeeSalaryResource;
 use App\Http\Resources\Tenant\HR\EmployeeSalaryRevisionResource;
-use App\Models\HR\Employee;
+use App\Models\Tenant\HR\Employee;
 use App\Services\Tenant\HR\EmployeeSalaryService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;

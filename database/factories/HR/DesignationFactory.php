@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Factories\HR;
 
-use App\Models\HR\Department;
-use App\Models\HR\Designation;
+use App\Models\Tenant\HR\Department;
+use App\Models\Tenant\HR\Designation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

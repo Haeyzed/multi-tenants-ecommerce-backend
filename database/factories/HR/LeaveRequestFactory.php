@@ -6,9 +6,9 @@ namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\LeaveStatus;
 use App\Enums\Tenant\HR\LeaveType as LeaveTypeCode;
-use App\Models\HR\Employee;
-use App\Models\HR\LeaveRequest;
-use App\Models\HR\LeaveType;
+use App\Models\Tenant\HR\Employee;
+use App\Models\Tenant\HR\LeaveRequest;
+use App\Models\Tenant\HR\LeaveType;
 use App\Services\Tenant\HR\LeaveTypeService;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

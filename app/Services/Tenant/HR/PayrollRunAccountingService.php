@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\HR\PayrollRun;
 use App\Models\Tenant\Account;
+use App\Models\Tenant\HR\PayrollRun;
 use App\Models\Tenant\JournalEntry;
 use App\Services\Tenant\Accounting\JournalEntryService;
 use App\Support\Money;

@@ -11,7 +11,7 @@ use App\Http\Requests\Tenant\HR\StoreJobOpeningRequest;
 use App\Http\Requests\Tenant\HR\UpdateJobOpeningRequest;
 use App\Http\Resources\Media\MediaResource;
 use App\Http\Resources\Tenant\HR\JobOpeningResource;
-use App\Models\HR\JobOpening;
+use App\Models\Tenant\HR\JobOpening;
 use App\Services\Tenant\HR\JobOpeningService;
 use App\Support\ApiResponseSchema;
 use Dedoc\Scramble\Attributes\Group;

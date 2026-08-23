@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Enums\Notification\NotificationChannel;
-use App\Models\HR\Candidate;
+use App\Models\Tenant\HR\Candidate;
 use App\Models\Tenant\User;
 use App\Services\Notification\NotificationService;
 use App\Services\Tenant\HR\HrSettingsService;

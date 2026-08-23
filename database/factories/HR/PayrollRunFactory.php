@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories\HR;
 
 use App\Enums\Tenant\HR\PayrollRunStatus;
-use App\Models\HR\PayrollRun;
+use App\Models\Tenant\HR\PayrollRun;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

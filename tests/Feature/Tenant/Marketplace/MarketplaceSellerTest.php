@@ -153,3 +153,22 @@ test('seller isolation prevents managing another sellers offer', function (): vo
     expect(fn () => app(SellerOfferService::class)->destroy($offer, $sellerB))
         ->toThrow(ValidationException::class);
 });
+
+test('seller soft delete revokes tokens and hides from listings', function (): void {
+    $service = app(SellerService::class);
+    $seller = $service->store([
+        'name' => 'Delete Me',
+        'email' => 'delete-me@example.com',
+        'password' => 'Password1!',
+    ]);
+
+    $seller->createToken('test')->plainTextToken;
+    $sellerId = $seller->id;
+
+    $service->destroy($seller);
+
+    expect(Seller::query()->find($sellerId))->toBeNull()
+        ->and(Seller::withTrashed()->find($sellerId)?->trashed())->toBeTrue()
+        ->and($seller->tokens()->count())->toBe(0)
+        ->and($service->list()->pluck('id')->all())->not->toContain($sellerId);
+});

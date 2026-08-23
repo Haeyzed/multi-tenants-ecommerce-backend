@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Policies\Tenant;
 
 use App\Enums\Cms\CmsContentStatus;
-use App\Models\Tenant\Cms\Page;
+use App\Models\Tenant\Content\Page;
 use App\Models\Tenant\User;
 
 /**

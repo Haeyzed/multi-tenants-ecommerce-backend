@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Tenant\HR;
 
 use App\Enums\Tenant\HR\PerformanceCycleStatus;
-use App\Models\HR\PerformanceCycle;
+use App\Models\Tenant\HR\PerformanceCycle;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 

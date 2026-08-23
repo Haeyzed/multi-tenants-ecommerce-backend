@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Tenant\HR;
 
-use App\Models\HR\Employee;
-use App\Models\HR\JobOpening;
-use App\Models\HR\WorkLocation;
+use App\Models\Tenant\HR\Employee;
+use App\Models\Tenant\HR\JobOpening;
+use App\Models\Tenant\HR\WorkLocation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
